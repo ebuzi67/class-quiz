@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>분수 퀴즈 - 4학년</title>
+  <style>
+    :root {
+      --bg: #fff8e7;
+      --card: #ffffff;
+      --text: #2b2b2b;
+      --muted: #6b6b6b;
+      --primary: #4a7cf7;
+      --primary-dark: #3360d1;
+      --correct: #2e9d5b;
+      --correct-bg: #e3f6ea;
+      --wrong: #d9443b;
+      --wrong-bg: #fde6e4;
+      --border: #e2ddd0;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 24px;
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      margin: 0 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 진행 상황 */
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 16px;
+      background: #eee8da;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .question {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin: 0 0 28px;
+      line-height: 1.8;
+    }
+
+    /* 보기 */
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 96px;
+      padding: 14px 20px;
+      font: inherit;
+      font-size: 1.15em;
+      color: var(--text);
+      background: #fafafa;
+      border: 3px solid var(--border);
+      border-radius: 18px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .choice:not(:disabled):hover {
+      border-color: var(--primary);
+      background: #f0f4ff;
+    }
+
+    .choice:not(:disabled):active { transform: scale(0.97); }
+
+    .choice:disabled { cursor: default; }
+
+    .choice .num {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.8em;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .choice.correct {
+      border-color: var(--correct);
+      background: var(--correct-bg);
+    }
+    .choice.correct .num { background: var(--correct); }
+
+    .choice.wrong {
+      border-color: var(--wrong);
+      background: var(--wrong-bg);
+    }
+    .choice.wrong .num { background: var(--wrong); }
+
+    .choice.dim { opacity: 0.5; }
+
+    /* 분수 모양 */
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+      line-height: 1.1;
+      margin: 0 0.12em;
+      font-size: 0.95em;
+    }
+    .frac .top {
+      padding: 0 0.2em;
+      border-bottom: 3px solid currentColor;
+    }
+    .frac .bottom { padding: 0 0.2em; }
+    .whole {
+      vertical-align: middle;
+      margin-right: 0.05em;
+    }
+
+    /* 풀이 */
+    .feedback {
+      margin-top: 24px;
+      padding: 20px 24px;
+      border-radius: 18px;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.correct { background: var(--correct-bg); border: 3px solid var(--correct); }
+    .feedback.wrong { background: var(--wrong-bg); border: 3px solid var(--wrong); }
+
+    .feedback-title {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .feedback.correct .feedback-title { color: var(--correct); }
+    .feedback.wrong .feedback-title { color: var(--wrong); }
+
+    .explain { line-height: 2; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      min-height: 72px;
+      font: inherit;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .btn:active { transform: scale(0.98); }
+    .btn[hidden] { display: none; }
+
+    /* 결과 화면 */
+    .result { text-align: center; }
+    .result .emoji { font-size: 4em; line-height: 1.2; }
+    .result .score {
+      font-size: 3em;
+      font-weight: bold;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+    .result .message { font-size: 1.2em; margin-bottom: 8px; }
+
+    /* 태블릿 세로 / 작은 화면 */
+    @media (max-width: 600px) {
+      body { font-size: 20px; padding: 16px 12px; }
+      .card { padding: 22px 18px; }
+      .choices { grid-template-columns: 1fr; }
+      .choice { min-height: 80px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>🍕 분수 퀴즈</h1>
+
+    <!-- 문제 화면 -->
+    <section class="card" id="quiz">
+      <div class="progress-text">
+        <span id="progress-label">1번 / 10문제</span>
+        <span id="score-label">맞힌 문제: 0개</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+      <p class="question" id="question"></p>
+      <div class="choices" id="choices"></div>
+
+      <div class="feedback" id="feedback">
+        <div class="feedback-title" id="feedback-title"></div>
+        <div class="explain" id="explain"></div>
+      </div>
+
+      <button class="btn" id="next-btn" hidden>다음 문제 ▶</button>
+    </section>
+
+    <!-- 결과 화면 -->
+    <section class="card result" id="result" hidden>
+      <div class="emoji" id="result-emoji"></div>
+      <p>내 점수는</p>
+      <div class="score" id="result-score"></div>
+      <p class="message" id="result-message"></p>
+      <button class="btn" id="retry-btn">🔄 다시 풀기</button>
+    </section>
+  </main>
+
+  <script>
+    // 분수 표기: {2/7} → 분수, {1 3/4} → 대분수
+    const QUESTIONS = [
+      {
+        q: "{2/7} + {3/7} 은 얼마일까요?",
+        choices: ["{5/14}", "{5/7}", "{6/7}", "{1/7}"],
+        answer: 1,
+        explain: "분모가 같으면 분자끼리 더해요. 2 + 3 = 5 이니까 답은 {5/7} 이에요."
+      },
+      {
+        q: "{5/9} − {2/9} 은 얼마일까요?",
+        choices: ["{7/9}", "{3/18}", "{3/9}", "{2/9}"],
+        answer: 2,
+        explain: "분모가 같으면 분자끼리 빼요. 5 − 2 = 3 이니까 답은 {3/9} 이에요."
+      },
+      {
+        q: "다음 중 진분수는 어느 것일까요?",
+        choices: ["{5/5}", "{7/4}", "{9/2}", "{3/5}"],
+        answer: 3,
+        explain: "진분수는 분자가 분모보다 작은 분수예요. 3 은 5 보다 작으니까 {3/5} 가 진분수예요."
+      },
+      {
+        q: "가분수 {7/4} 를 대분수로 나타내면 무엇일까요?",
+        choices: ["{1 3/4}", "{1 4/7}", "{3 1/4}", "{2 1/4}"],
+        answer: 0,
+        explain: "7 ÷ 4 = 1 … 3 이에요. 자연수 부분은 1, 남은 것은 {3/4} 이니까 {1 3/4} 예요."
+      },
+      {
+        q: "대분수 {2 1/3} 을 가분수로 나타내면 무엇일까요?",
+        choices: ["{6/3}", "{5/3}", "{7/3}", "{3/7}"],
+        answer: 2,
+        explain: "2 는 {6/3} 이에요. {6/3} 과 {1/3} 을 더하면 {7/3} 이 돼요."
+      },
+      {
+        q: "다음 중 가장 큰 분수는 어느 것일까요?",
+        choices: ["{3/7}", "{6/7}", "{2/7}", "{5/7}"],
+        answer: 1,
+        explain: "분모가 같으면 분자가 클수록 큰 분수예요. 분자 6 이 가장 크니까 {6/7} 이 가장 커요."
+      },
+      {
+        q: "{3/8} + {6/8} 은 얼마일까요?",
+        choices: ["{9/16}", "{1 2/8}", "{1 1/8}", "{3/8}"],
+        answer: 2,
+        explain: "3 + 6 = 9 이니까 {9/8} 이에요. {8/8} 은 1 이므로 {9/8} = {1 1/8} 이에요."
+      },
+      {
+        q: "1 − {2/5} 는 얼마일까요?",
+        choices: ["{1/5}", "{3/5}", "{2/5}", "{4/5}"],
+        answer: 1,
+        explain: "1 을 {5/5} 로 바꿔요. {5/5} − {2/5} = {3/5} 이에요."
+      },
+      {
+        q: "{3 1/4} − {1 3/4} 은 얼마일까요?",
+        choices: ["{2 2/4}", "{1 3/4}", "{2/4}", "{1 2/4}"],
+        answer: 3,
+        explain: "{1/4} 에서 {3/4} 을 뺄 수 없으니 가분수로 바꿔요. {13/4} − {7/4} = {6/4} = {1 2/4} 이에요."
+      },
+      {
+        q: "피자 한 판을 똑같이 8조각으로 나누었어요. 민수가 3조각, 동생이 2조각을 먹었어요. 남은 피자는 전체의 얼마일까요?",
+        choices: ["{5/8}", "{3/5}", "{3/8}", "{2/8}"],
+        answer: 2,
+        explain: "먹은 피자는 {3/8} + {2/8} = {5/8} 이에요. 남은 피자는 {8/8} − {5/8} = {3/8} 이에요."
+      }
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const quizEl = $("quiz");
+    const resultEl = $("result");
+    const questionEl = $("question");
+    const choicesEl = $("choices");
+    const feedbackEl = $("feedback");
+    const feedbackTitleEl = $("feedback-title");
+    const explainEl = $("explain");
+    const nextBtn = $("next-btn");
+    const retryBtn = $("retry-btn");
+    const progressLabel = $("progress-label");
+    const scoreLabel = $("score-label");
+    const progressFill = $("progress-fill");
+
+    let current = 0;
+    let score = 0;
+    let order = [];
+
+    // {a/b} 또는 {n a/b} 를 세로 분수 모양 HTML 로 바꿔요
+    function fmt(text) {
+      return text.replace(/\{(?:(\d+) )?(\d+)\/(\d+)\}/g, (_, whole, top, bottom) => {
+        const frac = `<span class="frac" aria-label="${bottom}분의 ${top}">` +
+          `<span class="top">${top}</span><span class="bottom">${bottom}</span></span>`;
+        return whole ? `<span class="whole">${whole}</span>${frac}` : frac;
+      });
+    }
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function start() {
+      current = 0;
+      score = 0;
+      order = shuffle(QUESTIONS.map((_, i) => i));
+      resultEl.hidden = true;
+      quizEl.hidden = false;
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const item = QUESTIONS[order[current]];
+
+      progressLabel.textContent = `${current + 1}번 / ${QUESTIONS.length}문제`;
+      scoreLabel.textContent = `맞힌 문제: ${score}개`;
+      progressFill.style.width = `${(current / QUESTIONS.length) * 100}%`;
+
+      questionEl.innerHTML = `${current + 1}. ${fmt(item.q)}`;
+
+      feedbackEl.className = "feedback";
+      nextBtn.hidden = true;
+      choicesEl.innerHTML = "";
+
+      // 보기 순서도 섞어서 보여줘요
+      shuffle(item.choices.map((_, i) => i)).forEach((choiceIdx, pos) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.dataset.index = choiceIdx;
+        btn.innerHTML = `<span class="num">${pos + 1}</span><span>${fmt(item.choices[choiceIdx])}</span>`;
+        btn.addEventListener("click", () => choose(choiceIdx));
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function choose(choiceIdx) {
+      const item = QUESTIONS[order[current]];
+      const isCorrect = choiceIdx === item.answer;
+      if (isCorrect) score++;
+
+      choicesEl.querySelectorAll(".choice").forEach((btn) => {
+        const idx = Number(btn.dataset.index);
+        btn.disabled = true;
+        if (idx === item.answer) btn.classList.add("correct");
+        else if (idx === choiceIdx) btn.classList.add("wrong");
+        else btn.classList.add("dim");
+      });
+
+      feedbackEl.className = `feedback show ${isCorrect ? "correct" : "wrong"}`;
+      feedbackTitleEl.textContent = isCorrect ? "⭕ 정답이에요! 잘했어요!" : "❌ 아쉬워요! 다시 생각해 봐요.";
+      explainEl.innerHTML = `💡 ${fmt(item.explain)}`;
+
+      scoreLabel.textContent = `맞힌 문제: ${score}개`;
+      progressFill.style.width = `${((current + 1) / QUESTIONS.length) * 100}%`;
+
+      nextBtn.textContent = current === QUESTIONS.length - 1 ? "결과 보기 🏁" : "다음 문제 ▶";
+      nextBtn.hidden = false;
+      nextBtn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function next() {
+      current++;
+      if (current < QUESTIONS.length) {
+        showQuestion();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      const total = QUESTIONS.length;
+      quizEl.hidden = true;
+      resultEl.hidden = false;
+
+      $("result-score").textContent = `${score} / ${total}`;
+
+      let emoji, message;
+      if (score === total) {
+        emoji = "🏆"; message = "모두 맞혔어요! 분수 박사님이에요!";
+      } else if (score >= 8) {
+        emoji = "🌟"; message = "아주 잘했어요! 조금만 더 하면 만점이에요!";
+      } else if (score >= 5) {
+        emoji = "😊"; message = "잘했어요! 틀린 문제를 다시 풀어 봐요.";
+      } else {
+        emoji = "💪"; message = "괜찮아요! 다시 풀면서 분수와 친해져 봐요.";
+      }
+      $("result-emoji").textContent = emoji;
+      $("result-message").textContent = message;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    nextBtn.addEventListener("click", next);
+    retryBtn.addEventListener("click", start);
+
+    start();
+  </script>
+</body>
+</html>
