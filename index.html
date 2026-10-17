@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>분수 퀴즈 - 4학년</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffb347">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="분수 퀴즈">
   <style>
     :root {
       --bg: #fff8e7;
@@ -901,6 +908,11 @@
     $("restart-btn").addEventListener("click", renderHome);
 
     renderHome();
+
+    // 앱처럼 설치하고 인터넷 없이도 쓸 수 있게 해요
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      navigator.serviceWorker.register("sw.js");
+    }
   </script>
 </body>
 </html>
