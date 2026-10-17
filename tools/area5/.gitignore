@@ -1,0 +1,7 @@
+# 스크립트를 돌리면 생기는 중간 파일
+*.html
+!app_template.html
+*.pdf
+*.png
+fonts/
+__pycache__/
