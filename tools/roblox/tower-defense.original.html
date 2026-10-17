@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로블록스 스튜디오 타워 디펜스 마스터 퀴즈</title>
+    <style>
+        :root {
+            --primary-color: #0070f3;
+            --secondary-color: #ff3366;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        .quiz-info {
+            display: flex;
+            justify-content: space-between;
+            background: #eef2f7;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .question-box {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .options-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        .option-item {
+            background: #f9fbfd;
+            border: 2px solid #e1e8ed;
+            padding: 12px 18px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        .option-item:hover {
+            background: #e6f0ff;
+            border-color: var(--primary-color);
+        }
+        .option-item.selected {
+            background: #d0e3ff;
+            border-color: var(--primary-color);
+            font-weight: bold;
+        }
+        .option-item.correct {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+            color: #155724;
+        }
+        .option-item.wrong {
+            background: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24;
+        }
+        .explanation {
+            background: #fff8e1;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.4;
+            display: none;
+        }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background-color: #005bb5;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result-container {
+            text-align: center;
+            display: none;
+        }
+        .result-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>roblox 타워 디펜스 스튜디오 퀴즈</h1>
+    <div class="subtitle">유튜버 옐롯과 함께하는 핵심 개념 다지기 (초등~어른 기초)</div>
+
+    <!-- 퀴즈 화면 -->
+    <div id="quiz-screen">
+        <div class="quiz-info">
+            <span id="question-progress">문제 1 / 10</span>
+            <span id="score-board">점수: 0점</span>
+        </div>
+        <div class="question-box" id="question-text">문로딩 중...</div>
+        <ul class="options-list" id="options-container">
+            <!-- 보기 동적 생성 -->
+        </ul>
+        <div class="explanation" id="explanation-box"></div>
+        <button class="btn" id="next-btn" onclick="nextQuestion()" disabled>정답 제출 및 다음</button>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div class="result-container" id="result-screen">
+        <h2>🎉 퀴즈 완료! 수고하셨습니다!</h2>
+        <p>나의 로블록스 스튜디오 타워 디펜스 이해도는?</p>
+        <div class="result-score" id="final-score">0점</div>
+        <p id="result-message" style="margin-bottom: 25px; font-size: 16px;"></p>
+        <button class="btn" onclick="restartQuiz()">다시 풀기</button>
+    </div>
+</div>
+
+<script>
+    // 옐롯의 타워 디펜스 편 도서/강의 내용을 기반으로 한 10가지 기초 문제
+    const quizData = [
+        {
+            question: "1. 로비맵에서 전투맵으로 유저를 이동시키기 위해 옐롯이 책 1장에서 다룬 핵심 시스템은 무엇인가요?",
+            options: [
+                "1) 텔레포트(Teleport) 시스템",
+                "2) 파트 크기 조절 시스템",
+                "3) 리더보드 순위표 시스템",
+                "4) 점프맵 가속 시스템"
+            ],
+            answer: 0,
+            explanation: "정답은 1번입니다! 로비와 전투맵을 오가기 위해 TeleportService를 활용한 텔레포트 시스템을 구축합니다."
+        },
+        {
+            question: "2. 몬스터가 길을 따라 자연스럽게 이동하도록 지정하는 핵심 요소는 무엇인가요?",
+            options: [
+                "1) 웨이포인트 (Waypoint)",
+                "2) 사운드 이펙트 (SoundEffect)",
+                "3) 파티클 이미터 (ParticleEmitter)",
+                "4) 팀 컬러 (TeamColor)"
+            ],
+            answer: 0,
+            explanation: "정답은 1번입니다! 몬스터 이동 경로를 만들 때는 웨이포인트를 활용해 순서대로 좌표를 찾아가도록 설정합니다."
+        },
+        {
+            question: "3. 몬스터 머리 위에 체력(HP) 상태를 실시간으로 띄워주기 위해 사용하는 GUI 객체는 무엇인가요?",
+            options: [
+                "1) ScreenGui",
+                "2) BillboardGui",
+                "3) SurfaceGui",
+                "4) StarterGui"
+            ],
+            answer: 1,
+            explanation: "정답은 2번입니다! 3차원 공간 속 파트나 모델 위에 고정되어 표시되는 GUI는 BillboardGui를 사용합니다."
+        },
+        {
+            question: "4. 게임 내에서 코인(Coin)을 사용해 새로운 영웅(유닛)을 구매하기 위해 필요한 시스템은?",
+            options: [
+                "1) 영웅 상점 (Shop) 시스템",
+                "2) 마우스 잠금 시스템",
+                "3) 스카이박스 변경 시스템",
+                "4) 중력 조절 시스템"
+            ],
+            answer: 0,
+            explanation: "정답은 1번입니다! 코인으로 유닛을 사고파는 상점 UI와 구매 처리 로직을 구현하게 됩니다."
+        },
+        {
+            question: "5. 원하는 위치에 마우스 클릭으로 영웅 유닛을 소환(설치)할 때 주의해야 할 점이 아닌 것은?",
+            options: [
+                "1) 설치 제한 영역(배치 불가 구역) 설정",
+                "2) 유닛 설치 높이 값 조절",
+                "3) 맵의 모든 파트를 지우개로 삭제하기",
+                "4) 코인 잔액과 가격 비교 확인"
+            ],
+            answer: 2,
+            explanation: "정답은 3번입니다! 맵의 파트를 전부 지우면 게임이 성립하지 않으며, 영역 설정과 높이 값, 잔액 체크가 필수입니다."
+        },
+        {
+            question: "6. 영웅 유닛이 일정 범위 내의 몬스터를 감지하고 총을 발사해 공격하는 스크립트 작성 시 주로 쓰이는 루아(Lua) 기능은?",
+            options: [
+                "1) while 반복문과 거리 계산 (Magnitude)",
+                "2) 컴퓨터 전원 끄기 함수",
+                "3) 브라우저 검색 기능",
+                "4) 그래픽 카드 드라이버 업데이트"
+            ],
+            answer: 0,
+            explanation: "정답은 1번입니다! 유닛과 몬스터 사이의 거리를 구하는 `Magnitude`와 반복문을 통해 타겟을 탐색하고 공격합니다."
+        },
+        {
+            question: "7. 몬스터를 처치했을 때 플레이어에게 보상으로 지급되는 재화는 무엇인가요?",
+            options: [
+                "1) 로벅스(Robux)",
+                "2) 코인(Coin)",
+                "3) 경험치 배지",
+                "4) 나이트메어 보석"
+            ],
+            answer: 1,
+            explanation: "정답은 2번입니다! 몬스터 처치 시 코인을 획득하여 추가 영웅을 업그레이드하거나 살 수 있습니다."
+        },
+        {
+            question: "8. 플레이어의 점수와 기록을 서버 전체에 순위별로 보여주는 시스템의 이름은?",
+            options: [
+                "1) 리더보드 (Leaderboard)",
+                "2) 인벤토리 시스템",
+                "3) 채팅 필터링 시스템",
+                "4) 카메라 시점 변환기"
+            ],
+            answer: 0,
+            explanation: "정답은 1번입니다! 플레이어의 수치 데이터를 화면 우측 상단 등에 표시해 주는 리더보드를 구축합니다."
+        },
+        {
+            question: "9. 게임을 성공적으로 클리어했을 때 플레이어에게 성취감을 주기 위해 추가하는 요소는?",
+            options: [
+                "1) 게임 클리어 보상 및 UI 시스템",
+                "2) 블루스크린 발생기",
+                "3) 게임 강제 종료 스크립트",
+                "4) 맵 초기화 오류 유도"
+            ],
+            answer: 0,
+            explanation: "정답은 1번입니다! 모든 웨이브를 막아내면 게임 클리어 UI가 나타나며 보상이 주어지는 시스템을 완성합니다."
+        },
+        {
+            question: "10. 로블록스 스튜디오에서 코드를 작성할 때 사용되는 프로그래밍 언어의 이름은?",
+            options: [
+                "1) 파이썬 (Python)",
+                "2) 자바스크립트 (JavaScript)",
+                "3) 루아 (Lua)",
+                "4) HTML/CSS"
+            ],
+            answer: 2,
+            explanation: "정답은 3번입니다! 로블록스 스튜디오는 루아(Luau 포함 Lua 계열) 스크립트 언어를 사용하여 게임 로직을 프로그래밍합니다."
+        }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+    let selectedOption = null;
+    let isAnswered = false;
+
+    const questionProgress = document.getElementById('question-progress');
+    const scoreBoard = document.getElementById('score-board');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const explanationBox = document.getElementById('explanation-box');
+    const nextBtn = document.getElementById('next-btn');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const finalScore = document.getElementById('final-score');
+    const resultMessage = document.getElementById('result-message');
+
+    function loadQuiz() {
+        selectedOption = null;
+        isAnswered = false;
+        explanationBox.style.display = 'none';
+        nextBtn.disabled = true;
+        nextBtn.innerText = "정답 제출하기";
+
+        const current = quizData[currentIdx];
+        questionProgress.innerText = `문제 ${currentIdx + 1} / ${quizData.length}`;
+        scoreBoard.innerText = `점수: ${score}점`;
+        questionText.innerText = current.question;
+
+        optionsContainer.innerHTML = '';
+        current.options.forEach((opt, idx) => {
+            const li = document.createElement('li');
+            li.className = 'option-item';
+            li.innerText = opt;
+            li.onclick = () => selectOption(idx, li);
+            optionsContainer.appendChild(li);
+        });
+    }
+
+    function selectOption(idx, element) {
+        if (isAnswered) return;
+        
+        document.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedOption = idx;
+        nextBtn.disabled = false;
+    }
+
+    function nextQuestion() {
+        if (!isAnswered) {
+            // 정답 확인 단계
+            isAnswered = true;
+            const current = quizData[currentIdx];
+            const optionItems = document.querySelectorAll('.option-item');
+
+            if (selectedOption === current.answer) {
+                optionItems[selectedOption].classList.add('correct');
+                score += 10;
+                scoreBoard.innerText = `점수: ${score}점`;
+            } else {
+                optionItems[selectedOption].classList.add('wrong');
+                optionItems[current.answer].classList.add('correct');
+            }
+
+            explanationBox.innerText = current.explanation;
+            explanationBox.style.display = 'block';
+
+            if (currentIdx === quizData.length - 1) {
+                nextBtn.innerText = "결과 보기";
+            } else {
+                nextBtn.innerText = "다음 문제";
+            }
+        } else {
+            // 다음 문제로 이동 또는 결과 화면
+            currentIdx++;
+            if (currentIdx < quizData.length) {
+                loadQuiz();
+            } else {
+                showResult();
+            }
+        }
+    }
+
+    function showResult() {
+        quizScreen.style.display = 'none';
+        resultScreen.style.display = 'block';
+        finalScore.innerText = `${score}점`;
+
+        let msg = "";
+        if (score === 100) {
+            msg = "🏆 완벽합니다! 로블록스 타워 디펜스 마스터시네요! 직접 게임을 출시해도 되겠어요!";
+        } else if (score >= 70) {
+            msg = "👏 훌륭해요! 타워 디펜스 제작 핵심 개념을 아주 잘 이해하고 계십니다.";
+        } else {
+            msg = "💡 기초 개념을 다시 한번 복습하고 도전해보세요. 멋진 타워 디펜스 게임을 만들 수 있습니다!";
+        }
+        resultMessage.innerText = msg;
+    }
+
+    function restartQuiz() {
+        currentIdx = 0;
+        score = 0;
+        resultScreen.style.display = 'none';
+        quizScreen.style.display = 'block';
+        loadQuiz();
+    }
+
+    // 초기 실행
+    loadQuiz();
+</script>
+
+</body>
+</html>

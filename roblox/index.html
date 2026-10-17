@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로블록스 스튜디오 퀴즈</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1f6feb">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="로블록스 퀴즈">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: #f0f4f8; color: #333;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 20px; line-height: 1.5; display: flex; justify-content: center; padding: 24px 16px;
+    }
+    .app { width: 100%; max-width: 560px; }
+    h1 { text-align: center; font-size: 1.5em; margin: 8px 0 4px; color: #1f6feb; }
+    p.sub { text-align: center; color: #666; font-size: .8em; margin: 0 0 20px; }
+    a.card {
+      display: flex; gap: 16px; align-items: center; text-decoration: none; color: inherit;
+      background: #fff; border: 2px solid #e1e8ed; border-left: 8px solid var(--c); border-radius: 18px;
+      padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 16px rgba(0,0,0,.06);
+    }
+    a.card:hover, a.card:focus { border-color: var(--c); }
+    a.card .emoji { font-size: 2.2em; flex: none; width: 64px; text-align: center; }
+    a.card b { display: block; font-size: 1.1em; color: var(--c); }
+    a.card small { color: #666; }
+    button { font-family: inherit; cursor: pointer; border-radius: 14px; }
+    .install { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; margin-top: 6px;
+      background: #fff; color: #1f6feb; border: 2px dashed #1f6feb; font-weight: 800; font-size: 1em; }
+    .guide { background: #fff; border: 2px solid #1f6feb; border-radius: 18px; padding: 16px 18px; margin-top: 6px; font-size: .9em; }
+    .guide ol { margin: 8px 0 4px; padding-left: 1.3em; }
+    .guide li { margin: 6px 0; }
+    .guide .close { float: right; background: none; border: none; color: #666; font-size: 1.2em; padding: 0 4px; }
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1f6feb; color: #fff;
+      padding: 10px 18px; border-radius: 999px; font-size: .9em; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>로블록스 스튜디오 퀴즈</h1>
+    <p class="sub">유튜버 옐롯과 함께하는 게임 제작 핵심 개념 다지기</p>
+    <a class="card" href="tower-defense/" style="--c:#0070f3">
+      <span class="emoji">🏰</span>
+      <span><b>타워 디펜스</b><small>웨이포인트, 영웅 소환, 코인 상점까지 10문제</small></span>
+    </a>
+    <a class="card" href="jump-map/" style="--c:#ff5722">
+      <span class="emoji">🦘</span>
+      <span><b>점프맵 (Obby)</b><small>킬브릭, 체크포인트, 움직이는 발판까지 10문제</small></span>
+    </a>
+    <div id="install"></div>
+  </div>
+  <script>
+    // ---------- 홈 화면에 설치하기 ----------
+    // 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+    // 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+    // 이미 앱으로 열었거나 설치된 기기에서는 버튼을 숨겨요.
+    let installEvent = null, showGuide = false;
+    const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+    function render() {
+      const box = document.getElementById("install");
+      if (isStandalone()) { box.innerHTML = ""; return; }
+      if (showGuide) {
+        box.innerHTML = `<div class="guide"><button class="close" onclick="closeGuide()" aria-label="닫기">✕</button>
+          <b>📲 아이폰·아이패드에 설치하기</b>
+          <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+            <li>화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span style="white-space:nowrap">(□↑)</span>을 눌러요.</li>
+            <li>목록을 내려 <b>홈 화면에 추가</b>를 누르고, 오른쪽 위 <b>추가</b>를 눌러요.</li></ol>
+          <small style="color:#666">홈 화면에 생긴 로블록스 퀴즈 아이콘으로 열면 앱처럼 전체 화면으로 열려요.</small></div>`;
+      } else if (installEvent || isIOS()) {
+        box.innerHTML = `<button class="install" onclick="installApp()">📲 홈 화면에 설치하기</button>`;
+      } else {
+        box.innerHTML = "";
+      }
+    }
+    async function installApp() {
+      if (installEvent) {
+        const ev = installEvent;
+        installEvent = null;
+        ev.prompt();
+        try { await ev.userChoice; } catch (e) {}
+      } else if (isIOS()) {
+        showGuide = true;
+      }
+      render();
+    }
+    function closeGuide() { showGuide = false; render(); }
+    function toast(msg) {
+      const t = document.createElement("div");
+      t.className = "toast"; t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      installEvent = e;
+      render();
+    });
+    window.addEventListener("appinstalled", () => {
+      installEvent = null;
+      render();
+      toast("홈 화면에 설치했어요! 🎉");
+    });
+
+    render();
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>
