@@ -346,6 +346,28 @@
     }
     .records li .label { color: var(--level-color); }
 
+    /* 홈 화면에 설치하기 */
+    .install-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+      padding: 14px; margin: 0 0 18px; font: inherit; font-weight: bold; cursor: pointer;
+      background: #fff; color: var(--primary-dark); border: 2px dashed var(--primary); border-radius: 16px;
+    }
+    .install-guide {
+      background: #fff; border: 2px solid var(--primary); border-radius: 16px;
+      padding: 16px 18px; margin: 0 0 18px; font-size: 0.85em; text-align: left;
+    }
+    .install-guide ol { margin: 8px 0 4px; padding-left: 1.3em; }
+    .install-guide li { margin: 6px 0; }
+    .install-guide .close {
+      float: right; background: none; border: none; font: inherit; font-size: 1.2em;
+      color: var(--muted); cursor: pointer; padding: 0 4px;
+    }
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 999px;
+      font-weight: bold; font-size: 0.8em; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    }
+
     /* 태블릿 세로 / 작은 화면 */
     @media (max-width: 600px) {
       body { font-size: 20px; padding: 16px 12px; }
@@ -363,6 +385,7 @@
 
     <!-- 처음 화면: 난이도 고르기 -->
     <section class="card" id="home">
+      <div id="install-area"></div>
       <p class="intro">난이도를 골라 주세요!<br>단계마다 문제 10개가 무작위로 나와요.</p>
       <div class="levels" id="levels"></div>
     </section>
@@ -908,6 +931,72 @@
     $("restart-btn").addEventListener("click", renderHome);
 
     renderHome();
+
+    // 홈 화면에 설치하기
+    // 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+    // 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+    // 이미 앱으로 열었거나 설치된 기기에서는 버튼을 숨겨요.
+    let installEvent = null;
+    let showGuide = false;
+    const installArea = $("install-area");
+    const isStandalone = () =>
+      window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    const isIOS = () =>
+      /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+    function renderInstall() {
+      if (isStandalone()) { installArea.innerHTML = ""; return; }
+      if (showGuide) {
+        installArea.innerHTML = `<div class="install-guide">
+          <button class="close" id="install-close" aria-label="닫기">✕</button>
+          <b>📲 아이폰·아이패드에 설치하기</b>
+          <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+            <li>화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span style="white-space:nowrap">(□↑)</span>을 눌러요.</li>
+            <li>목록을 내려 <b>홈 화면에 추가</b>를 누르고, 오른쪽 위 <b>추가</b>를 눌러요.</li></ol>
+          <span style="color:var(--muted)">홈 화면에 생긴 분수 퀴즈 아이콘으로 열면 앱처럼 전체 화면으로 열려요.</span></div>`;
+        $("install-close").addEventListener("click", () => { showGuide = false; renderInstall(); });
+        return;
+      }
+      if (installEvent || isIOS()) {
+        installArea.innerHTML = `<button class="install-btn" id="install-btn">📲 홈 화면에 설치하기</button>`;
+        $("install-btn").addEventListener("click", installApp);
+        return;
+      }
+      installArea.innerHTML = "";
+    }
+
+    async function installApp() {
+      if (installEvent) {
+        const ev = installEvent;
+        installEvent = null;
+        ev.prompt();
+        try { await ev.userChoice; } catch (e) {}
+        renderInstall();
+      } else if (isIOS()) {
+        showGuide = true;
+        renderInstall();
+      }
+    }
+
+    function toast(msg) {
+      const t = document.createElement("div");
+      t.className = "toast";
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      installEvent = e;
+      renderInstall();
+    });
+    window.addEventListener("appinstalled", () => {
+      installEvent = null;
+      renderInstall();
+      toast("홈 화면에 설치했어요! 🎉");
+    });
+    renderInstall();
 
     // 앱처럼 설치하고 인터넷 없이도 쓸 수 있게 해요
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
