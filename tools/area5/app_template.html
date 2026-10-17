@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>넓이 퀴즈 - 5학년</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2f6b3a">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="넓이 퀴즈">
+  <style>
+    :root {
+      --bg: #f3f8ef;
+      --card: #ffffff;
+      --text: #222;
+      --muted: #666;
+      --green: #2f6b3a;
+      --green-soft: #e6f2e0;
+      --orange: #e8590c;
+      --blue: #1971c2;
+      --correct: #2e9d5b;
+      --correct-bg: #e3f6ea;
+      --wrong: #d9443b;
+      --wrong-bg: #fde6e4;
+      --hint-bg: #fff4e6;
+      --border: #d6e4cf;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 20px; line-height: 1.55;
+      display: flex; justify-content: center; padding: 16px;
+    }
+    .app { width: 100%; max-width: 720px; }
+    h1 { font-size: 1.5em; margin: 4px 0 2px; text-align: center; }
+    .sub { text-align: center; color: var(--muted); margin: 0 0 16px; font-size: .9em; }
+    .card { background: var(--card); border: 2px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+    button { font: inherit; cursor: pointer; border: none; border-radius: 14px; }
+    .unit { display: flex; gap: 14px; align-items: center; width: 100%; text-align: left; background: var(--card); border: 2px solid var(--border); padding: 16px; margin-bottom: 12px; }
+    .unit:active, .unit:hover { border-color: var(--green); }
+    .unit .emo { font-size: 2em; }
+    .unit b { display: block; font-size: 1.1em; }
+    .unit small { color: var(--muted); }
+    .stars { color: #f59f00; letter-spacing: 2px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .back { background: #fff; border: 2px solid var(--border); padding: 6px 14px; font-size: .9em; }
+    .topbar .t { font-weight: 800; flex: 1; }
+    .btn { display: block; width: 100%; padding: 14px; font-weight: 800; font-size: 1.05em; margin-top: 10px; }
+    .primary { background: var(--green); color: #fff; }
+    .ghost { background: #fff; color: var(--green); border: 2px solid var(--green); }
+    .section { display: flex; justify-content: space-between; align-items: center; width: 100%; background: #fff; border: 2px solid var(--border); padding: 14px 16px; margin-bottom: 10px; text-align: left; }
+    .section .n { color: var(--muted); font-size: .85em; }
+    .fig { text-align: center; margin: 8px 0; overflow-x: auto; }
+    .fig svg text { font-family: inherit; }
+    .figrow { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    .figrow .fig { flex: 1 1 180px; }
+    .cap { margin: 0; font-size: .85em; text-align: center; }
+    .or { color: var(--orange); font-weight: 800; }
+    .bl { color: var(--blue); font-weight: 800; }
+    .tip { background: var(--green-soft); border-radius: 12px; padding: 10px 14px; margin: 10px 0; font-weight: 700; }
+    .tip.big { font-size: 1.05em; }
+    .warn { background: var(--hint-bg); border-radius: 12px; padding: 10px 14px; }
+    .ex { color: var(--muted); }
+    .progress { height: 10px; background: #dfe9d9; border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+    .progress > div { height: 100%; background: var(--green); transition: width .3s; }
+    .qtext { font-size: 1.1em; margin: 6px 0 10px; }
+    .answer { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+    .answer input { flex: 1; min-width: 0; font: inherit; font-size: 1.3em; padding: 10px 14px; border: 2px solid var(--border); border-radius: 12px; text-align: center; }
+    .answer input:focus { outline: none; border-color: var(--green); }
+    .answer .unitlabel { font-weight: 800; }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .choice { background: #fff; border: 2px solid var(--border); padding: 14px; font-size: 1.15em; font-weight: 800; }
+    .choice.sel { border-color: var(--green); background: var(--green-soft); }
+    .choice.right { border-color: var(--correct); background: var(--correct-bg); }
+    .choice.bad { border-color: var(--wrong); background: var(--wrong-bg); }
+    .feedback { border-radius: 14px; padding: 12px 14px; margin-top: 12px; }
+    .feedback.ok { background: var(--correct-bg); border: 2px solid var(--correct); }
+    .feedback.no { background: var(--wrong-bg); border: 2px solid var(--wrong); }
+    .feedback.hint { background: var(--hint-bg); border: 2px solid #f0a35e; }
+    .feedback b.h { display: block; margin-bottom: 4px; }
+    .dots { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
+    .dots span { width: 10px; height: 10px; border-radius: 50%; background: #cfdcc8; }
+    .dots span.on { background: var(--green); }
+    .row2 { display: flex; gap: 10px; }
+    .row2 .btn { margin-top: 0; }
+    .big-score { font-size: 3em; font-weight: 800; text-align: center; color: var(--green); margin: 4px 0; }
+    .center { text-align: center; }
+    .review { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; font-size: .95em; }
+    .footer { text-align: center; color: var(--muted); font-size: .75em; margin-top: 20px; }
+    @media (max-width: 420px) { body { font-size: 18px; padding: 12px; } .choices { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app" id="app"></div>
+  <script>
+    const DATA = /*__DATA__*/null;
+    const app = document.getElementById("app");
+
+    // 단원별 최고 점수를 이 기기에만 저장해요. 저장이 막혀 있어도 앱은 그대로 동작해요.
+    function loadBest() { try { return JSON.parse(localStorage.getItem("area5-best") || "{}"); } catch (e) { return {}; } }
+    function saveBest(key, score) {
+      try {
+        const best = loadBest();
+        if (!(key in best) || score > best[key]) { best[key] = score; localStorage.setItem("area5-best", JSON.stringify(best)); }
+      } catch (e) {}
+    }
+    function stars(ratio) {
+      const n = ratio >= 1 ? 3 : ratio >= 0.8 ? 2 : ratio >= 0.5 ? 1 : 0;
+      return "★".repeat(n) + "☆".repeat(3 - n);
+    }
+    function el(html) { app.innerHTML = html; window.scrollTo(0, 0); }
+
+    // ---------- 첫 화면 ----------
+    function home() {
+      const best = loadBest();
+      let html = `<h1>📐 넓이 퀴즈</h1><p class="sub">5학년 1학기 6단원 · 다각형의 둘레와 넓이</p>`;
+      DATA.units.forEach((u, i) => {
+        const done = u.sections.filter(s => (u.id + "/" + s.id) in best).length;
+        html += `<button class="unit" onclick="unit(${i})"><span class="emo">${u.emoji}</span>
+          <span><b>${u.title}</b><small>${u.desc}</small><br><small>${done} / ${u.sections.length} 단계 해 봤어요</small></span></button>`;
+      });
+      html += `<p class="footer">기록은 이 기기에만 저장돼요.</p>`;
+      el(html);
+    }
+
+    // ---------- 단원 화면 ----------
+    function unit(ui) {
+      const u = DATA.units[ui], best = loadBest();
+      let html = `<div class="topbar"><button class="back" onclick="home()">← 처음</button><span class="t">${u.emoji} ${u.title}</span></div>
+        <button class="btn ghost" onclick="concept(${ui},0)">📖 개념 먼저 보기</button><div style="height:12px"></div>`;
+      u.sections.forEach((s, si) => {
+        const key = u.id + "/" + s.id, n = s.questions.length;
+        const rec = key in best ? `<span class="stars">${stars(best[key] / n)}</span> <span class="n">${best[key]}/${n}</span>` : `<span class="n">${n}문제</span>`;
+        html += `<button class="section" onclick="startQuiz(${ui},${si})"><span><b>${si + 1}. ${s.title}</b></span><span>${rec}</span></button>`;
+      });
+      el(html);
+    }
+
+    // ---------- 개념 카드 ----------
+    function concept(ui, ci) {
+      const u = DATA.units[ui], c = u.concepts[ci], last = ci === u.concepts.length - 1;
+      const dots = u.concepts.map((_, i) => `<span class="${i === ci ? "on" : ""}"></span>`).join("");
+      el(`<div class="topbar"><button class="back" onclick="unit(${ui})">← 단원</button><span class="t">📖 개념 ${ci + 1} / ${u.concepts.length}</span></div>
+        <div class="card"><h2 style="margin:0 0 6px;font-size:1.2em">${c.title}</h2>${c.html}</div>
+        <div class="dots">${dots}</div>
+        <div class="row2">
+          <button class="btn ghost" ${ci === 0 ? "disabled style='opacity:.4'" : ""} onclick="concept(${ui},${ci - 1})">← 이전</button>
+          ${last ? `<button class="btn primary" onclick="startQuiz(${ui},0)">문제 풀러 가기 →</button>`
+                 : `<button class="btn primary" onclick="concept(${ui},${ci + 1})">다음 →</button>`}
+        </div>`);
+    }
+
+    // ---------- 문제 풀기 ----------
+    let S = null; // 지금 풀고 있는 퀴즈 상태
+    function startQuiz(ui, si, onlyIdx) {
+      const qs = DATA.units[ui].sections[si].questions;
+      const order = onlyIdx || qs.map((_, i) => i);
+      S = { ui, si, order, pos: 0, score: 0, wrongs: [], tries: 0, sel: null, retry: !!onlyIdx };
+      showQ();
+    }
+    function curQ() { return DATA.units[S.ui].sections[S.si].questions[S.order[S.pos]]; }
+
+    function showQ() {
+      const q = curQ(), s = DATA.units[S.ui].sections[S.si];
+      S.tries = 0; S.sel = null; S.locked = false;
+      const pct = Math.round(S.pos / S.order.length * 100);
+      let input;
+      if (q.type === "num") {
+        input = `<div class="answer"><input id="ans" type="text" inputmode="decimal" autocomplete="off" placeholder="답 입력"
+                  onkeydown="if(event.key==='Enter')check()"><span class="unitlabel">${q.unit}</span></div>`;
+      } else {
+        input = `<div class="choices">${q.choices.map((c, i) => `<button class="choice" id="c${i}" onclick="pick(${i})">${c}</button>`).join("")}</div>`;
+      }
+      el(`<div class="topbar"><button class="back" onclick="unit(${S.ui})">← 그만</button><span class="t">${s.title}</span><span>${S.pos + 1} / ${S.order.length}</span></div>
+        <div class="progress"><div style="width:${pct}%"></div></div>
+        <div class="card">${q.fig ? `<div class="fig">${q.fig}</div>` : ""}<div class="qtext">${q.q}</div>${input}
+          <div id="fb"></div>
+          <button class="btn primary" id="go" onclick="check()">확인</button></div>`);
+      const a = document.getElementById("ans"); if (a) a.focus({ preventScroll: true });
+    }
+
+    function pick(i) {
+      if (S.locked) return;
+      S.sel = i;
+      document.querySelectorAll(".choice").forEach((b, j) => b.classList.toggle("sel", j === i));
+    }
+
+    function check() {
+      const q = curQ(), fb = document.getElementById("fb"), go = document.getElementById("go");
+      let ok;
+      if (q.type === "num") {
+        const raw = document.getElementById("ans").value.replace(/[,\s]/g, "");
+        if (raw === "") { fb.innerHTML = `<div class="feedback hint">답을 입력해 주세요.</div>`; return; }
+        ok = Number(raw) === q.answer;
+      } else {
+        if (S.sel === null) { fb.innerHTML = `<div class="feedback hint">보기를 하나 골라 주세요.</div>`; return; }
+        ok = S.sel === q.answer;
+      }
+      S.tries++;
+      if (ok) {
+        if (S.tries === 1) S.score++;
+        finishQ(true);
+      } else if (S.tries === 1) {
+        // 처음 틀리면 힌트를 보여 주고 한 번 더 기회를 줘요.
+        fb.innerHTML = `<div class="feedback hint"><b class="h">🤔 다시 생각해 볼까요?</b>${q.hint}</div>`;
+        if (q.type === "choice") document.getElementById("c" + S.sel).classList.add("bad");
+        else { const a = document.getElementById("ans"); a.select(); }
+      } else {
+        S.wrongs.push(S.order[S.pos]);
+        finishQ(false);
+      }
+    }
+
+    function finishQ(ok) {
+      const q = curQ(), fb = document.getElementById("fb"), go = document.getElementById("go");
+      S.locked = true;
+      if (q.type === "choice") {
+        document.querySelectorAll(".choice").forEach(b => b.disabled = true);
+        document.getElementById("c" + q.answer).classList.add("right");
+      } else document.getElementById("ans").disabled = true;
+      const ansText = q.type === "num" ? `${q.answer.toLocaleString()} ${q.unit}` : q.choices[q.answer];
+      fb.innerHTML = ok
+        ? `<div class="feedback ok"><b class="h">⭕ 정답이에요! ${S.tries > 1 ? "(힌트를 보고 맞혔어요)" : ""}</b>${q.explain}</div>`
+        : `<div class="feedback no"><b class="h">정답은 ${ansText}</b>${q.explain}</div>`;
+      const last = S.pos === S.order.length - 1;
+      go.textContent = last ? "결과 보기" : "다음 문제 →";
+      go.onclick = () => { S.locked = false; if (last) result(); else { S.pos++; showQ(); } };
+      go.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // ---------- 결과 ----------
+    function result() {
+      const u = DATA.units[S.ui], s = u.sections[S.si], n = S.order.length;
+      if (!S.retry) saveBest(u.id + "/" + s.id, S.score);
+      const ratio = S.score / n;
+      const msg = ratio === 1 ? "완벽해요! 🎉" : ratio >= 0.8 ? "아주 잘했어요! 👍" : ratio >= 0.5 ? "좋아요, 틀린 문제를 다시 풀어 봐요! 💪" : "개념을 다시 보고 도전해 봐요! 📖";
+      const qs = s.questions;
+      const review = S.wrongs.map(i => {
+        const q = qs[i], a = q.type === "num" ? `${q.answer.toLocaleString()} ${q.unit}` : q.choices[q.answer];
+        return `<div class="review">❌ ${q.q.replace(/<[^>]+>/g, "")}<br><b>정답: ${a}</b></div>`;
+      }).join("");
+      el(`<div class="topbar"><button class="back" onclick="unit(${S.ui})">← 단원</button><span class="t">${s.title}</span></div>
+        <div class="card center"><div class="stars" style="font-size:2em">${stars(ratio)}</div>
+          <div class="big-score">${S.score} / ${n}</div><p>${msg}</p>
+          <p class="sub">힌트 없이 한 번에 맞힌 문제만 점수에 들어가요.</p></div>
+        ${S.wrongs.length ? `<button class="btn primary" onclick="startQuiz(${S.ui},${S.si},[${S.wrongs.join(",")}])">틀린 문제 다시 풀기 (${S.wrongs.length})</button>` : ""}
+        ${S.si + 1 < u.sections.length ? `<button class="btn ${S.wrongs.length ? "ghost" : "primary"}" onclick="startQuiz(${S.ui},${S.si + 1})">다음 단계: ${u.sections[S.si + 1].title} →</button>` : ""}
+        <button class="btn ghost" onclick="unit(${S.ui})">단원 화면으로</button>
+        ${review ? `<div class="card" style="margin-top:14px"><b>틀린 문제 정리</b>${review}</div>` : ""}`);
+    }
+
+    home();
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>
