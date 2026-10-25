@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>줄넘기 챌린지</title>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#F6F5FF">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="체육시간">
+<style>
+:root{
+  --bg:#F6F5FF; --surface:#fff; --ink:#24264A; --muted:#7a7c98; --line:#e3e1f5;
+  --purple:#5B3DF5; --purple-soft:#ECE8FF; --pink:#E8336E; --gold:#F7B733;
+  --p1:#F0476E; --p2:#3A86FF; --r:18px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,#F6F5FF 0%,#FFF8E6 100%);color:var(--ink);
+  font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  -webkit-user-select:none;user-select:none;overflow:hidden}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:1.05rem;
+  background:var(--purple);color:#fff;box-shadow:0 3px 0 #3d26b8}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #3d26b8}
+button:disabled{opacity:.7}
+button.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:none}
+button.small{padding:8px 14px;font-size:.9rem}
+[hidden]{display:none!important}
+
+/* ---------- 설정 화면 ---------- */
+#setup{height:100%;overflow:auto;display:flex;justify-content:center;padding:24px 16px}
+.panel{width:100%;max-width:520px}
+.back{display:inline-block;color:var(--muted);text-decoration:none;font-weight:700;font-size:.95rem}
+.panel h1{text-align:center;font-size:2.2rem;margin:8px 0 4px;letter-spacing:-.02em}
+.panel h1 em{font-style:normal;color:var(--pink)}
+.panel .sub{text-align:center;color:var(--muted);margin:0 0 20px;line-height:1.6}
+.panel .sub b{color:var(--pink)}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
+.card h2{font-size:1.05rem;margin:0 0 10px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{flex:1;min-width:90px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;text-align:center;padding:10px 8px;border-radius:14px;border:2px solid var(--line);font-weight:700;background:#fff}
+.seg input:checked+span{border-color:var(--purple);background:var(--purple);color:#fff}
+.seg input:focus-visible+span{outline:3px solid #b7a8ff}
+.card small{display:block;color:var(--muted);margin-top:8px;line-height:1.5}
+.how{line-height:1.7;margin:0;padding-left:1.3em}
+.best{text-align:center;color:var(--muted);font-weight:700;margin:4px 0 0}
+.start-row{display:flex;gap:10px;justify-content:center;margin:18px 0 8px;flex-wrap:wrap}
+.start-row button{font-size:1.25rem;padding:14px 38px}
+select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--line);width:100%;background:#fff}
+.err{color:var(--pink);font-weight:700;text-align:center;white-space:pre-line}
+
+/* ---------- 게임 화면 ---------- */
+#game{height:100%;display:flex;flex-direction:column;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px}
+.top{display:flex;align-items:stretch;gap:10px}
+.top>button{align-self:center}
+.boards{flex:1;display:flex;gap:10px}
+.board{flex:1;display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:6px 14px;min-width:0}
+.board .face{font-size:30px}
+.board .count{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;min-width:1.6em;text-align:center;line-height:1}
+.board .info{display:flex;flex-direction:column;font-size:.85rem;min-width:0}
+.board .hearts{font-size:1.05rem;letter-spacing:.05em}
+.board .streak{color:#e8762b;font-weight:700}
+.board .tip{color:var(--pink);font-weight:700;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board.out{opacity:.55}
+.pill{align-self:center;min-width:76px;text-align:center;padding:8px 14px;border-radius:999px;font-weight:900;color:#fff;background:var(--purple);font-size:1.05rem}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+.view{position:relative;border-radius:16px;overflow:hidden;background:#222;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.view video,.view canvas{position:absolute;inset:0;width:100%;height:100%}
+.view video{transform:scaleX(-1);object-fit:fill}
+.msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;padding:12px}
+.msg .big{font-size:clamp(2rem,8vw,4.6rem);font-weight:900;color:#fff;line-height:1.15;
+  -webkit-text-stroke:8px rgba(36,38,74,.55);paint-order:stroke fill;text-shadow:0 4px 12px rgba(0,0,0,.3)}
+.msg .small{font-size:clamp(.95rem,2.6vw,1.3rem);font-weight:700;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.7);margin-top:8px}
+.msg.pop .big{animation:pop .35s ease-out}
+@keyframes pop{from{transform:scale(.6);opacity:.2}to{transform:scale(1);opacity:1}}
+.msg .actions{pointer-events:auto;display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.bottom{text-align:center;color:var(--muted);font-size:.85rem;min-height:1.2em}
+.install-guide{position:fixed;inset:0;background:rgba(20,20,40,.5);display:grid;place-items:center;padding:16px;z-index:10}
+.install-guide>div{background:#fff;border-radius:var(--r);padding:22px 24px;max-width:420px;width:100%}
+.install-guide h2{font-size:1.4rem;margin:0 0 8px}
+.install-guide ol{margin:0 0 16px;padding-left:1.3em;line-height:1.7}
+@media (max-width:600px){.top{flex-wrap:wrap}.boards{order:3;flex-basis:100%}.pill{margin-left:auto}.board{padding:4px 10px;gap:6px}.board .face{font-size:22px}.board .tip{display:none}}
+</style>
+</head>
+<body>
+
+<section id="setup">
+  <div class="panel">
+    <a class="back" href="../">← 체육시간</a>
+    <h1>줄넘기 <em>챌린지</em></h1>
+    <p class="sub">화면 속 내 몸에 줄이 돌아가요!<br>줄이 <b>발밑을 지나갈 때 콩! 점프</b>하면 성공. 하트 3개가 다 없어지면 끝!</p>
+
+    <div class="card">
+      <h2>놀이</h2>
+      <div class="seg">
+        <label><input type="radio" name="mode" value="virtual" checked><span>🪢 가상 줄넘기</span></label>
+        <label><input type="radio" name="mode" value="real"><span>⏱ 진짜 줄 30초 기록</span></label>
+      </div>
+      <small id="modeTip"></small>
+    </div>
+
+    <div class="card">
+      <h2>몇 명?</h2>
+      <div class="seg">
+        <label><input type="radio" name="players" value="1"><span>🐰 혼자</span></label>
+        <label><input type="radio" name="players" value="2" checked><span>🐰 🐻 둘이서</span></label>
+      </div>
+      <small>둘이서 할 때는 화면 왼쪽이 1P(🐰), 오른쪽이 2P(🐻)예요. 서로 부딪히지 않게 떨어져 서요.</small>
+    </div>
+
+    <div class="card" id="speedCard">
+      <h2>줄 빠르기</h2>
+      <div class="seg">
+        <label><input type="radio" name="speed" value="slow" checked><span>천천히</span></label>
+        <label><input type="radio" name="speed" value="mid"><span>보통</span></label>
+        <label><input type="radio" name="speed" value="fast"><span>빠르게</span></label>
+      </div>
+      <small>"휙~" 소리에 줄이 머리 위로, "탁!" 소리에 발밑으로 지나가요. 소리에 맞춰 뛰면 쉬워요.</small>
+    </div>
+
+    <div class="card" id="camCard" hidden>
+      <h2>카메라</h2>
+      <select id="camSel" aria-label="카메라 고르기"></select>
+    </div>
+
+    <div class="card">
+      <h2>놀이 방법</h2>
+      <ol class="how">
+        <li>노트북·태블릿을 세워 두고 <b>2~3걸음 뒤로</b> 물러나요. 머리부터 발끝까지 보여야 해요.</li>
+        <li><b>가상 줄넘기</b>: 손을 옆으로 내리고 줄을 돌리는 흉내를 내요. 줄이 발밑에 올 때 <b>두 발로 콩!</b> 뛰어요.</li>
+        <li><b>진짜 줄 30초</b>: 진짜 줄넘기를 들고 30초 동안 몇 번 넘는지 세어 줘요.</li>
+      </ol>
+    </div>
+
+    <p class="best" id="best"></p>
+    <p class="err" id="err" hidden></p>
+    <div class="start-row">
+      <button id="startBtn">시작하기</button>
+    </div>
+    <div class="start-row">
+      <button class="ghost small" id="installBtn" hidden>📲 홈 화면에 설치</button>
+    </div>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="top">
+    <button class="ghost small" id="quitBtn">← 설정</button>
+    <div class="boards" id="boards"></div>
+    <div class="pill" id="pill">준비</div>
+  </div>
+  <div class="stage" id="stage">
+    <div class="view" id="view">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="canvas"></canvas>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+  <div class="bottom" id="hint"></div>
+</section>
+
+<script type="module">
+import { FilesetResolver, PoseLandmarker } from "../lib/vision_bundle.mjs";
+
+const $ = (id) => document.getElementById(id);
+// 줄이 한 바퀴 도는 시간(초)
+const PERIODS = { slow: 1.7, mid: 1.3, fast: 1.0 };
+const SPEED_NAMES = { slow: "천천히", mid: "보통", fast: "빠르게" };
+const REAL_SECONDS = 30;
+const HEARTS = 3;
+// 줄이 발밑을 지나는 순간 앞뒤로 이만큼(초) 안에 떠 있으면 성공. 조금 일찍 뛰는 건 더 봐줘요.
+const EARLY = 0.3, LATE = 0.18;
+const PLAYERS = [
+  { name: "1P", emoji: "🐰", color: "#F0476E" },
+  { name: "2P", emoji: "🐻", color: "#3A86FF" },
+];
+const KEYS = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+const BONES = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32],[27,29],[28,30]];
+// 두 발이 몸통 길이의 이만큼 넘게 바닥에서 뜨고, 엉덩이도 같이 올라가면 점프로 봐요.
+const FOOT_LIFT = 0.08, HIP_LIFT = 0.05;
+
+// ---------- 설정 ----------
+const form = (name) => document.querySelector(`input[name=${name}]:checked`).value;
+const SAVE_KEY = "jumprope-settings";
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+    for (const [k, v] of Object.entries(s)) {
+      const el = document.querySelector(`input[name=${k}][value="${v}"]`);
+      if (el) el.checked = true;
+    }
+  } catch (_) {}
+}
+function store(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
+function read(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+const bestKey = (mode, speed) => (mode === "real" ? "jumprope-best-real" : `jumprope-best-virtual-${speed}`);
+function updateSetupText() {
+  const mode = form("mode"), speed = form("speed");
+  $("speedCard").hidden = mode === "real";
+  $("modeTip").textContent = mode === "real"
+    ? "진짜 줄넘기를 들고 해요. 주변에 부딪힐 물건이 없는지 꼭 확인해요!"
+    : "줄 없이 해요. 화면 속 줄을 보고 타이밍에 맞춰 뛰어요.";
+  const best = +read(bestKey(mode, speed)) || 0;
+  $("best").textContent = best ? `🏆 최고 기록 ${best}개 (${mode === "real" ? "진짜 줄 30초" : "가상 줄넘기 · " + SPEED_NAMES[speed]})` : "";
+}
+loadSettings(); updateSetupText();
+document.querySelectorAll("input[type=radio]").forEach((el) => el.addEventListener("change", updateSetupText));
+
+// ---------- 소리 ----------
+let actx = null;
+function ac() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+  if (actx && actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(freq, dur, type = "sine", vol = 0.2, when = 0, slide = 0) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + when;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  tick: () => tone(660, 0.12, "triangle", 0.18),
+  go: () => { tone(523, 0.12, "triangle"); tone(784, 0.2, "triangle", 0.2, 0.12); },
+  whoosh: () => tone(300, 0.22, "sine", 0.06, 0, 900),
+  tap: () => tone(180, 0.06, "square", 0.08),
+  ok: () => tone(880, 0.08, "triangle", 0.12),
+  miss: () => { tone(330, 0.18, "sawtooth", 0.15); tone(220, 0.35, "sawtooth", 0.15, 0.16); },
+  combo: () => [784, 988, 1175].forEach((f, i) => tone(f, 0.14, "triangle", 0.16, i * 0.08)),
+  end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, "triangle", 0.2, i * 0.14)),
+};
+
+// ---------- 화면 ----------
+const video = $("video"), canvas = $("canvas"), ctx = canvas.getContext("2d");
+const msg = $("msg"), pill = $("pill"), hint = $("hint");
+function showMsg(big, small = "", actions = null) {
+  msg.classList.remove("pop"); void msg.offsetWidth; msg.classList.add("pop");
+  msg.innerHTML = (big ? `<div class="big">${big}</div>` : "") + (small ? `<div class="small">${small}</div>` : "");
+  if (actions) {
+    const row = document.createElement("div"); row.className = "actions";
+    for (const [label, fn, ghost] of actions) {
+      const b = document.createElement("button"); b.textContent = label; if (ghost) b.className = "ghost";
+      b.onclick = fn; row.appendChild(b);
+    }
+    msg.appendChild(row);
+  }
+}
+let msgUntil = 0;
+function flashMsg(big, small, ms) { showMsg(big, small); msgUntil = performance.now() + ms; }
+
+let boards = [];
+function buildBoards() {
+  const box = $("boards"); box.innerHTML = "";
+  boards = players.map((p) => {
+    const el = document.createElement("div"); el.className = "board";
+    el.style.borderColor = p.color + "66";
+    el.innerHTML = `<span class="face">${p.emoji}</span><span class="count" style="color:${p.color}">0</span>
+      <span class="info"><span class="hearts"></span><span class="streak"></span><span class="tip"></span></span>`;
+    box.appendChild(el);
+    return { el, count: el.querySelector(".count"), hearts: el.querySelector(".hearts"),
+      streak: el.querySelector(".streak"), tip: el.querySelector(".tip") };
+  });
+}
+function renderBoards() {
+  players.forEach((p, i) => {
+    const b = boards[i];
+    b.count.textContent = p.count;
+    b.hearts.textContent = cfg.mode === "virtual" ? "❤️".repeat(p.hearts) + "🤍".repeat(HEARTS - p.hearts) : "";
+    b.streak.textContent = cfg.mode === "virtual" ? (p.streak ? `🔥 ${p.streak}연속` : " ") : "🪢 넘은 개수";
+    b.tip.textContent = p.out ? "끝!" : !p.seen ? "화면 안으로 들어와요!" : !p.full ? "발끝까지 보여 줘요!" : "";
+    b.el.classList.toggle("out", p.out);
+  });
+}
+
+function fitView() {
+  const st = $("stage"), v = $("view");
+  const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
+  const scale = Math.min(st.clientWidth / vw, st.clientHeight / vh);
+  v.style.width = `${Math.floor(vw * scale)}px`; v.style.height = `${Math.floor(vh * scale)}px`;
+  canvas.width = Math.floor(vw * scale * devicePixelRatio); canvas.height = Math.floor(vh * scale * devicePixelRatio);
+}
+addEventListener("resize", () => { if (!$("game").hidden) fitView(); });
+
+// ---------- 카메라와 포즈 인식 ----------
+let landmarker = null, stream = null;
+async function loadModel() {
+  if (landmarker) return landmarker;
+  const files = await FilesetResolver.forVisionTasks(new URL("../lib/wasm", location.href).href);
+  const opts = (delegate) => ({
+    baseOptions: { modelAssetPath: new URL("../lib/pose_landmarker_lite.task", location.href).href, delegate },
+    runningMode: "VIDEO", numPoses: 2,
+    minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+  });
+  try { landmarker = await PoseLandmarker.createFromOptions(files, opts("GPU")); }
+  catch (_) { landmarker = await PoseLandmarker.createFromOptions(files, opts("CPU")); }
+  return landmarker;
+}
+async function openCamera(deviceId) {
+  stopCamera();
+  const want = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "user" };
+  Object.assign(want, { width: { ideal: 1280 }, height: { ideal: 720 } });
+  stream = await navigator.mediaDevices.getUserMedia({ video: want, audio: false });
+  video.srcObject = stream;
+  await new Promise((res) => (video.readyState >= 1 ? res() : (video.onloadedmetadata = res)));
+  await video.play().catch(() => {});
+  listCameras();
+}
+function stopCamera() { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; }
+async function listCameras() {
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+    const sel = $("camSel"); $("camCard").hidden = cams.length < 2;
+    const cur = stream?.getVideoTracks()[0]?.getSettings().deviceId;
+    sel.innerHTML = cams.map((c, i) => `<option value="${c.deviceId}" ${c.deviceId === cur ? "selected" : ""}>📷 ${c.label || "카메라 " + (i + 1)}</option>`).join("");
+  } catch (_) {}
+}
+
+// ---------- 몸 읽기 ----------
+let cfg = {}, players = [], phase = "off", phaseT = 0, timers = [], running = false, lastVideoTime = -1;
+let wakeLock = null;
+function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+function newPlayer(i) {
+  return { ...PLAYERS[i], count: 0, hearts: HEARTS, streak: 0, out: false, lm: null, seen: false, full: false, fullSince: 0,
+    groundFoot: null, groundHip: null, air: false, lastAir: -1, lastTakeoff: 0, okAt: 0, missAt: 0 };
+}
+// 사람 위치(화면 왼쪽/오른쪽)로 1P와 2P를 나눠요. 화면은 거울처럼 좌우가 뒤집혀 보여요.
+function assign(poses) {
+  const items = poses.map((lm) => ({ lm, x: 1 - (lm[11].x + lm[12].x + lm[23].x + lm[24].x) / 4 }));
+  if (players.length === 1) {
+    items.sort((a, b) => Math.abs(a.x - 0.5) - Math.abs(b.x - 0.5));
+    return [items[0]?.lm || null];
+  }
+  items.sort((a, b) => a.x - b.x);
+  if (items.length >= 2) return [items[0].lm, items[1].lm];
+  if (items.length === 1) return items[0].x < 0.5 ? [items[0].lm, null] : [null, items[0].lm];
+  return [null, null];
+}
+const vis = (p) => (p.visibility ?? 1) > 0.5;
+const px = (p) => [p.x * video.videoWidth, p.y * video.videoHeight];
+function bodyScale(lm) {
+  const sy = (lm[11].y + lm[12].y) / 2 * video.videoHeight, hy = (lm[23].y + lm[24].y) / 2 * video.videoHeight;
+  const sx = (lm[11].x + lm[12].x) / 2 * video.videoWidth, hx = (lm[23].x + lm[24].x) / 2 * video.videoWidth;
+  return Math.max(30, Math.hypot(sx - hx, sy - hy));
+}
+// 바닥 높이는 서 있을 때의 발·엉덩이 위치예요. 내려갈 땐 빨리, 올라갈 땐 아주 천천히 따라가서
+// 점프하는 동안에는 바닥이 거의 안 바뀌어요(조금 앞뒤로 움직여도 다시 맞춰져요).
+function follow(ground, cur, dt) {
+  if (ground == null) return cur;
+  return ground + (cur - ground) * Math.min(1, dt * (cur > ground ? 10 : 0.6));
+}
+function read_(p, lm, now, dt) {
+  p.lm = lm; p.seen = !!lm;
+  if (!lm) { p.full = false; p.air = false; return; }
+  const feet = [27, 28].filter((k) => vis(lm[k]));
+  p.full = vis(lm[0]) && feet.length > 0 && Math.max(lm[27].y, lm[28].y) < 0.99;
+  if (!feet.length) { p.air = false; return; }
+  const scale = bodyScale(lm), H = video.videoHeight;
+  const footY = feet.map((k) => lm[k].y * H);
+  const lowFoot = Math.max(...footY);            // 더 낮은 발(두 발 다 떠야 점프)
+  const hipY = (lm[23].y + lm[24].y) / 2 * H;
+  if (p.groundFoot == null) { p.groundFoot = lowFoot; p.groundHip = hipY; }
+  const footLift = (p.groundFoot - lowFoot) / scale, hipLift = (p.groundHip - hipY) / scale;
+  const air = footLift > FOOT_LIFT && hipLift > HIP_LIFT;
+  if (air) {
+    p.lastAir = now;
+    if (!p.air && now - p.lastTakeoff > 220) { p.lastTakeoff = now; if (phase === "play" && cfg.mode === "real") countReal(p); }
+  } else {
+    p.groundFoot = follow(p.groundFoot, lowFoot, dt);
+    p.groundHip = follow(p.groundHip, hipY, dt);
+  }
+  p.air = air;
+}
+
+// ---------- 줄 ----------
+// 줄 각도: 0이면 머리 위, π(반 바퀴)면 발밑. 앞으로 돌아서 0~π는 몸 앞, π~2π는 몸 뒤예요.
+let ropeT0 = 0;
+const ropeAngle = (now) => (((now - ropeT0) / 1000 / cfg.period) * Math.PI * 2) % (Math.PI * 2);
+function ropePath(p, angle, W, H) {
+  const lm = p.lm, P = (q) => [(1 - q.x) * W, q.y * H];
+  const sc = bodyScale(lm) * (W / video.videoWidth);
+  const hand = (w, s, side) => (vis(lm[w]) ? P(lm[w]) : (([x, y]) => [x + side * sc * 0.4, y + sc * 0.9])(P(lm[s])));
+  let [lx, ly] = hand(15, 11, 1), [rx, ry] = hand(16, 12, -1);
+  if (lx > rx) [lx, ly, rx, ry] = [rx, ry, lx, ly];
+  const top = P(lm[0])[1] - sc * 0.9;
+  const feet = [27, 28].filter((k) => vis(lm[k])).map((k) => P(lm[k])[1]);
+  const bottom = (feet.length ? Math.max(...feet) : P(lm[23])[1] + sc * 1.8) + sc * 0.12;
+  const apex = top + (bottom - top) * (1 - Math.cos(angle)) / 2;
+  const handY = (ly + ry) / 2;
+  const cy = handY + (apex - handY) * 4 / 3, bulge = sc * 0.35;
+  return [lx, ly, lx - bulge, cy, rx + bulge, cy, rx, ry];
+}
+function drawRope(p, angle, front, W, H) {
+  const pts = ropePath(p, angle, W, H), d = devicePixelRatio;
+  ctx.save();
+  ctx.strokeStyle = p.color; ctx.lineCap = "round";
+  ctx.globalAlpha = front ? 1 : 0.35; ctx.lineWidth = (front ? 6 : 4) * d;
+  ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); ctx.bezierCurveTo(...pts.slice(2)); ctx.stroke();
+  ctx.restore();
+}
+
+function draw(now) {
+  const W = canvas.width, H = canvas.height, d = devicePixelRatio;
+  ctx.clearRect(0, 0, W, H);
+  if (players.length === 2) {
+    ctx.save(); ctx.setLineDash([12 * d, 10 * d]); ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 3 * d;
+    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.restore();
+  }
+  const P = (q) => [(1 - q.x) * W, q.y * H];
+  const showRope = cfg.mode === "virtual" && phase === "play";
+  const angle = showRope ? ropeAngle(now) : 0;
+  const front = angle < Math.PI;
+  for (const p of players) {
+    const lm = p.lm; if (!lm) continue;
+    const ropeOn = showRope && !p.out;
+    if (ropeOn && !front) drawRope(p, angle, false, W, H);
+    const glow = now - p.okAt < 450;
+    ctx.strokeStyle = glow ? "#F7B733" : p.color; ctx.lineWidth = 5 * d; ctx.lineCap = "round";
+    for (const [a, b] of BONES) {
+      if (!vis(lm[a]) || !vis(lm[b])) continue;
+      const [x1, y1] = P(lm[a]), [x2, y2] = P(lm[b]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+    ctx.fillStyle = "#fff";
+    for (const k of KEYS) {
+      if (!vis(lm[k])) continue;
+      const [x, y] = P(lm[k]); ctx.beginPath(); ctx.arc(x, y, 4 * d, 0, 7); ctx.fill();
+    }
+    if (ropeOn && front) drawRope(p, angle, true, W, H);
+    const [nx, ny] = P(lm[0]);
+    const size = Math.max(28 * d, bodyScale(lm) * (W / video.videoWidth) * 0.55);
+    ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const face = now - p.missAt < 1000 || p.out ? "😵" : glow || p.air ? "🤩" : p.emoji;
+    ctx.fillText(face, nx, ny - size * 0.15);
+  }
+}
+
+function loop() {
+  if (!running) return;
+  requestAnimationFrame(loop);
+  const now = performance.now();
+  if (video.readyState >= 2 && video.currentTime !== lastVideoTime && landmarker) {
+    lastVideoTime = video.currentTime;
+    const dt = Math.min(0.25, (now - (loop.last || now)) / 1000); loop.last = now;
+    let res = null;
+    try { res = landmarker.detectForVideo(video, now); } catch (_) {}
+    const lms = assign(res?.landmarks || []);
+    players.forEach((p, i) => read_(p, lms[i], now, dt));
+    tick(now);
+  }
+  draw(now);
+  renderBoards();
+}
+
+// ---------- 게임 진행 ----------
+let lastHalf = 0, nextJudge = Infinity;
+function tick(now) {
+  if (phase === "check") {
+    for (const p of players) { if (p.full) { if (!p.fullSince) p.fullSince = now; } else p.fullSince = 0; }
+    if (players.every((p) => p.fullSince && now - p.fullSince > 1000)) startCountdown();
+  } else if (phase === "play") {
+    if (msgUntil && now > msgUntil) { msgUntil = 0; showMsg(""); }
+    if (cfg.mode === "virtual") ropeTick(now);
+    else {
+      const left = Math.max(0, REAL_SECONDS - (now - phaseT) / 1000);
+      pill.textContent = `${Math.ceil(left)}초`;
+      if (left <= 0) finish();
+    }
+  }
+}
+function ropeTick(now) {
+  // 반 바퀴마다: 머리 위(휙) → 발밑(탁). 발밑을 지난 뒤 조금 기다렸다가 성공/실패를 정해요.
+  const half = Math.floor(((now - ropeT0) / 1000 / cfg.period) * 2);
+  if (half > lastHalf) {
+    lastHalf = half;
+    if (half % 2 === 0) sfx.whoosh(); else { sfx.tap(); nextJudge = ropeT0 + (half / 2) * cfg.period * 1000; }
+  }
+  if (now >= nextJudge + LATE * 1000) { judge(nextJudge); nextJudge = Infinity; }
+}
+function judge(t) {
+  for (const p of players) {
+    if (p.out || !p.full) continue; // 발끝까지 안 보이면 이번 줄은 쳐 주지 않고 넘어가요.
+    if (p.lastAir >= t - EARLY * 1000) {
+      p.count++; p.streak++; p.okAt = performance.now();
+      if (p.streak % 10 === 0) { sfx.combo(); flashMsg(`${p.streak}연속! 좋아요!`, players.length === 2 ? `${p.emoji} ${p.name}` : "", 1200); }
+      else sfx.ok();
+    } else {
+      p.hearts--; p.streak = 0; p.missAt = performance.now();
+      sfx.miss();
+      if (p.hearts <= 0) {
+        p.out = true;
+        const who = players.length === 2 ? `${p.emoji} ${p.name} ` : "";
+        flashMsg(`${who}끝!`, `${p.count}개 넘었어요`, 1600);
+      } else {
+        flashMsg("앗! 걸렸다", `${players.length === 2 ? p.emoji + " " : "💥 "}하트 ${p.hearts}개 남았어요`, 1100);
+      }
+    }
+  }
+  if (players.every((p) => p.out)) later(finish, 1500);
+}
+function countReal(p) {
+  p.count++; p.okAt = performance.now(); sfx.ok();
+  if (p.count % 10 === 0) { sfx.combo(); flashMsg(`${p.count}개!`, players.length === 2 ? `${p.emoji} ${p.name}` : "", 900); }
+}
+
+function setPhase(name) { phase = name; phaseT = performance.now(); }
+function startCheck() {
+  clearTimers(); setPhase("check"); pill.textContent = "준비";
+  players.forEach((p) => (p.fullSince = 0));
+  const who = players.length === 2 ? "🐰 1P는 왼쪽, 🐻 2P는 오른쪽! 부딪히지 않게 떨어져 서요" : "화면 가운데에서 뒤로 물러나요";
+  showMsg("머리부터 발끝까지<br>보이게 서요", who, [["바로 시작", startCountdown, true]]);
+  hint.textContent = "온몸이 보이면 저절로 시작해요";
+}
+function startCountdown() {
+  if (phase !== "check") return;
+  setPhase("count"); showMsg("좋아요! 그대로~"); hint.textContent = "";
+  // 서 있는 자세를 바닥 높이로 다시 맞춰요.
+  players.forEach((p) => { p.groundFoot = null; p.groundHip = null; });
+  [3, 2, 1].forEach((n, i) => later(() => { showMsg(String(n)); sfx.tick(); }, 900 + i * 900));
+  later(startPlay, 900 + 3 * 900);
+}
+function startPlay() {
+  setPhase("play"); sfx.go();
+  if (cfg.mode === "virtual") {
+    ropeT0 = performance.now(); lastHalf = 0; nextJudge = Infinity;
+    pill.textContent = SPEED_NAMES[cfg.speed];
+    flashMsg("점프!", "줄이 발밑에 올 때 콩!", 1400);
+    hint.textContent = "\"탁!\" 소리가 날 때 줄이 발밑을 지나가요";
+  } else {
+    pill.textContent = `${REAL_SECONDS}초`;
+    flashMsg("시작!", "30초 동안 최대한 많이!", 1000);
+    hint.textContent = "두 발이 바닥에서 뜰 때마다 1개씩 세어요";
+  }
+}
+function finish() {
+  if (phase !== "play") return;
+  clearTimers(); setPhase("end"); pill.textContent = "끝!"; msgUntil = 0;
+  sfx.end();
+  const key = bestKey(cfg.mode, cfg.speed);
+  const prev = +read(key) || 0, top = Math.max(...players.map((p) => p.count));
+  const record = top > prev;
+  if (record) store(key, String(top));
+  let big, small;
+  if (players.length === 2) {
+    const [a, b] = players;
+    big = a.count === b.count ? `무승부! ${a.count}개` : `${(a.count > b.count ? a : b).emoji} ${(a.count > b.count ? a : b).name} 승리!`;
+    small = `🐰 ${a.count}개 · 🐻 ${b.count}개`;
+  } else {
+    big = `${players[0].count}개 넘었어요!`;
+    small = "";
+  }
+  small += record ? ` · 🏆 새 기록!` : prev ? ` · 최고 기록 ${prev}개` : "";
+  showMsg(big, small, [["한 판 더", replay], ["설정", quit, true]]);
+  hint.textContent = "";
+}
+function replay() { players = players.map((_, i) => newPlayer(i)); startCheck(); }
+
+async function start() {
+  const err = $("err"); err.hidden = true;
+  const s = { mode: form("mode"), players: form("players"), speed: form("speed") };
+  store(SAVE_KEY, JSON.stringify(s));
+  cfg = { ...s, players: +s.players, period: PERIODS[s.speed] };
+  ac(); // 소리는 버튼을 누를 때 켜야 해요(아이폰·아이패드).
+  const btn = $("startBtn"); btn.disabled = true; btn.textContent = "준비 중…";
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("nocam");
+    await Promise.all([openCamera($("camSel").value || undefined), loadModel()]);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "시작하기";
+    err.hidden = false;
+    err.textContent = e?.message === "nocam" || e?.name === "NotAllowedError" || e?.name === "NotFoundError"
+      ? "카메라를 쓸 수 없어요.\n브라우저 주소창의 카메라 권한을 '허용'으로 바꾼 뒤 다시 눌러 주세요."
+      : "움직임 인식을 준비하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    return;
+  }
+  btn.disabled = false; btn.textContent = "시작하기";
+  players = Array.from({ length: cfg.players }, (_, i) => newPlayer(i));
+  $("setup").hidden = true; $("game").hidden = false;
+  buildBoards(); fitView();
+  try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (_) {}
+  running = true; lastVideoTime = -1; loop.last = 0;
+  requestAnimationFrame(loop);
+  startCheck();
+}
+function quit() {
+  running = false; clearTimers(); setPhase("off");
+  stopCamera(); wakeLock?.release?.().catch(() => {}); wakeLock = null;
+  $("game").hidden = true; $("setup").hidden = false;
+  updateSetupText();
+}
+$("startBtn").onclick = start;
+$("quitBtn").onclick = quit;
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible" && running && !wakeLock) {
+    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (_) {}
+  } else if (document.visibilityState === "hidden") wakeLock = null;
+});
+// 미리 받아 두면 "시작하기"를 눌렀을 때 덜 기다려요.
+loadModel().catch(() => {});
+
+// ---------- 홈 화면에 설치하기 ----------
+// 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+// 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+(() => {
+  const btn = $("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    const g = document.createElement("div"); g.className = "install-guide";
+    g.innerHTML = `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <button class="small">알겠어요</button></div>`;
+    g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
+    document.body.appendChild(g);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+</script>
+</body>
+</html>
