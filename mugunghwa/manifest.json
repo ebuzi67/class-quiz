@@ -1,0 +1,27 @@
+{
+  "name": "무궁화 꽃이 피었습니다",
+  "short_name": "무궁화 꽃",
+  "description": "카메라가 몸 움직임을 알아보는 무궁화 꽃이 피었습니다 놀이 (1~2명)",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF7F0",
+  "theme_color": "#FFF7F0",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
