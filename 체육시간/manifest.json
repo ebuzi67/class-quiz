@@ -1,15 +1,15 @@
 {
-  "name": "무궁화 꽃이 피었습니다",
-  "short_name": "무궁화 꽃",
-  "description": "카메라가 몸 움직임을 알아보는 무궁화 꽃이 피었습니다 놀이 (1~2명)",
+  "name": "체육시간",
+  "short_name": "체육시간",
+  "description": "카메라가 몸 움직임을 알아보는 몸놀이: 무궁화 꽃이 피었습니다, 줄넘기 챌린지",
   "lang": "ko",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#FFF7F0",
-  "theme_color": "#FFF7F0",
+  "background_color": "#F4FBF7",
+  "theme_color": "#F4FBF7",
   "icons": [
     {
       "src": "icons/icon-192.png",
