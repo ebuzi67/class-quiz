@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>풍선 터뜨리기</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#EEF7FF">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="풍선 터뜨리기">
+<style>
+:root{
+  --bg:#EEF7FF; --surface:#fff; --ink:#1f3047; --muted:#6e8197; --line:#d6e7f6;
+  --main:#2F8FE0; --main-dark:#1c68ab; --main-soft:#DDEEFF; --ok:#2FA66B; --bad:#E53950; --r:18px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  -webkit-user-select:none;user-select:none;overflow:hidden}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:1.05rem;
+  background:var(--main);color:#fff;box-shadow:0 3px 0 var(--main-dark)}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--main-dark)}
+button:disabled{opacity:.7}
+button.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:none}
+button.small{padding:8px 14px;font-size:.9rem}
+[hidden]{display:none!important}
+
+/* ---------- 설정 화면 ---------- */
+#setup{height:100%;overflow:auto;display:flex;justify-content:center;padding:24px 16px}
+.panel{width:100%;max-width:520px}
+.back{display:inline-block;color:var(--muted);text-decoration:none;font-weight:700;font-size:.95rem}
+.panel h1{text-align:center;font-size:2.1rem;margin:8px 0 4px;color:var(--main)}
+.panel .sub{text-align:center;color:var(--muted);margin:0 0 20px;line-height:1.6}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
+.card h2{font-size:1.05rem;margin:0 0 10px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{flex:1;min-width:90px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;text-align:center;padding:10px 8px;border-radius:14px;border:2px solid var(--line);font-weight:700;background:#fff}
+.seg input:checked+span{border-color:var(--main);background:var(--main-soft);color:var(--main-dark)}
+.seg input:focus-visible+span{outline:3px solid #f5b48f}
+.card small{display:block;color:var(--muted);margin-top:8px;line-height:1.5}
+.how{line-height:1.7;margin:0;padding-left:1.3em}
+.shapes{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.shapes span{background:var(--main-soft);border-radius:999px;padding:3px 10px;font-size:.85rem;font-weight:700}
+.best{text-align:center;color:var(--muted);font-weight:700;margin:4px 0 0}
+.start-row{display:flex;gap:10px;justify-content:center;margin:18px 0 8px;flex-wrap:wrap}
+.start-row button{font-size:1.25rem;padding:14px 38px}
+select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--line);width:100%;background:#fff}
+.err{color:var(--bad);font-weight:700;text-align:center;white-space:pre-line}
+
+/* ---------- 게임 화면 ---------- */
+#game{height:100%;display:flex;flex-direction:column;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px}
+.top{display:flex;align-items:stretch;gap:10px}
+.top>button{align-self:center}
+.boards{flex:1;display:flex;gap:10px}
+.board{flex:1;display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:6px 14px;min-width:0}
+.board .face{font-size:30px}
+.board .count{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;min-width:1.6em;text-align:center;line-height:1}
+.board .info{display:flex;flex-direction:column;font-size:.85rem;min-width:0}
+.board .sub2{font-weight:700;color:var(--muted)}
+.board .tip{color:var(--bad);font-weight:700;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{align-self:center;min-width:76px;text-align:center;padding:8px 14px;border-radius:999px;font-weight:900;color:#fff;background:var(--main);font-size:1.05rem}
+.next{align-self:center;font-weight:900;font-size:clamp(1rem,2.6vw,1.3rem);white-space:nowrap}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+.view{position:relative;border-radius:16px;overflow:hidden;background:#222;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.view video,.view canvas{position:absolute;inset:0;width:100%;height:100%}
+.view video{transform:scaleX(-1);object-fit:fill}
+.msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;padding:12px}
+.msg .big{font-size:clamp(2rem,8vw,4.6rem);font-weight:900;color:#fff;line-height:1.15;
+  -webkit-text-stroke:8px rgba(58,42,34,.55);paint-order:stroke fill;text-shadow:0 4px 12px rgba(0,0,0,.3)}
+.msg .small{font-size:clamp(.95rem,2.6vw,1.3rem);font-weight:700;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.7);margin-top:8px}
+.msg.pop .big{animation:pop .35s ease-out}
+@keyframes pop{from{transform:scale(.6);opacity:.2}to{transform:scale(1);opacity:1}}
+.msg .actions{pointer-events:auto;display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.bottom{text-align:center;color:var(--muted);font-size:.85rem;min-height:1.2em}
+.install-guide{position:fixed;inset:0;background:rgba(40,25,20,.5);display:grid;place-items:center;padding:16px;z-index:10}
+.install-guide>div{background:#fff;border-radius:var(--r);padding:22px 24px;max-width:420px;width:100%}
+.install-guide h2{font-size:1.4rem;margin:0 0 8px}
+.install-guide ol{margin:0 0 16px;padding-left:1.3em;line-height:1.7}
+@media (max-width:600px){.top{flex-wrap:wrap}.boards{order:3;flex-basis:100%}.pill{margin-left:auto}.board{padding:4px 10px;gap:6px}.board .face{font-size:22px}.board .tip{display:none}}
+</style>
+</head>
+<body>
+
+<section id="setup">
+  <div class="panel">
+    <a class="back" href="../">← 체육시간</a>
+    <h1>🎈 풍선 터뜨리기</h1>
+    <p class="sub">내 주위에 풍선이 둥실둥실 나타나요!<br><b>손으로 치고 발로 차서</b> 날아가기 전에 펑! 터뜨려요.</p>
+
+    <div class="card">
+      <h2>몇 명?</h2>
+      <div class="seg">
+        <label><input type="radio" name="players" value="1"><span>🐰 혼자</span></label>
+        <label><input type="radio" name="players" value="2" checked><span>🐰 🐻 둘이서</span></label>
+      </div>
+      <small>둘이서 할 때는 화면 왼쪽이 1P(🐰), 오른쪽이 2P(🐻)예요. 각자 자기 쪽 풍선만 터뜨릴 수 있어요.</small>
+    </div>
+
+    <div class="card">
+      <h2>난이도</h2>
+      <div class="seg">
+        <label><input type="radio" name="level" value="easy" checked><span>쉬움</span></label>
+        <label><input type="radio" name="level" value="normal"><span>보통</span></label>
+        <label><input type="radio" name="level" value="hard"><span>어려움</span></label>
+      </div>
+      <small id="levelTip"></small>
+    </div>
+
+    <div class="card" id="camCard" hidden>
+      <h2>카메라</h2>
+      <select id="camSel" aria-label="카메라 고르기"></select>
+    </div>
+
+    <div class="card">
+      <h2>놀이 방법</h2>
+      <ol class="how">
+        <li>노트북·태블릿을 세워 두고 <b>2~3걸음 뒤로</b> 물러나요. 머리부터 발끝까지 보여야 해요.</li>
+        <li>🎈 풍선에 <b>손이나 발</b>을 갖다 대면 펑! 1점이에요.</li>
+        <li>🌟 반짝 풍선은 3점! 💣 폭탄은 건드리면 2점이 깎여요(보통·어려움).</li>
+        <li><b>45초</b> 동안 몇 점을 모으는지 겨뤄요. 낮은 풍선은 발로 차요!</li>
+      </ol>
+    </div>
+
+    <p class="best" id="best"></p>
+    <p class="err" id="err" hidden></p>
+    <div class="start-row">
+      <button id="startBtn">시작하기</button>
+    </div>
+    <div class="start-row">
+      <button class="ghost small" id="installBtn" hidden>📲 홈 화면에 설치</button>
+    </div>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="top">
+    <button class="ghost small" id="quitBtn">← 설정</button>
+    <div class="boards" id="boards"></div>
+    <div class="pill" id="pill">준비</div>
+  </div>
+  <div class="stage" id="stage">
+    <div class="view" id="view">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="canvas"></canvas>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+  <div class="bottom" id="hint"></div>
+</section>
+
+<script type="module">
+import { FilesetResolver, PoseLandmarker } from "../lib/vision_bundle.mjs";
+
+const $ = (id) => document.getElementById(id);
+const SECONDS = 45;
+const PLAYERS = [
+  { name: "1P", emoji: "🐰", color: "#F0476E" },
+  { name: "2P", emoji: "🐻", color: "#3A86FF" },
+];
+const KEYS = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+const BONES = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32],[27,29],[28,30]];
+// 풍선을 터뜨리는 곳: 손목·손끝, 발목·발끝
+const HANDS = [15, 16, 19, 20], FEET = [27, 28, 31, 32];
+// 난이도: 풍선이 새로 나오는 간격(초), 떠 있는 시간(초), 한 사람당 동시에 떠 있는 개수, 폭탄 나올 확률
+const LEVELS = {
+  easy: { every: 1.0, life: 5, max: 3, bomb: 0, name: "쉬움", tip: "풍선이 천천히, 넉넉히 떠 있어요. 폭탄은 없어요." },
+  normal: { every: 0.8, life: 3.6, max: 4, bomb: 0.12, name: "보통", tip: "풍선이 조금 빨리 날아가요. 💣 폭탄을 조심해요!" },
+  hard: { every: 0.6, life: 2.6, max: 5, bomb: 0.18, name: "어려움", tip: "풍선이 금방 날아가고 폭탄도 자주 나와요." },
+};
+const COLORS = ["#FF5C7A", "#FFB020", "#3DBE7A", "#4C9BFF", "#A66BFF", "#FF7AC8"];
+
+// ---------- 설정 ----------
+const form = (name) => document.querySelector(`input[name=${name}]:checked`).value;
+const SAVE_KEY = "balloon-settings";
+function store(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
+function read(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+try {
+  const s = JSON.parse(read(SAVE_KEY) || "{}");
+  for (const [k, v] of Object.entries(s)) {
+    const el = document.querySelector(`input[name=${k}][value="${v}"]`);
+    if (el) el.checked = true;
+  }
+} catch (_) {}
+const bestKey = (level) => `balloon-best-${level}`;
+function updateSetupText() {
+  const L = LEVELS[form("level")];
+  $("levelTip").textContent = L.tip;
+  const best = +read(bestKey(form("level"))) || 0;
+  $("best").textContent = best ? `🏆 최고 기록 ${best}점 (${L.name})` : "";
+}
+updateSetupText();
+document.querySelectorAll("input[type=radio]").forEach((el) => el.addEventListener("change", updateSetupText));
+
+// ---------- 소리 ----------
+let actx = null;
+function ac() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+  if (actx && actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(freq, dur, type = "sine", vol = 0.2, when = 0, slide = 0) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + when;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+
+const sfx = {
+  tick: () => tone(660, 0.12, "triangle", 0.18),
+  go: () => { tone(523, 0.12, "triangle"); tone(784, 0.2, "triangle", 0.2, 0.12); },
+  pop: () => { tone(900, 0.06, "square", 0.12, 0, 300); tone(1400, 0.05, "triangle", 0.1, 0.03); },
+  gold: () => [988, 1319, 1568].forEach((f, i) => tone(f, 0.12, "triangle", 0.15, i * 0.06)),
+  boom: () => { tone(120, 0.4, "sawtooth", 0.2, 0, 50); tone(80, 0.5, "square", 0.12, 0.05, 40); },
+  end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, "triangle", 0.2, i * 0.14)),
+};
+
+// ---------- 화면 ----------
+const video = $("video"), canvas = $("canvas"), ctx = canvas.getContext("2d");
+const msg = $("msg"), pill = $("pill"), hint = $("hint");
+function showMsg(big, small = "", actions = null) {
+  msg.classList.remove("pop"); void msg.offsetWidth; msg.classList.add("pop");
+  msg.innerHTML = (big ? `<div class="big">${big}</div>` : "") + (small ? `<div class="small">${small}</div>` : "");
+  if (actions) {
+    const row = document.createElement("div"); row.className = "actions";
+    for (const [label, fn, ghost] of actions) {
+      const b = document.createElement("button"); b.textContent = label; if (ghost) b.className = "ghost";
+      b.onclick = fn; row.appendChild(b);
+    }
+    msg.appendChild(row);
+  }
+}
+let msgUntil = 0;
+function flashMsg(big, small, ms) { showMsg(big, small); msgUntil = performance.now() + ms; }
+
+
+let boards = [];
+function buildBoards() {
+  const box = $("boards"); box.innerHTML = "";
+  boards = players.map((p) => {
+    const el = document.createElement("div"); el.className = "board";
+    el.style.borderColor = p.color + "66";
+    el.innerHTML = `<span class="face">${p.emoji}</span><span class="count" style="color:${p.color}">0</span>
+      <span class="info"><span class="sub2"></span><span class="tip"></span></span>`;
+    box.appendChild(el);
+    return { count: el.querySelector(".count"), sub: el.querySelector(".sub2"), tip: el.querySelector(".tip") };
+  });
+}
+function renderBoards() {
+  players.forEach((p, i) => {
+    const b = boards[i];
+    b.count.textContent = p.score;
+    b.sub.textContent = `🎈 ${p.popped}개 펑!`;
+    b.tip.textContent = !p.seen ? "화면 안으로 들어와요!" : !p.full ? "발끝까지 보여 줘요!" : "";
+  });
+}
+
+function fitView() {
+  const st = $("stage"), v = $("view");
+  const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
+  const scale = Math.min(st.clientWidth / vw, st.clientHeight / vh);
+  v.style.width = `${Math.floor(vw * scale)}px`; v.style.height = `${Math.floor(vh * scale)}px`;
+  canvas.width = Math.floor(vw * scale * devicePixelRatio);
+  canvas.height = Math.floor(vh * scale * devicePixelRatio);
+}
+addEventListener("resize", () => { if (!$("game").hidden) fitView(); });
+
+// ---------- 카메라와 포즈 인식 ----------
+let landmarker = null, stream = null;
+async function loadModel() {
+  if (landmarker) return landmarker;
+  const files = await FilesetResolver.forVisionTasks(new URL("../lib/wasm", location.href).href);
+  const opts = (delegate) => ({
+    baseOptions: { modelAssetPath: new URL("../lib/pose_landmarker_lite.task", location.href).href, delegate },
+    runningMode: "VIDEO", numPoses: 2,
+    minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+  });
+  try { landmarker = await PoseLandmarker.createFromOptions(files, opts("GPU")); }
+  catch (_) { landmarker = await PoseLandmarker.createFromOptions(files, opts("CPU")); }
+  return landmarker;
+}
+async function openCamera(deviceId) {
+  stopCamera();
+  const want = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "user" };
+  Object.assign(want, { width: { ideal: 1280 }, height: { ideal: 720 } });
+  stream = await navigator.mediaDevices.getUserMedia({ video: want, audio: false });
+  video.srcObject = stream;
+  await new Promise((res) => (video.readyState >= 1 ? res() : (video.onloadedmetadata = res)));
+  await video.play().catch(() => {});
+  listCameras();
+}
+function stopCamera() { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; }
+async function listCameras() {
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+    const sel = $("camSel"); $("camCard").hidden = cams.length < 2;
+    const cur = stream?.getVideoTracks()[0]?.getSettings().deviceId;
+    sel.innerHTML = cams.map((c, i) => `<option value="${c.deviceId}" ${c.deviceId === cur ? "selected" : ""}>📷 ${c.label || "카메라 " + (i + 1)}</option>`).join("");
+  } catch (_) {}
+}
+
+// ---------- 몸 읽기 ----------
+let cfg = {}, players = [], phase = "off", phaseT = 0, timers = [], running = false, lastVideoTime = -1;
+let wakeLock = null;
+function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+function newPlayer(i) {
+  return { ...PLAYERS[i], score: 0, popped: 0, lm: null, seen: false, full: false, fullSince: 0, nextSpawn: 0, hitAt: 0, boomAt: 0 };
+}
+// 사람 위치(화면 왼쪽/오른쪽)로 1P와 2P를 나눠요. 화면은 거울처럼 좌우가 뒤집혀 보여요.
+function assign(poses) {
+  const items = poses.map((lm) => ({ lm, x: 1 - (lm[11].x + lm[12].x + lm[23].x + lm[24].x) / 4 }));
+  if (players.length === 1) {
+    items.sort((a, b) => Math.abs(a.x - 0.5) - Math.abs(b.x - 0.5));
+    return [items[0]?.lm || null];
+  }
+  items.sort((a, b) => a.x - b.x);
+  if (items.length >= 2) return [items[0].lm, items[1].lm];
+  if (items.length === 1) return items[0].x < 0.5 ? [items[0].lm, null] : [null, items[0].lm];
+  return [null, null];
+}
+
+const vis = (p) => (p.visibility ?? 1) > 0.5;
+// 화면(캔버스) 좌표: 거울처럼 좌우를 뒤집어요.
+const D = (q) => [(1 - q.x) * canvas.width, q.y * canvas.height];
+function torsoLen(lm) {
+  const [sx, sy] = D({ x: (lm[11].x + lm[12].x) / 2, y: (lm[11].y + lm[12].y) / 2 });
+  const [hx, hy] = D({ x: (lm[23].x + lm[24].x) / 2, y: (lm[23].y + lm[24].y) / 2 });
+  return Math.max(20, Math.hypot(sx - hx, sy - hy));
+}
+function readPose(p, lm) {
+  p.lm = lm; p.seen = !!lm;
+  p.full = !!lm && vis(lm[0]) && (vis(lm[27]) || vis(lm[28])) && Math.max(lm[27].y, lm[28].y) < 0.99;
+}
+
+// ---------- 풍선 ----------
+// 풍선 좌표는 캔버스 픽셀 기준이에요. 크기는 몸통 길이에 맞춰서, 멀리 서도 가까이 서도 비슷하게 보여요.
+let balloons = [], bits = [];
+function region(i) {
+  const W = canvas.width;
+  return players.length === 2 ? [i * W / 2, i * W / 2 + W / 2] : [0, W];
+}
+function spawn(p, i, now) {
+  const lm = p.lm; if (!lm) return;
+  const T = torsoLen(lm), r = T * 0.32;
+  const [x0, x1] = region(i);
+  const hip = D({ x: (lm[23].x + lm[24].x) / 2, y: (lm[23].y + lm[24].y) / 2 });
+  const head = D(lm[0]);
+  const footY = Math.max(D(lm[27])[1], D(lm[28])[1]);
+  const hands = [...HANDS, ...FEET].filter((k) => vis(lm[k])).map((k) => D(lm[k]));
+  // 팔 닿는 곳(몸 가운데에서 몸통 1.7배 안)과 머리 위~발 사이에서, 지금 손발이 있는 곳은 피해서 골라요.
+  for (let tries = 0; tries < 12; tries++) {
+    const low = Math.random() < 0.25; // 넷 중 하나는 발로 차는 낮은 풍선
+    const x = hip[0] + (Math.random() * 2 - 1) * T * 1.7;
+    const y = low ? footY - r * (0.6 + Math.random() * 1.4) : head[1] - T * 0.6 + Math.random() * (hip[1] - head[1] + T * 0.6);
+    if (x < x0 + r || x > x1 - r || y < r || y > canvas.height - r) continue;
+    if (Math.abs(x - hip[0]) < T * 0.35 && y > head[1] && y < hip[1]) continue; // 몸통 위는 피해요
+    if (hands.some(([hx, hy]) => Math.hypot(hx - x, hy - y) < r * 2.2)) continue;
+    if (balloons.some((b) => b.owner === i && Math.hypot(b.x - x, b.y - y) < r * 2.2)) continue;
+    const roll = Math.random();
+    const kind = roll < cfg.L.bomb ? "bomb" : roll < cfg.L.bomb + 0.1 ? "gold" : "normal";
+    balloons.push({ x, y, r, kind, owner: i, born: now, life: cfg.L.life * 1000, color: COLORS[Math.floor(Math.random() * COLORS.length)], wob: Math.random() * 6 });
+    return;
+  }
+}
+function popAt(b, now) {
+  const p = players[b.owner];
+  b.dead = true;
+  if (b.kind === "bomb") {
+    p.score = Math.max(0, p.score - 2); p.boomAt = now; sfx.boom();
+    addText(b.x, b.y, "-2 💥", "#FF4D66");
+  } else {
+    const pts = b.kind === "gold" ? 3 : 1;
+    p.score += pts; p.popped++; p.hitAt = now;
+    if (b.kind === "gold") sfx.gold(); else sfx.pop();
+    addText(b.x, b.y, `+${pts}`, b.kind === "gold" ? "#FFB020" : "#fff");
+    for (let k = 0; k < 10; k++) {
+      const a = Math.random() * Math.PI * 2, v = b.r * (2 + Math.random() * 3);
+      bits.push({ x: b.x, y: b.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, born: now, color: b.kind === "gold" ? "#FFD34D" : b.color });
+    }
+  }
+}
+function addText(x, y, text, color) { bits.push({ x, y, text, color, born: performance.now(), vx: 0, vy: -60 * devicePixelRatio }); }
+function updateBalloons(now, dt) {
+  players.forEach((p, i) => {
+    if (!p.lm) return;
+    const mine = balloons.filter((b) => b.owner === i && !b.dead);
+    if (now >= p.nextSpawn && mine.length < cfg.L.max) { spawn(p, i, now); p.nextSpawn = now + cfg.L.every * 1000 * (0.7 + Math.random() * 0.6); }
+    const pts = [...HANDS, ...FEET].filter((k) => vis(p.lm[k])).map((k) => D(p.lm[k]));
+    for (const b of mine) {
+      if (pts.some(([x, y]) => Math.hypot(x - b.x, y - b.y) < b.r * 1.05)) popAt(b, now);
+    }
+  });
+  for (const b of balloons) {
+    const age = (now - b.born) / b.life;
+    if (age > 0.75) b.y -= b.r * 3 * dt; // 끝날 즈음 위로 날아가요
+    if (age >= 1) b.dead = true;
+  }
+  balloons = balloons.filter((b) => !b.dead);
+  bits = bits.filter((t) => now - t.born < 700);
+}
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function drawBalloon(b, now) {
+  const age = (now - b.born) / b.life;
+  const grow = Math.min(1, (now - b.born) / 250); // 뿅 하고 나타나요
+  const r = b.r * grow, x = b.x + Math.sin(now / 400 + b.wob) * b.r * 0.12, y = b.y;
+  ctx.save();
+  if (age > 0.75) ctx.globalAlpha = Math.max(0, 1 - (age - 0.75) * 4);
+  if (b.kind === "bomb") {
+    ctx.font = `${r * 2}px ${EMOJI_FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("💣", x, y);
+  } else {
+    const col = b.kind === "gold" ? "#FFC83D" : b.color;
+    ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 2 * devicePixelRatio;
+    ctx.beginPath(); ctx.moveTo(x, y + r * 1.15);
+    ctx.quadraticCurveTo(x - r * 0.3, y + r * 1.7, x, y + r * 2.2); ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(x, y, r * 0.88, r * 1.08, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - r * 0.15, y + r * 1.2); ctx.lineTo(x + r * 0.15, y + r * 1.2); ctx.lineTo(x, y + r * 1.02); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.beginPath(); ctx.ellipse(x - r * 0.32, y - r * 0.4, r * 0.18, r * 0.3, -0.5, 0, 7); ctx.fill();
+    if (b.kind === "gold") {
+      ctx.font = `${r * 0.9}px ${EMOJI_FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("🌟", x, y);
+    }
+  }
+  ctx.restore();
+}
+function drawBits(now) {
+  for (const t of bits) {
+    const age = (now - t.born) / 1000;
+    const x = t.x + t.vx * age, y = t.y + t.vy * age;
+    ctx.save(); ctx.globalAlpha = Math.max(0, 1 - age / 0.7);
+    if (t.text) {
+      ctx.font = `900 ${32 * devicePixelRatio}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.lineWidth = 5 * devicePixelRatio; ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.strokeText(t.text, x, y);
+      ctx.fillStyle = t.color; ctx.fillText(t.text, x, y);
+    } else {
+      ctx.fillStyle = t.color; ctx.beginPath(); ctx.arc(x, y + age * age * 400 * devicePixelRatio, 5 * devicePixelRatio, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function draw(now) {
+  const W = canvas.width, H = canvas.height, d = devicePixelRatio;
+  ctx.clearRect(0, 0, W, H);
+  if (players.length === 2) {
+    ctx.save(); ctx.setLineDash([12 * d, 10 * d]); ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 3 * d;
+    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.restore();
+  }
+  for (const p of players) {
+    const lm = p.lm; if (!lm) continue;
+    ctx.strokeStyle = p.color; ctx.lineWidth = 5 * d; ctx.lineCap = "round";
+    for (const [a, b] of BONES) {
+      if (!vis(lm[a]) || !vis(lm[b])) continue;
+      ctx.beginPath(); ctx.moveTo(...D(lm[a])); ctx.lineTo(...D(lm[b])); ctx.stroke();
+    }
+    ctx.fillStyle = "#fff";
+    for (const k of KEYS) {
+      if (!vis(lm[k])) continue;
+      const [x, y] = D(lm[k]); ctx.beginPath(); ctx.arc(x, y, 4 * d, 0, 7); ctx.fill();
+    }
+    // 손발 끝을 동그랗게 보여 줘서 어디로 터뜨리는지 알 수 있게 해요.
+    if (phase === "play") {
+      ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 * d;
+      for (const k of [15, 16, 31, 32]) {
+        if (!vis(lm[k])) continue;
+        const [x, y] = D(lm[k]); ctx.beginPath(); ctx.arc(x, y, torsoLen(lm) * 0.12, 0, 7); ctx.fill(); ctx.stroke();
+      }
+    }
+    const [nx, ny] = D(lm[0]);
+    const size = Math.max(28 * d, torsoLen(lm) * 0.55);
+    ctx.font = `${size}px ${EMOJI_FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#000"; // 손 표시의 반투명 색이 얼굴에 남지 않게
+    const face = now - p.boomAt < 900 ? "😵" : now - p.hitAt < 400 ? "😆" : p.emoji;
+    ctx.fillText(face, nx, ny - size * 0.15);
+  }
+  if (phase === "play") for (const b of balloons) drawBalloon(b, now);
+  drawBits(now);
+}
+
+function loop() {
+  if (!running) return;
+  requestAnimationFrame(loop);
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - (loop.last || now)) / 1000); loop.last = now;
+  if (video.readyState >= 2 && video.currentTime !== lastVideoTime && landmarker) {
+    lastVideoTime = video.currentTime;
+    let res = null;
+    try { res = landmarker.detectForVideo(video, now); } catch (_) {}
+    const lms = assign(res?.landmarks || []);
+    players.forEach((p, i) => readPose(p, lms[i]));
+    tick(now);
+  }
+  if (phase === "play") updateBalloons(now, dt);
+  draw(now);
+  renderBoards();
+}
+
+// ---------- 게임 진행 ----------
+function tick(now) {
+  if (phase === "check") {
+    for (const p of players) { if (p.full) { if (!p.fullSince) p.fullSince = now; } else p.fullSince = 0; }
+    if (players.every((p) => p.fullSince && now - p.fullSince > 1000)) startCountdown();
+  } else if (phase === "play") {
+    if (msgUntil && now > msgUntil) { msgUntil = 0; showMsg(""); }
+    const left = Math.max(0, SECONDS - (now - phaseT) / 1000);
+    pill.textContent = `${Math.ceil(left)}초`;
+    if (left <= 0) finish();
+  }
+}
+function setPhase(name) { phase = name; phaseT = performance.now(); }
+function startCheck() {
+  clearTimers(); setPhase("check"); pill.textContent = "준비"; balloons = []; bits = [];
+  players.forEach((p) => (p.fullSince = 0));
+  const who = players.length === 2 ? "🐰 1P는 왼쪽, 🐻 2P는 오른쪽! 팔을 뻗어도 안 부딪히게 떨어져 서요" : "화면 가운데에서 뒤로 물러나요";
+  showMsg("머리부터 발끝까지<br>보이게 서요", who, [["바로 시작", startCountdown, true]]);
+  hint.textContent = "온몸이 보이면 저절로 시작해요";
+}
+function startCountdown() {
+  if (phase !== "check") return;
+  setPhase("count"); showMsg("좋아요! 그대로~"); hint.textContent = "";
+  [3, 2, 1].forEach((n, i) => later(() => { showMsg(String(n)); sfx.tick(); }, 900 + i * 900));
+  later(() => {
+    setPhase("play"); sfx.go();
+    players.forEach((p) => (p.nextSpawn = 0));
+    flashMsg("펑! 펑!", "손과 발로 풍선을 터뜨려요", 1200);
+    hint.textContent = "낮은 풍선은 발로 차요! 💣 폭탄은 피해요";
+  }, 900 + 3 * 900);
+}
+function finish() {
+  if (phase !== "play") return;
+  clearTimers(); setPhase("end"); balloons = []; msgUntil = 0;
+  pill.textContent = "끝!";
+  sfx.end();
+  const key = bestKey(cfg.level);
+  const prev = +read(key) || 0, top = Math.max(...players.map((p) => p.score));
+  const record = top > prev;
+  if (record) store(key, String(top));
+  let big, small;
+  if (players.length === 2) {
+    const [a, b] = players;
+    big = a.score === b.score ? `무승부! ${a.score}점` : `${(a.score > b.score ? a : b).emoji} ${(a.score > b.score ? a : b).name} 승리!`;
+    small = `🐰 ${a.score}점 · 🐻 ${b.score}점`;
+  } else {
+    big = `${top}점! 🎈`;
+    small = `풍선 ${players[0].popped}개 펑!`;
+  }
+  small += record ? " · 🏆 새 기록!" : prev ? ` · 최고 기록 ${prev}점` : "";
+  showMsg(big, small, [["한 판 더", replay], ["설정", quit, true]]);
+  hint.textContent = "";
+}
+function replay() { players = players.map((_, i) => newPlayer(i)); startCheck(); }
+
+async function start() {
+  const err = $("err"); err.hidden = true;
+  const s = { players: form("players"), level: form("level") };
+  store(SAVE_KEY, JSON.stringify(s));
+  cfg = { players: +s.players, level: s.level, L: LEVELS[s.level] };
+  ac(); // 소리는 버튼을 누를 때 켜야 해요(아이폰·아이패드).
+  const btn = $("startBtn"); btn.disabled = true; btn.textContent = "준비 중…";
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("nocam");
+    await Promise.all([openCamera($("camSel").value || undefined), loadModel()]);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "시작하기";
+    err.hidden = false;
+    err.textContent = e?.message === "nocam" || e?.name === "NotAllowedError" || e?.name === "NotFoundError"
+      ? "카메라를 쓸 수 없어요.\n브라우저 주소창의 카메라 권한을 '허용'으로 바꾼 뒤 다시 눌러 주세요."
+      : "움직임 인식을 준비하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    return;
+  }
+  btn.disabled = false; btn.textContent = "시작하기";
+  players = Array.from({ length: cfg.players }, (_, i) => newPlayer(i));
+  $("setup").hidden = true; $("game").hidden = false;
+  buildBoards(); fitView();
+  try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (_) {}
+  running = true; lastVideoTime = -1; loop.last = 0;
+  requestAnimationFrame(loop);
+  startCheck();
+}
+function quit() {
+  running = false; clearTimers(); setPhase("off"); balloons = [];
+  stopCamera(); wakeLock?.release?.().catch(() => {}); wakeLock = null;
+  $("game").hidden = true; $("setup").hidden = false;
+  updateSetupText();
+}
+$("startBtn").onclick = start;
+$("quitBtn").onclick = quit;
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible" && running && !wakeLock) {
+    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (_) {}
+  } else if (document.visibilityState === "hidden") wakeLock = null;
+});
+// 미리 받아 두면 "시작하기"를 눌렀을 때 덜 기다려요.
+loadModel().catch(() => {});
+
+// ---------- 홈 화면에 설치하기 ----------
+// 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+// 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+(() => {
+  const btn = $("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    const g = document.createElement("div"); g.className = "install-guide";
+    g.innerHTML = `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <button class="small">알겠어요</button></div>`;
+    g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
+    document.body.appendChild(g);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
