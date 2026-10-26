@@ -4,9 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>체육시간</title>
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#F4FBF7">
-<link rel="icon" href="jumprope/icons/icon-192.png">
-<link rel="apple-touch-icon" href="jumprope/icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="체육시간">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -26,6 +30,13 @@
   a.card b { display: block; font-size: 1.1em; }
   a.card small { color: #6b7a8c; }
   .note { text-align: center; color: #6b7a8c; font-size: .8em; margin-top: 20px; }
+  button { font: inherit; font-weight: 700; font-size: .9rem; border: 2px solid #d7eee2; background: #fff; border-radius: 999px; padding: 8px 16px; cursor: pointer; color: inherit; }
+  .row { text-align: center; margin-top: 6px; }
+  [hidden] { display: none !important; }
+  .install-guide { position: fixed; inset: 0; background: rgba(20,30,40,.5); display: grid; place-items: center; padding: 16px; z-index: 10; }
+  .install-guide > div { background: #fff; border-radius: 18px; padding: 22px 24px; max-width: 420px; width: 100%; }
+  .install-guide h2 { font-size: 1.3rem; margin: 0 0 8px; }
+  .install-guide ol { margin: 0 0 16px; padding-left: 1.3em; line-height: 1.7; }
 </style>
 </head>
 <body>
@@ -52,8 +63,35 @@
       <span class="em" style="background:#DDF5E6">🏃</span>
       <span><b>장애물 피하기</b><small>통나무는 점프, 막대는 쪼그려 앉아서 피해요</small></span>
     </a>
-    <p class="note">게임마다 따로 앱으로 설치할 수 있어요. 게임을 연 다음 "📲 홈 화면에 설치"를 눌러요.</p>
+    <div class="row"><button id="installBtn" hidden>📲 체육시간 앱 설치</button></div>
+    <p class="note">체육시간 앱 하나로 모든 게임을 할 수 있어요. 게임 하나만 따로 두고 싶으면, 그 게임을 연 다음 "📲 홈 화면에 설치"를 눌러요.</p>
     <p class="note">노트북·태블릿을 세워 두고 2~3걸음 뒤에서, 머리부터 발끝까지 보이게 서서 해요.<br>카메라 영상은 기기 안에서만 쓰고 어디에도 보내지 않아요.</p>
   </div>
+<script>
+// ---------- 홈 화면에 설치하기 ----------
+// 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+// 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+(() => {
+  const btn = document.getElementById("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    const g = document.createElement("div"); g.className = "install-guide";
+    g.innerHTML = `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <button>알겠어요</button></div>`;
+    g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
+    document.body.appendChild(g);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
 </body>
 </html>

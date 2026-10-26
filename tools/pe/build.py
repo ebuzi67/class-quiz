@@ -1,4 +1,4 @@
-"""체육시간 앱 준비하기 (무궁화 꽃, 줄넘기, 벽 통과하기, 풍선 터뜨리기, 장애물 피하기: 각각 따로 설치되는 앱)
+"""체육시간 앱 준비하기 (게임 고르기 앱 + 무궁화 꽃, 줄넘기, 벽 통과하기, 풍선 터뜨리기, 장애물 피하기: 각각 따로 설치되는 앱)
 
 카메라로 몸 움직임을 알아보는 MediaPipe 포즈 인식 라이브러리와 모델을 pe/lib/에
 받아 두고(인터넷이 없어도, 외부 사이트가 막혀도 동작하게), 앱마다 아이콘을 만들어요.
@@ -144,6 +144,21 @@ def dodge_icon(size):
     return img
 
 
+def hub_icon(size):
+    # 체육시간 모음 앱: 게임 아이콘 넷(무궁화 꽃, 줄넘기, 벽, 풍선)을 둥근 타일로 모아요
+    s = size * 4
+    img = Image.new("RGB", (s, s), "#F4FBF7")
+    gap, tile = int(s * 0.06), int(s * 0.41)
+    mask = Image.new("L", (tile, tile), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, tile - 1, tile - 1], radius=int(tile * 0.22), fill=255)
+    for k, draw in enumerate((flower_icon, rope_icon, wall_icon, balloon_icon)):
+        t = draw(size).resize((tile, tile), Image.LANCZOS)
+        x = gap + (k % 2) * (tile + gap) + int(s * 0.02)
+        y = gap + (k // 2) * (tile + gap) + int(s * 0.02)
+        img.paste(t, (x, y), mask)
+    return img
+
+
 def save_icon(app, draw, size):
     img = draw(size).resize((size, size), Image.LANCZOS)
     (OUT / app / "icons").mkdir(parents=True, exist_ok=True)
@@ -153,6 +168,7 @@ def save_icon(app, draw, size):
 if __name__ == "__main__":
     fetch_lib()
     for size in (180, 192, 512):
+        save_icon(".", hub_icon, size)
         save_icon("mugunghwa", flower_icon, size)
         save_icon("jumprope", rope_icon, size)
         save_icon("wall", wall_icon, size)

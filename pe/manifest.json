@@ -1,0 +1,27 @@
+{
+  "name": "체육시간",
+  "short_name": "체육시간",
+  "description": "카메라가 몸 움직임을 알아보는 몸놀이 모음: 무궁화 꽃, 줄넘기, 벽 통과하기, 풍선 터뜨리기, 장애물 피하기",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F4FBF7",
+  "theme_color": "#F4FBF7",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
