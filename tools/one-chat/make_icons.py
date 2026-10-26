@@ -1,4 +1,4 @@
-# 원이랑 수다 앱 아이콘을 one-chat/icons/에 만들어요.
+# 원이랑 대화하기 앱 아이콘을 one-chat/icons/에 만들어요.
 # 원본: tools/one-chat/one.jpg (원 캐릭터 그림 그대로). 위아래 어두운 테두리만 잘라 내고,
 # 하얀 정사각형 가운데에 그림 전체가 들어가게 놓아요.
 # 실행: python3 tools/one-chat/make_icons.py
