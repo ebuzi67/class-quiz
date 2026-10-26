@@ -1,11 +1,12 @@
-"""체육시간 앱 준비하기 (무궁화 꽃, 줄넘기)
+"""체육시간 앱 준비하기 (무궁화 꽃, 줄넘기: 각각 따로 설치되는 앱)
 
-카메라로 몸 움직임을 알아보는 MediaPipe 포즈 인식 라이브러리와 모델을 체육시간/lib/에
-받아 두고(인터넷이 없어도, 외부 사이트가 막혀도 동작하게), 앱 아이콘을 만들어요.
-두 게임이 같은 lib/을 함께 써요. 게임 화면은 체육시간/*/index.html을 바로 고치면 돼요.
+카메라로 몸 움직임을 알아보는 MediaPipe 포즈 인식 라이브러리와 모델을 pe/lib/에
+받아 두고(인터넷이 없어도, 외부 사이트가 막혀도 동작하게), 두 앱의 아이콘을 만들어요.
+두 게임이 같은 lib/을 함께 써요. 게임 화면은 pe/*/index.html을 바로 고치면 돼요.
 
-  python3 tools/체육시간/build.py
+  python3 tools/pe/build.py
 """
+import math
 import shutil
 import subprocess
 import tarfile
@@ -16,7 +17,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 HERE = Path(__file__).parent
-OUT = HERE.parent.parent / "체육시간"
+OUT = HERE.parent.parent / "pe"
 LIB = OUT / "lib"
 VISION = "@mediapipe/tasks-vision@0.10.14"
 MODEL = ("https://storage.googleapis.com/mediapipe-models/pose_landmarker/"
@@ -43,7 +44,7 @@ def fetch_lib():
         urllib.request.urlretrieve(MODEL, model)
 
 
-def build_icon(size):
+def rope_icon(size):
     # 민트 바탕에 줄넘기하는 사람 하나: 분홍 줄이 머리 위로 돌아가요
     s = size * 4
     img = Image.new("RGB", (s, s), "#BFEBD6")
@@ -64,13 +65,39 @@ def build_icon(size):
     for x, y in (hand_l, hand_r):
         r = s * 0.03
         d.ellipse([x - r, y - r, x + r, y + r], fill="#F7B733")
-    img = img.resize((size, size), Image.LANCZOS)
-    (OUT / "icons").mkdir(parents=True, exist_ok=True)
-    img.save(OUT / "icons" / f"icon-{size}.png", optimize=True)
+    return img
+
+
+def flower_icon(size):
+    # 분홍 바탕에 다섯 잎 무궁화 한 송이
+    s = size * 4
+    img = Image.new("RGB", (s, s), "#FFE3EC")
+    d = ImageDraw.Draw(img)
+    cx, cy = s * 0.5, s * 0.5
+    for i in range(5):
+        a = math.radians(-90 + i * 72)
+        px, py = cx + math.cos(a) * s * 0.2, cy + math.sin(a) * s * 0.2
+        r = s * 0.2
+        d.ellipse([px - r, py - r, px + r, py + r], fill="#F7A1C0", outline="#E2709A", width=int(s * 0.012))
+    r = s * 0.13
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill="#C2185B")
+    for i in range(5):
+        a = math.radians(-90 + i * 72)
+        d.line([cx, cy, cx + math.cos(a) * s * 0.1, cy + math.sin(a) * s * 0.1], fill="#8E0E43", width=int(s * 0.018))
+    r = s * 0.035
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill="#FFE082")
+    return img
+
+
+def save_icon(app, draw, size):
+    img = draw(size).resize((size, size), Image.LANCZOS)
+    (OUT / app / "icons").mkdir(parents=True, exist_ok=True)
+    img.save(OUT / app / "icons" / f"icon-{size}.png", optimize=True)
 
 
 if __name__ == "__main__":
     fetch_lib()
     for size in (180, 192, 512):
-        build_icon(size)
+        save_icon("mugunghwa", flower_icon, size)
+        save_icon("jumprope", rope_icon, size)
     print("done:", OUT)

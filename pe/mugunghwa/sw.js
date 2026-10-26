@@ -1,16 +1,12 @@
-// 체육시간 오프라인 지원 (무궁화 꽃, 줄넘기)
+// 무궁화 꽃이 피었습니다 오프라인 지원
 // 화면 파일: 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-// lib/ 안의 포즈 인식 파일(크고 잘 안 바뀜): 한 번 받으면 저장해 둔 것을 바로 써요.
-const CACHE = "pe-time-v1";
-const LIB = "pe-time-lib-v1";
+// ../lib/ 안의 포즈 인식 파일(줄넘기와 함께 씀, 크고 잘 안 바뀜): 한 번 받으면 저장해 둔 것을 바로 써요.
+const CACHE = "pe-mugunghwa-v1";
+const LIB = "pe-mugunghwa-lib-v1";
 const FILES = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./mugunghwa/",
-  "./mugunghwa/index.html",
-  "./jumprope/",
-  "./jumprope/index.html",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-180.png"
@@ -25,7 +21,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key.startsWith("pe-time-") && key !== CACHE && key !== LIB).map((key) => caches.delete(key)))
+      Promise.all(keys.filter((key) => key.startsWith("pe-mugunghwa-") && key !== CACHE && key !== LIB).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
