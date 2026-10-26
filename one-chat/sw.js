@@ -1,7 +1,7 @@
 // 원이랑 수다 오프라인 지원
 // 화면 파일만 맡아요. 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-// 원의 대답(api.anthropic.com)은 건드리지 않아요. 인터넷이 없으면 대답은 못 하고 화면만 열려요.
-const CACHE = "one-chat-v1";
+// 원의 대답은 모두 index.html 안에 들어 있어서, 한 번 열어 두면 인터넷 없이도 이야기할 수 있어요.
+const CACHE = "one-chat-v2";
 const FILES = [
   "./",
   "./index.html",

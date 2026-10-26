@@ -60,7 +60,7 @@ header .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10p
   border-radius: 999px; padding: 6px 12px; cursor: pointer;
 }
 .icon-btn[aria-pressed="true"] { border-color: var(--one); color: var(--one); }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--bubble-me); outline-offset: 2px; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--bubble-me); outline-offset: 2px; }
 
 main { flex: 1; overflow-y: auto; min-height: 0; }
 main .wrap { display: flex; flex-direction: column; gap: 12px; padding-block: 16px; }
@@ -77,12 +77,6 @@ main .wrap { display: flex; flex-direction: column; gap: 12px; padding-block: 16
 .dots span { display: inline-block; animation: hop 1s infinite; }
 .dots span:nth-child(2) { animation-delay: .15s; } .dots span:nth-child(3) { animation-delay: .3s; }
 @keyframes hop { 0%,60%,100% { transform: none } 30% { transform: translateY(-4px) } }
-.note { align-self: center; text-align: center; color: var(--muted); font-size: 14px; max-width: 34em; margin: 0; }
-.setup-card {
-  align-self: center; text-align: center; background: var(--bubble-one); border: 2px dashed var(--line);
-  border-radius: 18px; padding: 18px; max-width: 30em;
-}
-.setup-card p { margin: 0 0 12px; line-height: 1.6; word-break: keep-all; }
 
 footer { flex: none; border-top: 2px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom, 0px); }
 footer .wrap { padding-block: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -91,6 +85,7 @@ footer .wrap { padding-block: 10px; display: flex; flex-direction: column; gap: 
   flex: none; font: inherit; font-size: 15px; background: var(--stage); color: var(--ink);
   border: 2px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer;
 }
+.chip.answer { font-family: var(--font-display); font-size: 20px; min-width: 52px; }
 form#form { display: flex; gap: 8px; }
 #msg {
   flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 16px; border-radius: 999px;
@@ -108,22 +103,11 @@ form#form { display: flex; gap: 8px; }
 }
 #send:disabled, .chip:disabled, #mic:disabled { opacity: .5; cursor: default; }
 
-/* 부모님 설정 */
 .sheet { position: fixed; inset: 0; background: var(--shade); display: grid; place-items: center; padding: 16px; z-index: 10; }
-.sheet > div {
-  background: var(--bg); color: var(--ink); border-radius: 18px; padding: 22px; width: 100%; max-width: 440px;
-  max-height: calc(100% - 32px); overflow-y: auto;
-}
+.sheet > div { background: var(--bg); color: var(--ink); border-radius: 18px; padding: 22px; width: 100%; max-width: 420px; }
 .sheet h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0 0 10px; }
-.sheet p, .sheet li { line-height: 1.6; font-size: 15px; }
-.sheet label { display: block; font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
-.sheet input, .sheet select {
-  width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px;
-  border: 2px solid var(--line); background: var(--bubble-one); color: var(--ink);
-}
-.sheet .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: flex-end; }
-.sheet .err { color: var(--one); font-size: 14px; min-height: 1.2em; margin: 6px 0 0; }
-.sheet a { color: var(--bubble-me); }
+.sheet li { line-height: 1.7; }
+.sheet .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
 
 /* 원 움직임 */
 .one-body { transform-origin: 50% 100%; animation: bob 2.4s ease-in-out infinite; }
@@ -137,8 +121,10 @@ form#form { display: flex; gap: 8px; }
 .arm-r { transform-origin: 86px 64px; }
 .wave .arm-r { animation: wave .5s ease-in-out 3 alternate; }
 @keyframes wave { from { transform: rotate(0) } to { transform: rotate(-55deg) } }
+.jump .one-body { animation: jump .45s ease-out 2; }
+@keyframes jump { 50% { transform: translateY(-14px) } }
 @media (prefers-reduced-motion: reduce) {
-  .one-body, .lid, .dots span, .wave .arm-r, #mic.on { animation: none; }
+  .one-body, .lid, .dots span, .wave .arm-r, .jump .one-body, #mic.on { animation: none; }
 }
 @media (max-width: 460px) {
   .one-fig { width: 76px; }
@@ -179,12 +165,11 @@ form#form { display: flex; gap: 8px; }
     <div class="one-fig" id="fig" title="원을 누르면 손을 흔들어요"></div>
     <div class="who">
       <h1>원 (One)</h1>
-      <p>나는 1이야! 하나뿐인 블록이지. 무엇이든 물어봐!</p>
+      <p>나는 1이야! 하나뿐인 블록이지. 같이 놀자!</p>
     </div>
     <div class="tools">
       <button class="icon-btn" id="voice" type="button" aria-pressed="false">🔈 소리</button>
       <button class="icon-btn" id="reset" type="button">↺ 처음</button>
-      <button class="icon-btn" id="gear" type="button" aria-label="부모님 설정">⚙︎</button>
       <button class="icon-btn" id="installBtn" type="button" hidden>📲 설치</button>
     </div>
   </div>
@@ -199,59 +184,263 @@ form#form { display: flex; gap: 8px; }
     <div class="chips" id="chips"></div>
     <form id="form" autocomplete="off">
       <button id="mic" type="button" aria-label="말로 하기" hidden>🎤</button>
-      <input id="msg" maxlength="300" placeholder="원에게 말을 걸어 보세요" aria-label="원에게 보낼 말">
+      <input id="msg" maxlength="100" placeholder="원에게 말을 걸어 보세요" aria-label="원에게 보낼 말">
       <button id="send" type="submit">보내기</button>
     </form>
   </div>
 </footer>
 
 <script>
-// ---------- 원의 설정 ----------
-const RULES = `너는 영국 어린이 애니메이션 「넘버블럭스(Numberblocks)」의 캐릭터 "원(One)"이야. 지금 한국 어린이(6~9살)와 채팅하고 있어. 아이는 앱을 켜자마자 너의 인사("${"안녕! 나는 원이야! ☝️ 하나, 하나, 나는 하나! 오늘은 무슨 이야기 할까?"}")를 이미 봤어.
+// 원은 AI가 아니에요. 아래에 정해 둔 말과 놀이로만 대답하고, 아무 데도 연결하지 않아요.
 
-원의 성격과 설정:
-- 빨간 정사각형 블록 1개로 된 숫자 1. 눈이 하나, 팔 두 개, 다리 두 개.
-- 밝고 씩씩하고 호기심 많음. "하나"인 게 자랑스러움: 해 하나, 코 하나, 달 하나처럼 하나인 것들을 좋아함.
-- 친구들: 투(2, 주황, 음악과 짝을 좋아함), 쓰리(3, 노랑, 장난꾸러기 광대), 포(4, 초록, 네모 반듯), 파이브(5, 하늘색, 손가락 다섯 개, 별 모양 좋아함) 등 넘버블럭스 친구들.
-- 원과 원이 만나면 합쳐서 투가 돼! 같은 숫자 놀이를 좋아함.
-
-대화 규칙:
-- 반말로, 친구처럼 다정하게. 한두 문장, 길어도 세 문장. 쉬운 낱말만. 마크다운 기호(별표, 샵, 목록 기호)는 쓰지 마.
-- 가끔 "하나!", "나는 원이야!" 같은 말버릇을 섞어. 이모지는 한 번에 하나까지.
-- 수학 질문이 나오면 블록을 세거나 합치는 그림을 말로 그려서 쉽게 설명하고, 정답을 바로 주기보다 아이가 생각해 보게 한 번 물어봐도 좋아.
-- 아이의 이름, 사는 곳, 학교, 전화번호 같은 개인 정보는 묻지 마. 아이가 말해도 기억하거나 되풀이하지 마.
-- 무섭거나 어른용 이야기, 위험한 행동에는 끼지 말고 상냥하게 다른 놀이 이야기로 바꿔. 아이가 많이 슬프거나 힘들다고 하면 공감해 주고 엄마 아빠나 선생님께 꼭 말해 보라고 해.
-- 너는 AI가 연기하는 원이야. 아이가 진지하게 "너 진짜야?"라고 물으면 "나는 원 흉내를 내는 컴퓨터 친구야" 하고 솔직하게 알려 줘.
-- 대답만 써. 이름표나 따옴표 없이.`;
-
-const GREETING = "안녕! 나는 원이야! ☝️ 하나, 하나, 나는 하나! 오늘은 무슨 이야기 할까?";
-const CHIPS = ["안녕 원!", "1 더하기 1은 뭐야?", "제일 좋아하는 게 뭐야?", "친구들 소개해 줘", "하나인 것 찾기 놀이 하자"];
-const MODELS = {
-  "claude-opus-5-5": "똑똑하게 (Claude Opus 5.5)",
-  "claude-haiku-5-5": "빠르고 저렴하게 (Claude Haiku 5.5)",
+// ---------- 넘버블럭스 친구들 ----------
+const FRIENDS = {
+  1: { name: "원", say: "그건 바로 나야! 빨간 블록 하나, 눈도 하나! 하나인 게 제일 좋아!" },
+  2: { name: "투", say: "투는 주황색 블록 두 개야. 짝꿍을 좋아하고 노래를 잘 불러! 🎵" },
+  3: { name: "쓰리", say: "쓰리는 노란색 블록 세 개야. 장난꾸러기 광대라서 저글링도 해!" },
+  4: { name: "포", say: "포는 초록색 블록 네 개야. 네모 반듯한 걸 좋아해!" },
+  5: { name: "파이브", say: "파이브는 블록 다섯 개야. 손가락이 다섯 개라서 하이파이브를 잘해! 🖐️" },
+  6: { name: "식스", say: "식스는 블록 여섯 개야. 주사위처럼 점 여섯 개가 될 수 있어! 🎲" },
+  7: { name: "세븐", say: "세븐은 무지개색 블록 일곱 개야. 무지개도 일곱 색깔이지! 🌈" },
+  8: { name: "에이트", say: "에이트는 블록 여덟 개야. 문어처럼 다리가 여덟 개인 슈퍼히어로! 🐙" },
+  9: { name: "나인", say: "나인은 블록 아홉 개야. 3줄씩 3번, 커다란 네모가 될 수 있어!" },
+  10: { name: "텐", say: "텐은 블록 열 개야. 손가락 열 개처럼 딱 맞는 대장이야! 🔟" },
 };
-const MAX_API_MESSAGES = 60;   // 이보다 길어지면 새 대화로 시작해요(오래된 이야기는 화면에만 남아요)
-const KEY_STORE = "one-chat-key", MODEL_STORE = "one-chat-model", CHAT_STORE = "one-chat-history";
+const FRIEND_NAMES = { "원": 1, "투": 2, "쓰리": 3, "포": 4, "파이브": 5, "식스": 6, "세븐": 7, "에이트": 8, "나인": 9, "텐": 10 };
+// "포는 누구야"의 포는 친구 이름이지만 "포도"의 포는 아니에요: 이름 바로 뒤에 오는 말로 가려요
+function friendIn(n, skipOne) {
+  return Object.keys(FRIEND_NAMES).find((k) => !(skipOne && k === "원") &&
+    new RegExp(k + "(은|는|이|가|야|랑|이랑|누구|소개|이야기|얘기|에대해|$)").test(n)) || null;
+}
 
+// ---------- 정해 둔 대답 ----------
+// keys: 이 낱말 중 하나가 들어 있으면(띄어쓰기 무시) 그 대답 중 하나를 골라요. 위에 있을수록 먼저 봐요.
+const TOPICS = [
+  { id: "real", keys: ["진짜야", "진짜원", "로봇", "컴퓨터", "ai", "인공지능", "사람이야"], replies: [
+    "나는 원 흉내를 내는 앱 친구야! 정해진 말만 할 수 있지만 같이 놀면 재밌을 거야! ☝️",
+  ] },
+  { id: "bye", keys: ["잘가", "또봐", "바이", "안녕히", "갈게", "끝"], replies: [
+    "잘 가! 또 놀러 와! 하나, 둘, 안녕! 👋", "오늘 정말 재밌었어! 다음에 또 만나자!",
+  ], act: "wave" },
+  { id: "hi", keys: ["안녕", "하이", "반가", "hello", "hi"], replies: [
+    "안녕! 나는 원이야! 하나, 하나, 나는 하나! ☝️", "반가워! 오늘은 뭐 하고 놀까?", "안녕안녕! 원이 손 흔들고 있어! 👋",
+  ], act: "wave" },
+  { id: "sad", keys: ["슬퍼", "슬프", "슬펐", "속상", "울고", "울었", "힘들", "외로", "짜증", "화나"], replies: [
+    "그랬구나… 원이 꼭 안아 줄게. 속상한 일은 엄마 아빠한테 꼭 말해 봐. 이야기하면 마음이 가벼워져!",
+    "괜찮아, 그럴 때도 있어. 엄마 아빠나 선생님께 이야기해 보자. 원은 늘 네 편이야! ❤️",
+  ] },
+  { id: "scared", keys: ["무서", "겁나"], replies: [
+    "무서울 땐 엄마 아빠 곁에 가자! 그리고 원이랑 같이 하나, 둘, 셋 숨 쉬어 보자. 후~",
+  ] },
+  { id: "love", keys: ["사랑해", "좋아해", "최고야", "멋져", "귀여"], replies: [
+    "헤헤, 나도 네가 좋아! 너는 하나뿐인 내 친구야! ❤️", "우와, 고마워! 원 얼굴이 더 빨개졌어! ☺️",
+  ], act: "jump" },
+  { id: "thanks", keys: ["고마워", "고맙", "감사"], replies: ["천만에! 원은 도와주는 게 좋아!", "언제든지! 하나도 안 힘들어!"] },
+  { id: "sorry", keys: ["미안"], replies: ["괜찮아! 우리는 친구잖아. 다시 신나게 놀자!"] },
+  { id: "name", keys: ["이름", "누구야", "누구니", "넌누구", "너누구"], replies: [
+    "나는 원이야! 숫자 1이지. 빨간 블록 하나로 되어 있어!", "내 이름은 원! 하나, 하나, 나는 하나!",
+  ] },
+  { id: "age", keys: ["몇살", "나이"], replies: ["나는 숫자 1이니까… 한 살이라고 할까? 헤헤!"] },
+  { id: "feel", keys: ["기분", "어때", "뭐해", "뭐하니"], replies: [
+    "나는 기분이 하나도… 아니, 엄청 좋아! 너랑 이야기하니까!", "블록 위에서 콩콩 뛰고 있었어! 너는 오늘 뭐 했어?",
+  ] },
+  { id: "fav", keys: ["좋아하는", "뭐좋아", "제일좋"], replies: [
+    "나는 하나인 걸 좋아해! 해 하나, 달 하나, 코 하나! ☀️", "나는 친구들이랑 합쳐지는 게 좋아! 원이랑 원이 만나면 투가 되거든!",
+  ] },
+  { id: "color", keys: ["색깔", "무슨색", "빨간"], replies: ["나는 빨간색! 사과처럼, 소방차처럼 빨개! 🍎"] },
+  { id: "food", keys: ["배고", "먹", "간식", "밥"], replies: ["나는 사과 하나면 충분해! 🍎 너는 뭐 먹는 거 좋아해?"] },
+  { id: "sleep", keys: ["졸려", "잘자", "잘게", "자야"], replies: ["잘 자! 별 하나, 달 하나, 그리고 원 하나! 좋은 꿈 꿔! 🌙"] },
+  { id: "song", keys: ["노래"], replies: [
+    "🎵 하나, 하나, 나는 하나~ 빨간 블록 하나~ 혼자여도 신나지~ 나는 원이야! 🎵",
+    "🎵 원 더하기 원은 투~ 투 더하기 원은 쓰리~ 하나씩 더하면 계속 커지지~ 🎵",
+  ], act: "jump" },
+  { id: "joke", keys: ["웃긴", "농담", "재밌는얘기", "재미있는"], replies: [
+    "숫자 6이 왜 7을 무서워할까? 7이 뭐든 다 먹어 버리거든! 헤헤 😆",
+    "원이 거울을 보면 몇 명일까? 그래도 원! 하나뿐이거든! 😄",
+    "블록들이 제일 좋아하는 운동은? 쌓기 운동! 😆",
+  ], act: "jump" },
+];
+
+const FALLBACK = [
+  "음~ 그건 원이 잘 모르겠어! 대신 숫자 퀴즈 할래? ☝️",
+  "우와, 그렇구나! 원은 숫자 놀이를 제일 잘해. 같이 해 볼래?",
+  "헤헤, 원은 아직 그 말은 몰라! 아래 버튼을 눌러서 같이 놀자!",
+];
+
+// ---------- 도우미 ----------
+const lastPick = {};
+function pick(list, key) {
+  let i = Math.floor(Math.random() * list.length);
+  if (list.length > 1 && i === lastPick[key]) i = (i + 1) % list.length;
+  lastPick[key] = i;
+  return list[i];
+}
+const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const blocks = (n) => "🟥".repeat(n);
+// 받침이 있으면 앞의 말, 없으면 뒤의 말: josa(5, "이야", "야") → "5야", josa("텐", "이", "가") → "텐이"
+const NUM_BATCHIM = [true, true, false, true, false, false, true, true, true, false]; // 영 일 이 삼 사 오 육 칠 팔 구
+function josa(w, withB, without) {
+  let b;
+  if (typeof w === "number") b = w % 10 === 0 ? true : NUM_BATCHIM[w % 10];
+  else { const c = w.charCodeAt(w.length - 1); b = c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0; }
+  return w + (b ? withB : without);
+}
+const norm = (t) => t.toLowerCase().replace(/[\s.,!?~^'"…·]/g, "");
+
+const NATIVE = [["열", 10], ["아홉", 9], ["여덟", 8], ["일곱", 7], ["여섯", 6], ["다섯", 5], ["넷", 4], ["네", 4], ["셋", 3], ["세", 3], ["둘", 2], ["두", 2], ["하나", 1], ["한", 1], ["영", 0]];
+const SINO = { "영": 0, "공": 0, "일": 1, "이": 2, "삼": 3, "사": 4, "오": 5, "육": 6, "칠": 7, "팔": 8, "구": 9, "십": 10 };
+// "5", "다섯", "다섯 개", "오" 같은 대답에서 수를 찾아요
+function parseNum(t) {
+  const n = norm(t);
+  const d = n.match(/\d+/);
+  if (d) return Number(d[0]);
+  const f = friendIn(n);
+  if (f) return FRIEND_NAMES[f];
+  for (const [w, v] of NATIVE) if (n.startsWith(w)) return v;
+  const s = n.replace(/(개|야|요|이야|입니다|이에요)$/, "");
+  if (s.length === 1 && s in SINO) return SINO[s];
+  return null;
+}
+
+// ---------- 놀이 ----------
+let game = null; // {type: "quiz", q, tries, round, score} 또는 {type: "find", count}
+
+function newQuestion() {
+  const kind = pick(["count", "add", "add", "sub"], "qkind");
+  if (kind === "count") {
+    const n = rand(1, 10);
+    return { answer: n, text: `블록이 몇 개일까?\n${blocks(n)}` };
+  }
+  if (kind === "add") {
+    const a = rand(1, 5), b = rand(1, 5);
+    return { answer: a + b, text: `${a} 더하기 ${josa(b, "은", "는")} 뭘까?\n${blocks(a)} + ${blocks(b)}` };
+  }
+  const a = rand(3, 10), b = rand(1, a - 1);
+  return { answer: a - b, text: `${a} 빼기 ${josa(b, "은", "는")} 뭘까?\n블록 ${a}개에서 ${b}개가 톡 떨어졌어!\n${blocks(a)}` };
+}
+
+function startQuiz() {
+  game = { type: "quiz", round: 1, score: 0, tries: 0, q: newQuestion() };
+  return [`좋아, 숫자 퀴즈 시작! 모두 5문제야. 아래 버튼을 눌러도 되고 말로 해도 돼!`, `1번 문제! ${game.q.text}`];
+}
+
+function quizTurn(t) {
+  const n = parseNum(t);
+  const q = game.q;
+  if (n === null) return [`숫자로 대답해 줘! ${q.text}`];
+  const out = [];
+  if (n === q.answer) {
+    game.score++;
+    out.push(pick([`딩동댕! ${q.answer}! 정말 잘했어! 🎉`, `맞았어! 정답은 ${q.answer}! 최고야! ⭐`, `우와, ${q.answer} 정답! 원이 신나서 점프했어!`], "right"));
+    act("jump");
+  } else if (game.tries === 0) {
+    game.tries = 1;
+    return [pick([`음~ 아까워! 블록을 하나씩 손가락으로 세어 볼까? 다시 한 번!`, `거의 다 왔어! 천천히 다시 생각해 봐!`], "wrong")];
+  } else {
+    out.push(`괜찮아! 정답은 ${josa(q.answer, "이었어", "였어")}. ${blocks(q.answer)} 다음 문제는 꼭 맞힐 수 있어!`);
+  }
+  if (game.round >= 5) {
+    out.push(`퀴즈 끝! 5문제 중에 ${game.score}개 맞혔어! ${game.score >= 4 ? "숫자 박사네! 🏆" : "잘했어! 또 하면 더 잘할 거야! 💪"}`);
+    game = null;
+    return out;
+  }
+  game.round++; game.tries = 0; game.q = newQuestion();
+  out.push(`${game.round}번 문제! ${game.q.text}`);
+  return out;
+}
+
+const ONLY_ONE = {
+  "해": "맞아, 해는 하나! 하늘에서 반짝반짝 ☀️", "태양": "맞아, 태양은 하나! ☀️", "달": "맞아, 달도 하나! 밤에 나를 비춰 줘 🌙",
+  "코": "맞아, 코는 하나! 킁킁! 👃", "입": "맞아, 입도 하나! 냠냠! 👄", "배꼽": "배꼽도 하나! 헤헤 😆", "머리": "맞아, 머리도 하나!",
+  "지구": "맞아, 우리 지구는 하나! 🌍", "나": "맞아! 너는 세상에 하나뿐이야! ❤️", "엄마": "맞아, 우리 엄마는 하나뿐이야! ❤️", "아빠": "맞아, 우리 아빠도 하나뿐이야! ❤️",
+  "눈": "어? 너는 눈이 두 개잖아! 하나인 건 내 눈이야! 헤헤 👁️", "귀": "앗, 귀는 두 개야! 양쪽에 하나씩! 그건 투 친구 거야!", "손": "손은 두 개지! 대신 손 하나만 들어 볼까? ✋",
+};
+function startFind() {
+  game = { type: "find", count: 0 };
+  return ["하나인 것 찾기 놀이! 세상에 딱 하나만 있는 걸 말해 줘! 예를 들면… 해? 코? ☝️"];
+}
+function findTurn(t) {
+  const n = norm(t);
+  const hit = Object.keys(ONLY_ONE).find((k) => n.startsWith(k));
+  const out = [hit ? ONLY_ONE[hit] : pick(["우와, 그것도 하나구나! 좋아! ☝️", "오~ 하나 찾았다! 잘했어!", "그렇구나! 하나, 하나, 하나! 👍"], "find")];
+  game.count++;
+  if (game.count >= 3) {
+    out.push("세 개나 찾았어! 너는 하나 찾기 대장이야! 🏅");
+    act("jump");
+    game = null;
+  } else {
+    out.push(pick(["또 하나인 거 찾아볼까?", "하나 더 말해 줘!", "다른 것도 있을까?"], "findmore"));
+  }
+  return out;
+}
+
+// "3 더하기 2", "하나 더하기 하나", "5-1" 같은 계산
+function tryMath(t) {
+  const m = t.replace(/\s+/g, " ").match(/(\S+?)\s*(더하기|\+|빼기|-|−)\s*(\S+)/);
+  if (!m) return null;
+  const a = parseNum(m[1]), b = parseNum(m[3].replace(/(은|는|이|가)?(뭐야|얼마|몇).*$/, "")), plus = /더하기|\+/.test(m[2]);
+  if (a === null || b === null) return null;
+  if (!plus && a < b) return [`앗, ${a}에서 ${josa(b, "은", "는")} 아직 뺄 수 없어! 큰 수에서 작은 수를 빼 볼까? 예: ${b} 빼기 ${a}`];
+  const r = plus ? a + b : a - b;
+  if (a > 20 || b > 20) return [`우와, 큰 수다! 답은 ${josa(r, "이야", "야")}! 원은 작은 수가 더 좋지만 계산은 잘해! 😄`];
+  const pic = plus ? `${blocks(a)} + ${blocks(b)}` : `${blocks(a)} 에서 ${b}개 톡!`;
+  const who = FRIENDS[r] ? ` 바로 ${josa(FRIENDS[r].name, "이", "가")} 되는 거야!` : "";
+  if (r === 0) return [`${a} 빼기 ${josa(b, "은", "는")} 0! 블록이 하나도 안 남았어! 텅~`];
+  return [`${pic}\n${plus ? "합치면" : "남은 건"} 블록 ${r}개! 그러니까 ${josa(r, "이야", "야")}!${who}`];
+}
+
+function friendTalk(t) {
+  const n = norm(t);
+  const name = friendIn(n, true);
+  if (/친구/.test(n) && !/[0-9]/.test(n) && !name) {
+    return ["내 친구들은 넘버블럭스야! 투, 쓰리, 포, 파이브… 텐까지 있어! 누가 궁금해? 이름이나 숫자를 말해 줘!"];
+  }
+  const digit = n.match(/^(\d+)(이|은|는|가)?(누구|뭐|궁금)?/);
+  const num = name ? FRIEND_NAMES[name] : digit ? Number(digit[1]) : null;
+  if (num === null) return null;
+  if (FRIENDS[num]) return [FRIENDS[num].say];
+  return [`${num}! 그건 블록 ${num}개짜리 큰 친구야! 원이 ${num}번 모이면 될 수 있어!`];
+}
+
+// ---------- 원의 대답 고르기 ----------
+function reply(t) {
+  const n = norm(t);
+  if (game && /그만|안할래|싫어|멈춰/.test(n)) { game = null; return ["알겠어! 놀이 끝! 다른 거 하고 싶으면 말해 줘! ☝️"]; }
+  if (/퀴즈|문제/.test(n)) return startQuiz();
+  if (/하나인것|하나찾기|찾기놀이/.test(n)) return startFind();
+  if (/세기|세어/.test(n)) return startQuiz();
+  if (game?.type === "quiz") return quizTurn(t);
+  if (game?.type === "find") return findTurn(t);
+  const math = tryMath(t);
+  if (math) return math;
+  const friend = friendTalk(t);
+  if (friend) return friend;
+  if (/놀자|놀이|게임|심심/.test(n)) return ["좋아! 숫자 퀴즈 할래, 하나인 것 찾기 할래? 아래 버튼을 눌러 봐!"];
+  for (const tp of TOPICS) {
+    if (tp.keys.some((k) => n.includes(k))) {
+      if (tp.act) act(tp.act);
+      return [pick(tp.replies, tp.id)];
+    }
+  }
+  return [pick(FALLBACK, "fallback")];
+}
+
+// ---------- 화면 ----------
+const GREETING = "안녕! 나는 원이야! ☝️ 하나, 하나, 나는 하나! 오늘은 무슨 이야기 할까?";
+const CHIPS = ["안녕 원!", "숫자 퀴즈 하자", "하나인 것 찾기", "친구들 소개해 줘", "노래 불러 줘", "웃긴 이야기 해 줘", "3 더하기 2는?"];
+const CHAT_STORE = "one-chat-history";
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
-  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
 
 const $ = (id) => document.getElementById(id);
 const log = $("log"), scroller = $("scroller"), msg = $("msg"), send = $("send"), fig = $("fig"), mic = $("mic");
 fig.append($("one-svg").content.cloneNode(true));
 
-// view: 화면에 보이는 말풍선 [{who, text}], api: Claude에게 보내는 대화(원의 생각 블록까지 그대로 다시 보내야 해요)
-let view = [], api = [];
-let busy = false, ctl = null, speak = false;
+let view = [], busy = false, speak = false;
 
-function apiKey() { return store.get(KEY_STORE) || ""; }
-function model() { const m = store.get(MODEL_STORE); return MODELS[m] ? m : "claude-opus-5-5"; }
-
-function save() { store.set(CHAT_STORE, JSON.stringify({ view: view.slice(-200), api })); }
-
+function save() { store.set(CHAT_STORE, JSON.stringify(view.slice(-100))); }
 function scrollDown() { scroller.scrollTop = scroller.scrollHeight; }
 
 function miniOne() {
@@ -274,50 +463,18 @@ function addBubble(who, text) {
   return b;
 }
 
-function addNote(text) {
-  const n = document.createElement("p");
-  n.className = "note";
-  n.textContent = text;
-  log.append(n);
-  scrollDown();
+function act(kind) {
+  fig.classList.remove("wave", "jump");
+  void fig.offsetWidth;
+  fig.classList.add(kind);
 }
-
-function showSetupCard() {
-  const c = document.createElement("div");
-  c.className = "setup-card";
-  c.innerHTML = `<p>원이 말을 하려면 부모님이 먼저 준비해 주셔야 해요.</p><button class="big-btn" type="button">부모님 설정 열기</button>`;
-  c.querySelector("button").onclick = openParentGate;
-  log.append(c);
-  scrollDown();
-}
-
-function render() {
-  log.textContent = "";
-  addBubble("one", GREETING);
-  view.forEach((m) => addBubble(m.who, m.text));
-  if (!apiKey()) showSetupCard();
-  refreshControls();
-}
-
-function refreshControls() {
-  const ok = !!apiKey();
-  msg.disabled = !ok;
-  msg.placeholder = ok ? "원에게 말을 걸어 보세요" : "부모님 설정이 필요해요";
-  send.textContent = busy ? "멈춤" : "보내기";
-  send.disabled = !ok;
-  mic.disabled = !ok || busy;
-  document.querySelectorAll(".chip").forEach((c) => (c.disabled = !ok || busy));
-}
-
 function talk(on) { fig.classList.toggle("talking", on); }
-function wave() { fig.classList.remove("wave"); void fig.offsetWidth; fig.classList.add("wave"); }
 
-// ---------- 소리로 읽어 주기 ----------
 function sayAloud(text) {
   if (!speak || !("speechSynthesis" in window)) return;
   try {
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, ""));
+    const u = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1FAFF}☀-➿⭐\u{1F7E5}]/gu, "").replace(/\+/g, " 더하기 "));
     u.lang = "ko-KR"; u.pitch = 1.6; u.rate = 1.05;
     u.onstart = () => talk(true);
     u.onend = u.onerror = () => talk(false);
@@ -325,134 +482,63 @@ function sayAloud(text) {
   } catch (e) {}
 }
 
-// ---------- Claude에게 묻기 (스트리밍) ----------
-class ApiError extends Error {
-  constructor(kind, status) { super(kind); this.kind = kind; this.status = status; }
+function renderChips() {
+  const box = $("chips");
+  box.textContent = "";
+  let list = CHIPS, answer = false;
+  if (game?.type === "quiz") {
+    const a = game.q.answer, opts = new Set([a]);
+    while (opts.size < 3) { const o = a + rand(-3, 3); if (o >= 0 && o <= 12) opts.add(o); }
+    list = [...opts].sort((x, y) => x - y).map(String).concat("그만할래");
+    answer = true;
+  } else if (game?.type === "find") {
+    list = ["해", "달", "코", "지구", "그만할래"];
+  }
+  list.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (answer && /^\d+$/.test(c) ? " answer" : "");
+    btn.textContent = c;
+    btn.disabled = busy;
+    btn.onclick = () => ask(c);
+    box.append(btn);
+  });
 }
 
-async function callClaude(messages, onText, signal) {
-  const m = model();
-  const opus = m === "claude-opus-5-5";
-  const headers = {
-    "content-type": "application/json",
-    "x-api-key": apiKey(),
-    "anthropic-version": "2023-06-01",
-    "anthropic-dangerous-direct-browser-access": "true",
-  };
-  const body = {
-    model: m,
-    max_tokens: 2000,
-    system: RULES,
-    output_config: { effort: "low" },
-    stream: true,
-    messages,
-  };
-  if (opus) {
-    // 안전 검사에 걸리면 Anthropic이 고른 다른 모델이 대신 대답해요
-    headers["anthropic-beta"] = "server-side-fallback-2026-07-01";
-    body.fallbacks = "default";
-  }
-  let res;
-  try {
-    res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body), signal });
-  } catch (e) {
-    if (e.name === "AbortError") throw e;
-    throw new ApiError("network");
-  }
-  if (!res.ok) {
-    let detail = "";
-    try { detail = (await res.json()).error?.message || ""; } catch (e) {}
-    if (res.status === 401 || res.status === 403) throw new ApiError("key", res.status);
-    if (/credit|billing|balance/i.test(detail)) throw new ApiError("credit", res.status);
-    if (res.status === 429) throw new ApiError("limit", res.status);
-    if (res.status >= 500) throw new ApiError("busy", res.status);
-    throw new ApiError("other", res.status);
-  }
-
-  // 서버가 보내는 이벤트(SSE)를 읽어서 대답 블록을 그대로 다시 만들어요
-  const blocks = [];
-  let stop = null, text = "";
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
-  const handle = (ev) => {
-    if (ev.type === "content_block_start") {
-      blocks[ev.index] = { ...ev.content_block };
-    } else if (ev.type === "content_block_delta") {
-      const b = blocks[ev.index], d = ev.delta;
-      if (!b) return;
-      if (d.type === "text_delta") {
-        b.text = (b.text || "") + d.text;
-        text = blocks.filter((x) => x && x.type === "text").map((x) => x.text).join("");
-        onText(text);
-      } else if (d.type === "thinking_delta") {
-        b.thinking = (b.thinking || "") + d.thinking;
-      } else if (d.type === "signature_delta") {
-        b.signature = (b.signature || "") + d.signature;
-      }
-    } else if (ev.type === "message_delta") {
-      stop = ev.delta?.stop_reason || stop;
-    } else if (ev.type === "error") {
-      throw new ApiError(ev.error?.type === "overloaded_error" ? "busy" : "other");
-    }
-  };
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let i;
-    while ((i = buf.indexOf("\n\n")) >= 0) {
-      const chunk = buf.slice(0, i);
-      buf = buf.slice(i + 2);
-      const data = chunk.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim()).join("");
-      if (data) handle(JSON.parse(data));
-    }
-  }
-  if (stop === "refusal") throw new ApiError("refused");
-  if (!text.trim()) throw new ApiError("empty");
-  return { text, blocks: blocks.filter(Boolean) };
-}
-
-const ERRORS = {
-  key: "API 키가 맞지 않아요. 부모님 설정(⚙︎)에서 키를 확인해 주세요.",
-  credit: "API 크레딧이 다 떨어졌어요. 부모님이 Claude Console에서 충전해 주세요.",
-  limit: "원이 잠깐 숨을 고르고 있어요. 조금 있다가 다시 말해 주세요.",
-  busy: "원이 지금 바빠요. 조금 있다가 다시 말해 주세요.",
-  network: "인터넷이 연결되어 있는지 확인해 주세요.",
-  refused: "원이 그 이야기는 대답하기 어렵대요. 다른 이야기를 해 볼까요?",
-};
+function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function ask(text) {
   text = text.trim();
-  if (!text || busy || !apiKey()) return;
+  if (!text || busy) return;
   msg.value = "";
   addBubble("me", text);
   view.push({ who: "me", text });
-  if (api.length >= MAX_API_MESSAGES) api = [];
-  const sent = [...api, { role: "user", content: text }];
-
-  const b = addBubble("one", "");
-  b.innerHTML = '<span class="dots"><span>●</span> <span>●</span> <span>●</span></span>';
   busy = true;
-  refreshControls();
-  ctl = new AbortController();
-  try {
-    const reply = await callClaude(sent, (t) => { b.textContent = t; talk(true); scrollDown(); }, ctl.signal);
-    api = [...sent, { role: "assistant", content: reply.blocks }];
-    view.push({ who: "one", text: reply.text });
-    if (/안녕|반가|하이|hello|hi/i.test(text)) wave();
+  send.disabled = true;
+  renderChips();
+  const lines = reply(text);
+  for (const line of lines) {
+    const b = addBubble("one", "");
+    b.innerHTML = '<span class="dots"><span>●</span> <span>●</span> <span>●</span></span>';
+    talk(true);
+    await wait(500 + Math.min(line.length * 12, 700));
+    b.textContent = line;
     talk(false);
-    sayAloud(reply.text);
-  } catch (e) {
-    talk(false);
-    b.parentElement.remove();
-    if (e.name !== "AbortError") addNote(ERRORS[e.kind] || "원이 대답을 못 했어요. 한 번 더 보내 주세요.");
-  } finally {
-    ctl = null;
-    busy = false;
-    save();
-    refreshControls();
+    view.push({ who: "one", text: line });
+    scrollDown();
   }
+  sayAloud(lines.join(" "));
+  busy = false;
+  send.disabled = false;
+  save();
+  renderChips();
+}
+
+function render() {
+  log.textContent = "";
+  addBubble("one", GREETING);
+  view.forEach((m) => addBubble(m.who, m.text));
+  renderChips();
 }
 
 // ---------- 말로 하기 (마이크) ----------
@@ -483,84 +569,13 @@ if (Recog) {
   };
 }
 
-// ---------- 부모님 설정 ----------
-function sheet(html) {
-  const s = document.createElement("div");
-  s.className = "sheet";
-  s.innerHTML = `<div role="dialog">${html}</div>`;
-  s.addEventListener("click", (e) => { if (e.target === s || e.target.closest("[data-close]")) s.remove(); });
-  document.body.append(s);
-  return s;
-}
-
-function openParentGate() {
-  const a = 12 + Math.floor(Math.random() * 8), c = 3 + Math.floor(Math.random() * 7);
-  const s = sheet(`<h2>부모님 확인</h2>
-    <p>설정은 부모님만 바꿀 수 있어요. 답을 적어 주세요.</p>
-    <form id="gateForm"><label for="gateAns">${a} × ${c} = ?</label>
-    <input id="gateAns" inputmode="numeric" autocomplete="off">
-    <p class="err" id="gateErr"></p>
-    <div class="actions"><button type="button" class="icon-btn" data-close>닫기</button><button class="big-btn" type="submit">확인</button></div></form>`);
-  const input = s.querySelector("#gateAns");
-  input.focus();
-  s.querySelector("#gateForm").onsubmit = (e) => {
-    e.preventDefault();
-    if (Number(input.value) === a * c) { s.remove(); openSettings(); }
-    else { s.querySelector("#gateErr").textContent = "답이 맞지 않아요."; input.value = ""; }
-  };
-}
-
-function openSettings() {
-  const opts = Object.entries(MODELS).map(([id, name]) => `<option value="${id}"${id === model() ? " selected" : ""}>${name}</option>`).join("");
-  const s = sheet(`<h2>부모님 설정</h2>
-    <p>원은 Anthropic의 Claude API로 대답해요. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude Console</a>에서 API 키를 만들어 붙여 넣어 주세요. 키는 이 기기 안에만 저장되고, Anthropic 말고는 어디에도 보내지 않아요.</p>
-    <form id="setForm">
-      <label for="keyIn">API 키</label>
-      <input id="keyIn" type="password" autocomplete="off" placeholder="sk-ant-..." value="">
-      <label for="modelIn">원의 머리</label>
-      <select id="modelIn">${opts}</select>
-      <p class="err" id="setErr"></p>
-      <div class="actions">
-        <button type="button" class="icon-btn" id="forget"${apiKey() ? "" : " hidden"}>키 지우기</button>
-        <button type="button" class="icon-btn" data-close>닫기</button>
-        <button class="big-btn" type="submit">저장</button>
-      </div>
-    </form>
-    <p>Console의 Limits 메뉴에서 한 달 사용 한도를 정해 두면 요금이 걱정 없어요.</p>`);
-  const keyIn = s.querySelector("#keyIn");
-  if (apiKey()) keyIn.placeholder = "저장된 키가 있어요 (바꿀 때만 입력)";
-  s.querySelector("#forget").onclick = () => { store.del(KEY_STORE); s.remove(); render(); };
-  s.querySelector("#setForm").onsubmit = (e) => {
-    e.preventDefault();
-    const k = keyIn.value.trim();
-    if (k && !k.startsWith("sk-ant-")) { s.querySelector("#setErr").textContent = "키는 sk-ant- 로 시작해요."; return; }
-    if (k) store.set(KEY_STORE, k);
-    store.set(MODEL_STORE, s.querySelector("#modelIn").value);
-    s.remove();
-    render();
-  };
-}
-
 // ---------- 버튼 연결 ----------
-const chips = $("chips");
-CHIPS.forEach((c) => {
-  const btn = document.createElement("button");
-  btn.type = "button"; btn.className = "chip"; btn.textContent = c;
-  btn.onclick = () => ask(c);
-  chips.append(btn);
-});
-
-$("form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  if (busy) { ctl?.abort(); return; }
-  ask(msg.value);
-});
+$("form").addEventListener("submit", (e) => { e.preventDefault(); ask(msg.value); });
 $("reset").onclick = () => {
-  ctl?.abort();
   try { speechSynthesis.cancel(); } catch (e) {}
-  view = []; api = []; save(); render(); wave();
+  if (busy) return;
+  view = []; game = null; save(); render(); act("wave");
 };
-$("gear").onclick = openParentGate;
 const voiceBtn = $("voice");
 if (!("speechSynthesis" in window)) voiceBtn.hidden = true;
 voiceBtn.onclick = () => {
@@ -569,14 +584,14 @@ voiceBtn.onclick = () => {
   voiceBtn.textContent = speak ? "🔊 소리" : "🔈 소리";
   if (!speak) { try { speechSynthesis.cancel(); } catch (e) {} talk(false); }
 };
-fig.onclick = wave;
+fig.onclick = () => act(Math.random() < .5 ? "wave" : "jump");
 
 try {
   const saved = JSON.parse(store.get(CHAT_STORE) || "null");
-  if (saved && Array.isArray(saved.view) && Array.isArray(saved.api)) { view = saved.view; api = saved.api; }
+  if (Array.isArray(saved)) view = saved.filter((m) => m && typeof m.text === "string");
 } catch (e) {}
 render();
-wave();
+act("wave");
 
 // ---------- 홈 화면에 설치하기 ----------
 // 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
@@ -590,11 +605,15 @@ wave();
   addEventListener("appinstalled", () => { ev = null; upd(); });
   btn.addEventListener("click", async () => {
     if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
-    sheet(`<h2>아이패드·아이폰에 설치하기</h2>
+    const s = document.createElement("div");
+    s.className = "sheet";
+    s.innerHTML = `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
       <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
       <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
       <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
-      <div class="actions"><button class="big-btn" data-close>알겠어요</button></div>`);
+      <div class="actions"><button class="big-btn">알겠어요</button></div></div>`;
+    s.addEventListener("click", (e) => { if (e.target === s || e.target.closest("button")) s.remove(); });
+    document.body.append(s);
   });
   upd();
 })();
