@@ -252,21 +252,30 @@ const sfx = {
   safe: () => { tone(784, 0.1, "triangle", 0.15); tone(1047, 0.18, "triangle", 0.15, 0.1); },
   win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, "triangle", 0.2, i * 0.14)),
 };
+const canSpeak = "speechSynthesis" in window;
 let koVoice = null;
 function pickVoice() {
   const vs = speechSynthesis.getVoices();
   koVoice = vs.find((v) => /^ko/i.test(v.lang)) || null;
 }
-if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.addEventListener?.("voiceschanged", pickVoice); }
+if (canSpeak) { pickVoice(); speechSynthesis.addEventListener?.("voiceschanged", pickVoice); }
+// 휴대폰·태블릿은 목소리 목록이 비어 있거나 늦게 와요. 그럴 땐 목소리를 고르지 않고
+// lang만 정해서 기기의 기본 한국어 목소리로 말해요.
+// 돌려주는 값의 started/failed로 실제로 말을 시작했는지 알 수 있어요(못 하면 효과음으로 대신해요).
 function say(text, rate = 1, onend) {
-  if (!cfg.voice || !koVoice) return false;
-  speechSynthesis.cancel();
+  if (!cfg.voice || !canSpeak) return null;
+  if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ko-KR"; u.voice = koVoice; u.rate = rate; u.pitch = 1.15;
+  u.lang = "ko-KR"; if (koVoice) u.voice = koVoice; u.rate = rate; u.pitch = 1.15;
+  const state = { started: false, failed: false, at: performance.now() };
+  u.onstart = () => { state.started = true; };
+  u.onerror = () => { state.failed = true; };
   if (onend) u.onend = onend;
+  say.current = u; // 말하는 도중에 사라지면 끝 알림이 안 와서 잡아 둬요(안드로이드 크롬).
   speechSynthesis.speak(u);
-  return true;
+  return state;
 }
+const silent = (v) => !v || v.failed || (!v.started && performance.now() - v.at > 600);
 
 // ---------- 화면 ----------
 const video = $("video"), canvas = $("canvas"), ctx = canvas.getContext("2d");
@@ -524,16 +533,17 @@ function startGreen() {
   const rate = [0.75, 0.9, 1.0, 1.2, 1.45, 1.7][Math.floor(Math.random() * 6)];
   const dur = 2600 / rate; // 대략 걸리는 시간(ms)
   const step = dur / SYL;
-  const spoken = say(PHRASE, rate, () => { if (phase === "green") toRed(); });
-  for (let i = 1; i <= SYL; i++) later(() => { if (phase !== "green") return; lightPhrase(i); if (!spoken) sfx.syl(i); }, step * i - step / 2);
-  // 목소리가 없거나 끝 알림이 안 오면 시간으로 넘어가요.
-  later(() => { if (phase === "green") toRed(); }, spoken ? dur + 1800 : dur);
+  const voice = say(PHRASE, rate, () => { if (phase === "green") toRed(); });
+  for (let i = 1; i <= SYL; i++) later(() => { if (phase !== "green") return; lightPhrase(i); if (silent(voice)) sfx.syl(i); }, step * i - step / 2);
+  // 목소리가 안 나오면 시간이 되자마자, 나오는데 끝 알림이 안 오면 조금 더 기다렸다가 넘어가요.
+  later(() => { if (phase === "green" && silent(voice)) toRed(); }, dur);
+  later(() => { if (phase === "green") toRed(); }, dur + 1800);
 }
 function toRed() {
   if (phase !== "green") return;
   clearTimers(); lightPhrase(SYL);
   setPhase("red"); setPill("얼음!", "red");
-  speechSynthesis?.cancel?.();
+  if (canSpeak) speechSynthesis.cancel();
   sfx.freeze();
   showMsg("얼음!", "꼼짝 마!");
   hint.textContent = "술래가 보고 있어요. 움직이면 걸려요!";
@@ -558,7 +568,7 @@ function endRed() {
   later(startGreen, 1100);
 }
 function win(p) {
-  clearTimers(); setPhase("win"); setPill("도착!", "green"); speechSynthesis?.cancel?.();
+  clearTimers(); setPhase("win"); setPill("도착!", "green"); if (canSpeak) speechSynthesis.cancel();
   sfx.win();
   const title = players.length === 2 ? `${p.emoji} ${p.name} 도착!` : `${p.emoji} 도착!`;
   showMsg(`${title} 🎉`, "술래를 \"땡!\" 쳐 주세요!", [["한 판 더", replay], ["설정", quit, true]]);
@@ -573,7 +583,12 @@ async function start() {
   saveSettings(cfg);
   cfg.limit = LEVELS[cfg.level]; cfg.speed = DISTS[cfg.dist]; cfg.voice = cfg.voice === "on";
   ac(); // 소리는 버튼을 누를 때 켜야 해요(아이폰·아이패드).
-  if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.speak(new SpeechSynthesisUtterance("")); }
+  // 아이폰·아이패드는 버튼을 누를 때 한 번 말해 둬야 나중에도 말할 수 있어요(소리 없이 "준비").
+  if (canSpeak) {
+    pickVoice();
+    const u = new SpeechSynthesisUtterance("준비"); u.lang = "ko-KR"; u.volume = 0;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }
   const btn = $("startBtn"); btn.disabled = true; btn.textContent = "준비 중…";
   try {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("nocam");
@@ -596,7 +611,7 @@ async function start() {
   startCheck();
 }
 function quit() {
-  running = false; clearTimers(); setPhase("off"); speechSynthesis?.cancel?.();
+  running = false; clearTimers(); setPhase("off"); if (canSpeak) speechSynthesis.cancel();
   stopCamera(); wakeLock?.release?.().catch(() => {}); wakeLock = null;
   document.body.className = "";
   $("game").hidden = true; $("setup").hidden = false;
