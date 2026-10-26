@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>원이랑 수다</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffe3cf">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="원이랑 수다">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+:root {
+  --bg: #fff7ef;
+  --stage: #ffe3cf;
+  --one: #e8302a;
+  --ink: #2a1a17;
+  --muted: #8a6a62;
+  --bubble-me: #2f6fd6;
+  --bubble-me-ink: #ffffff;
+  --bubble-one: #ffffff;
+  --line: #f1d6c6;
+  --shade: rgba(40, 20, 15, .5);
+  --font-display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1514; --stage: #2c1d1b; --ink: #fbeee9; --muted: #c4a59c;
+    --bubble-me: #4a86ea; --bubble-one: #33241f; --line: #4a3330; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.wrap {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  width: 100%; max-width: 720px; margin: 0 auto;
+}
+header { background: var(--stage); border-bottom: 3px solid var(--line); flex: none; }
+header .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; }
+.one-fig { width: 104px; flex: none; cursor: pointer; color: var(--ink); }
+.one-fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+.who { min-width: 0; flex: 1; }
+.who h1 { font-family: var(--font-display); font-weight: 400; font-size: 30px; margin: 0; color: var(--one); line-height: 1.1; }
+.who p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+.tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: none; max-width: 190px; }
+.icon-btn {
+  font: inherit; font-size: 14px; border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.icon-btn[aria-pressed="true"] { border-color: var(--one); color: var(--one); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--bubble-me); outline-offset: 2px; }
+
+main { flex: 1; overflow-y: auto; min-height: 0; }
+main .wrap { display: flex; flex-direction: column; gap: 12px; padding-block: 16px; }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row.me { justify-content: flex-end; }
+.avatar { width: 34px; height: 34px; flex: none; }
+.bubble {
+  max-width: 78%; padding: 10px 14px; border-radius: 20px; line-height: 1.55;
+  white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; min-width: 0;
+}
+.row.one .bubble { background: var(--bubble-one); border: 2px solid var(--line); border-bottom-left-radius: 6px; }
+.row.me .bubble { background: var(--bubble-me); color: var(--bubble-me-ink); border-bottom-right-radius: 6px; }
+.dots { color: var(--muted); }
+.dots span { display: inline-block; animation: hop 1s infinite; }
+.dots span:nth-child(2) { animation-delay: .15s; } .dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes hop { 0%,60%,100% { transform: none } 30% { transform: translateY(-4px) } }
+.note { align-self: center; text-align: center; color: var(--muted); font-size: 14px; max-width: 34em; margin: 0; }
+.setup-card {
+  align-self: center; text-align: center; background: var(--bubble-one); border: 2px dashed var(--line);
+  border-radius: 18px; padding: 18px; max-width: 30em;
+}
+.setup-card p { margin: 0 0 12px; line-height: 1.6; word-break: keep-all; }
+
+footer { flex: none; border-top: 2px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom, 0px); }
+footer .wrap { padding-block: 10px; display: flex; flex-direction: column; gap: 8px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.chip {
+  flex: none; font: inherit; font-size: 15px; background: var(--stage); color: var(--ink);
+  border: 2px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+form#form { display: flex; gap: 8px; }
+#msg {
+  flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 16px; border-radius: 999px;
+  border: 2px solid var(--line); background: var(--bubble-one); color: var(--ink);
+}
+#mic {
+  flex: none; width: 48px; border-radius: 999px; border: 2px solid var(--line); background: var(--bubble-one);
+  font-size: 22px; cursor: pointer; color: var(--ink);
+}
+#mic.on { border-color: var(--one); background: var(--stage); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { transform: scale(1.08) } }
+.big-btn, #send {
+  font-family: var(--font-display); font-size: 18px; border: none; border-radius: 999px; padding: 10px 20px;
+  background: var(--one); color: #fff; cursor: pointer;
+}
+#send:disabled, .chip:disabled, #mic:disabled { opacity: .5; cursor: default; }
+
+/* 부모님 설정 */
+.sheet { position: fixed; inset: 0; background: var(--shade); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.sheet > div {
+  background: var(--bg); color: var(--ink); border-radius: 18px; padding: 22px; width: 100%; max-width: 440px;
+  max-height: calc(100% - 32px); overflow-y: auto;
+}
+.sheet h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0 0 10px; }
+.sheet p, .sheet li { line-height: 1.6; font-size: 15px; }
+.sheet label { display: block; font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
+.sheet input, .sheet select {
+  width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px;
+  border: 2px solid var(--line); background: var(--bubble-one); color: var(--ink);
+}
+.sheet .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+.sheet .err { color: var(--one); font-size: 14px; min-height: 1.2em; margin: 6px 0 0; }
+.sheet a { color: var(--bubble-me); }
+
+/* 원 움직임 */
+.one-body { transform-origin: 50% 100%; animation: bob 2.4s ease-in-out infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+.lid { transform-origin: 50px 52px; animation: blink 4.5s infinite; }
+@keyframes blink { 0%,94%,100% { transform: scaleY(0) } 96% { transform: scaleY(1) } }
+.mouth-open { opacity: 0; }
+.talking .mouth-open { animation: talk .28s infinite alternate; }
+.talking .mouth-shut { animation: talk .28s infinite alternate-reverse; }
+@keyframes talk { from { opacity: 0 } to { opacity: 1 } }
+.arm-r { transform-origin: 86px 64px; }
+.wave .arm-r { animation: wave .5s ease-in-out 3 alternate; }
+@keyframes wave { from { transform: rotate(0) } to { transform: rotate(-55deg) } }
+@media (prefers-reduced-motion: reduce) {
+  .one-body, .lid, .dots span, .wave .arm-r, #mic.on { animation: none; }
+}
+@media (max-width: 460px) {
+  .one-fig { width: 76px; }
+  .who h1 { font-size: 24px; }
+  .who p { display: none; }
+  .tools { max-width: 120px; }
+}
+</style>
+</head>
+<body>
+
+<template id="one-svg">
+  <svg viewBox="0 0 100 130" aria-hidden="true">
+    <text x="50" y="16" text-anchor="middle" font-family="Jua, sans-serif" font-size="20" fill="currentColor">1</text>
+    <g class="one-body">
+      <path d="M38 96 q-3 18 0 24 q4 4 7 0 q2 -8 -1 -24z" fill="#9d1d19"/>
+      <path d="M56 96 q-3 16 1 24 q4 4 7 0 q2 -8 -2 -24z" fill="#9d1d19"/>
+      <path d="M14 62 q-10 14 -8 26 q3 5 8 2 q4 -12 4 -26z" fill="#b2231e"/>
+      <g class="arm-r"><path d="M86 62 q10 14 8 26 q-3 5 -8 2 q-4 -12 -4 -26z" fill="#b2231e"/></g>
+      <rect x="14" y="26" width="72" height="72" rx="6" fill="#e8302a"/>
+      <rect x="14" y="26" width="72" height="8" rx="4" fill="#f2544e" opacity=".6"/>
+      <circle cx="50" cy="52" r="17" fill="#a3201c"/>
+      <circle cx="50" cy="52" r="13" fill="#fff"/>
+      <circle cx="50" cy="53" r="8" fill="#111"/>
+      <circle cx="53" cy="49" r="2.4" fill="#fff"/>
+      <ellipse class="lid" cx="50" cy="52" rx="14" ry="14" fill="#e8302a"/>
+      <path class="mouth-shut" d="M38 74 q12 12 24 0 q-12 5 -24 0z" fill="#7a1512"/>
+      <g class="mouth-open">
+        <path d="M37 72 q13 20 26 0 q-13 4 -26 0z" fill="#5a0d0b"/>
+        <path d="M41 74 q9 3 18 0 v3 q-9 3 -18 0z" fill="#fff"/>
+      </g>
+    </g>
+  </svg>
+</template>
+
+<header>
+  <div class="wrap">
+    <div class="one-fig" id="fig" title="원을 누르면 손을 흔들어요"></div>
+    <div class="who">
+      <h1>원 (One)</h1>
+      <p>나는 1이야! 하나뿐인 블록이지. 무엇이든 물어봐!</p>
+    </div>
+    <div class="tools">
+      <button class="icon-btn" id="voice" type="button" aria-pressed="false">🔈 소리</button>
+      <button class="icon-btn" id="reset" type="button">↺ 처음</button>
+      <button class="icon-btn" id="gear" type="button" aria-label="부모님 설정">⚙︎</button>
+      <button class="icon-btn" id="installBtn" type="button" hidden>📲 설치</button>
+    </div>
+  </div>
+</header>
+
+<main id="scroller">
+  <div class="wrap" id="log" aria-live="polite"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="chips" id="chips"></div>
+    <form id="form" autocomplete="off">
+      <button id="mic" type="button" aria-label="말로 하기" hidden>🎤</button>
+      <input id="msg" maxlength="300" placeholder="원에게 말을 걸어 보세요" aria-label="원에게 보낼 말">
+      <button id="send" type="submit">보내기</button>
+    </form>
+  </div>
+</footer>
+
+<script>
+// ---------- 원의 설정 ----------
+const RULES = `너는 영국 어린이 애니메이션 「넘버블럭스(Numberblocks)」의 캐릭터 "원(One)"이야. 지금 한국 어린이(6~9살)와 채팅하고 있어. 아이는 앱을 켜자마자 너의 인사("${"안녕! 나는 원이야! ☝️ 하나, 하나, 나는 하나! 오늘은 무슨 이야기 할까?"}")를 이미 봤어.
+
+원의 성격과 설정:
+- 빨간 정사각형 블록 1개로 된 숫자 1. 눈이 하나, 팔 두 개, 다리 두 개.
+- 밝고 씩씩하고 호기심 많음. "하나"인 게 자랑스러움: 해 하나, 코 하나, 달 하나처럼 하나인 것들을 좋아함.
+- 친구들: 투(2, 주황, 음악과 짝을 좋아함), 쓰리(3, 노랑, 장난꾸러기 광대), 포(4, 초록, 네모 반듯), 파이브(5, 하늘색, 손가락 다섯 개, 별 모양 좋아함) 등 넘버블럭스 친구들.
+- 원과 원이 만나면 합쳐서 투가 돼! 같은 숫자 놀이를 좋아함.
+
+대화 규칙:
+- 반말로, 친구처럼 다정하게. 한두 문장, 길어도 세 문장. 쉬운 낱말만. 마크다운 기호(별표, 샵, 목록 기호)는 쓰지 마.
+- 가끔 "하나!", "나는 원이야!" 같은 말버릇을 섞어. 이모지는 한 번에 하나까지.
+- 수학 질문이 나오면 블록을 세거나 합치는 그림을 말로 그려서 쉽게 설명하고, 정답을 바로 주기보다 아이가 생각해 보게 한 번 물어봐도 좋아.
+- 아이의 이름, 사는 곳, 학교, 전화번호 같은 개인 정보는 묻지 마. 아이가 말해도 기억하거나 되풀이하지 마.
+- 무섭거나 어른용 이야기, 위험한 행동에는 끼지 말고 상냥하게 다른 놀이 이야기로 바꿔. 아이가 많이 슬프거나 힘들다고 하면 공감해 주고 엄마 아빠나 선생님께 꼭 말해 보라고 해.
+- 너는 AI가 연기하는 원이야. 아이가 진지하게 "너 진짜야?"라고 물으면 "나는 원 흉내를 내는 컴퓨터 친구야" 하고 솔직하게 알려 줘.
+- 대답만 써. 이름표나 따옴표 없이.`;
+
+const GREETING = "안녕! 나는 원이야! ☝️ 하나, 하나, 나는 하나! 오늘은 무슨 이야기 할까?";
+const CHIPS = ["안녕 원!", "1 더하기 1은 뭐야?", "제일 좋아하는 게 뭐야?", "친구들 소개해 줘", "하나인 것 찾기 놀이 하자"];
+const MODELS = {
+  "claude-opus-5-5": "똑똑하게 (Claude Opus 5.5)",
+  "claude-haiku-5-5": "빠르고 저렴하게 (Claude Haiku 5.5)",
+};
+const MAX_API_MESSAGES = 60;   // 이보다 길어지면 새 대화로 시작해요(오래된 이야기는 화면에만 남아요)
+const KEY_STORE = "one-chat-key", MODEL_STORE = "one-chat-model", CHAT_STORE = "one-chat-history";
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+
+const $ = (id) => document.getElementById(id);
+const log = $("log"), scroller = $("scroller"), msg = $("msg"), send = $("send"), fig = $("fig"), mic = $("mic");
+fig.append($("one-svg").content.cloneNode(true));
+
+// view: 화면에 보이는 말풍선 [{who, text}], api: Claude에게 보내는 대화(원의 생각 블록까지 그대로 다시 보내야 해요)
+let view = [], api = [];
+let busy = false, ctl = null, speak = false;
+
+function apiKey() { return store.get(KEY_STORE) || ""; }
+function model() { const m = store.get(MODEL_STORE); return MODELS[m] ? m : "claude-opus-5-5"; }
+
+function save() { store.set(CHAT_STORE, JSON.stringify({ view: view.slice(-200), api })); }
+
+function scrollDown() { scroller.scrollTop = scroller.scrollHeight; }
+
+function miniOne() {
+  const s = document.createElement("div");
+  s.className = "avatar";
+  s.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="4" width="32" height="32" rx="4" fill="#e8302a"/><circle cx="20" cy="17" r="8" fill="#a3201c"/><circle cx="20" cy="17" r="6" fill="#fff"/><circle cx="20" cy="17.5" r="3.6" fill="#111"/><path d="M14 27 q6 6 12 0 q-6 2 -12 0z" fill="#7a1512"/></svg>`;
+  return s;
+}
+
+function addBubble(who, text) {
+  const row = document.createElement("div");
+  row.className = "row " + who;
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  if (who === "one") row.append(miniOne());
+  row.append(b);
+  log.append(row);
+  scrollDown();
+  return b;
+}
+
+function addNote(text) {
+  const n = document.createElement("p");
+  n.className = "note";
+  n.textContent = text;
+  log.append(n);
+  scrollDown();
+}
+
+function showSetupCard() {
+  const c = document.createElement("div");
+  c.className = "setup-card";
+  c.innerHTML = `<p>원이 말을 하려면 부모님이 먼저 준비해 주셔야 해요.</p><button class="big-btn" type="button">부모님 설정 열기</button>`;
+  c.querySelector("button").onclick = openParentGate;
+  log.append(c);
+  scrollDown();
+}
+
+function render() {
+  log.textContent = "";
+  addBubble("one", GREETING);
+  view.forEach((m) => addBubble(m.who, m.text));
+  if (!apiKey()) showSetupCard();
+  refreshControls();
+}
+
+function refreshControls() {
+  const ok = !!apiKey();
+  msg.disabled = !ok;
+  msg.placeholder = ok ? "원에게 말을 걸어 보세요" : "부모님 설정이 필요해요";
+  send.textContent = busy ? "멈춤" : "보내기";
+  send.disabled = !ok;
+  mic.disabled = !ok || busy;
+  document.querySelectorAll(".chip").forEach((c) => (c.disabled = !ok || busy));
+}
+
+function talk(on) { fig.classList.toggle("talking", on); }
+function wave() { fig.classList.remove("wave"); void fig.offsetWidth; fig.classList.add("wave"); }
+
+// ---------- 소리로 읽어 주기 ----------
+function sayAloud(text) {
+  if (!speak || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, ""));
+    u.lang = "ko-KR"; u.pitch = 1.6; u.rate = 1.05;
+    u.onstart = () => talk(true);
+    u.onend = u.onerror = () => talk(false);
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+// ---------- Claude에게 묻기 (스트리밍) ----------
+class ApiError extends Error {
+  constructor(kind, status) { super(kind); this.kind = kind; this.status = status; }
+}
+
+async function callClaude(messages, onText, signal) {
+  const m = model();
+  const opus = m === "claude-opus-5-5";
+  const headers = {
+    "content-type": "application/json",
+    "x-api-key": apiKey(),
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true",
+  };
+  const body = {
+    model: m,
+    max_tokens: 2000,
+    system: RULES,
+    output_config: { effort: "low" },
+    stream: true,
+    messages,
+  };
+  if (opus) {
+    // 안전 검사에 걸리면 Anthropic이 고른 다른 모델이 대신 대답해요
+    headers["anthropic-beta"] = "server-side-fallback-2026-07-01";
+    body.fallbacks = "default";
+  }
+  let res;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body), signal });
+  } catch (e) {
+    if (e.name === "AbortError") throw e;
+    throw new ApiError("network");
+  }
+  if (!res.ok) {
+    let detail = "";
+    try { detail = (await res.json()).error?.message || ""; } catch (e) {}
+    if (res.status === 401 || res.status === 403) throw new ApiError("key", res.status);
+    if (/credit|billing|balance/i.test(detail)) throw new ApiError("credit", res.status);
+    if (res.status === 429) throw new ApiError("limit", res.status);
+    if (res.status >= 500) throw new ApiError("busy", res.status);
+    throw new ApiError("other", res.status);
+  }
+
+  // 서버가 보내는 이벤트(SSE)를 읽어서 대답 블록을 그대로 다시 만들어요
+  const blocks = [];
+  let stop = null, text = "";
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  const handle = (ev) => {
+    if (ev.type === "content_block_start") {
+      blocks[ev.index] = { ...ev.content_block };
+    } else if (ev.type === "content_block_delta") {
+      const b = blocks[ev.index], d = ev.delta;
+      if (!b) return;
+      if (d.type === "text_delta") {
+        b.text = (b.text || "") + d.text;
+        text = blocks.filter((x) => x && x.type === "text").map((x) => x.text).join("");
+        onText(text);
+      } else if (d.type === "thinking_delta") {
+        b.thinking = (b.thinking || "") + d.thinking;
+      } else if (d.type === "signature_delta") {
+        b.signature = (b.signature || "") + d.signature;
+      }
+    } else if (ev.type === "message_delta") {
+      stop = ev.delta?.stop_reason || stop;
+    } else if (ev.type === "error") {
+      throw new ApiError(ev.error?.type === "overloaded_error" ? "busy" : "other");
+    }
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n\n")) >= 0) {
+      const chunk = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      const data = chunk.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim()).join("");
+      if (data) handle(JSON.parse(data));
+    }
+  }
+  if (stop === "refusal") throw new ApiError("refused");
+  if (!text.trim()) throw new ApiError("empty");
+  return { text, blocks: blocks.filter(Boolean) };
+}
+
+const ERRORS = {
+  key: "API 키가 맞지 않아요. 부모님 설정(⚙︎)에서 키를 확인해 주세요.",
+  credit: "API 크레딧이 다 떨어졌어요. 부모님이 Claude Console에서 충전해 주세요.",
+  limit: "원이 잠깐 숨을 고르고 있어요. 조금 있다가 다시 말해 주세요.",
+  busy: "원이 지금 바빠요. 조금 있다가 다시 말해 주세요.",
+  network: "인터넷이 연결되어 있는지 확인해 주세요.",
+  refused: "원이 그 이야기는 대답하기 어렵대요. 다른 이야기를 해 볼까요?",
+};
+
+async function ask(text) {
+  text = text.trim();
+  if (!text || busy || !apiKey()) return;
+  msg.value = "";
+  addBubble("me", text);
+  view.push({ who: "me", text });
+  if (api.length >= MAX_API_MESSAGES) api = [];
+  const sent = [...api, { role: "user", content: text }];
+
+  const b = addBubble("one", "");
+  b.innerHTML = '<span class="dots"><span>●</span> <span>●</span> <span>●</span></span>';
+  busy = true;
+  refreshControls();
+  ctl = new AbortController();
+  try {
+    const reply = await callClaude(sent, (t) => { b.textContent = t; talk(true); scrollDown(); }, ctl.signal);
+    api = [...sent, { role: "assistant", content: reply.blocks }];
+    view.push({ who: "one", text: reply.text });
+    if (/안녕|반가|하이|hello|hi/i.test(text)) wave();
+    talk(false);
+    sayAloud(reply.text);
+  } catch (e) {
+    talk(false);
+    b.parentElement.remove();
+    if (e.name !== "AbortError") addNote(ERRORS[e.kind] || "원이 대답을 못 했어요. 한 번 더 보내 주세요.");
+  } finally {
+    ctl = null;
+    busy = false;
+    save();
+    refreshControls();
+  }
+}
+
+// ---------- 말로 하기 (마이크) ----------
+const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null;
+if (Recog) {
+  mic.hidden = false;
+  mic.onclick = () => {
+    if (recog) { recog.stop(); return; }
+    try { speechSynthesis.cancel(); } catch (e) {}
+    recog = new Recog();
+    recog.lang = "ko-KR";
+    recog.interimResults = true;
+    let finalText = "";
+    recog.onresult = (e) => {
+      const r = Array.from(e.results).map((x) => x[0].transcript).join("");
+      msg.value = r;
+      if (e.results[e.results.length - 1].isFinal) finalText = r;
+    };
+    recog.onend = () => {
+      mic.classList.remove("on");
+      recog = null;
+      if (finalText.trim()) ask(finalText);
+    };
+    recog.onerror = () => {};
+    mic.classList.add("on");
+    try { recog.start(); } catch (e) { mic.classList.remove("on"); recog = null; }
+  };
+}
+
+// ---------- 부모님 설정 ----------
+function sheet(html) {
+  const s = document.createElement("div");
+  s.className = "sheet";
+  s.innerHTML = `<div role="dialog">${html}</div>`;
+  s.addEventListener("click", (e) => { if (e.target === s || e.target.closest("[data-close]")) s.remove(); });
+  document.body.append(s);
+  return s;
+}
+
+function openParentGate() {
+  const a = 12 + Math.floor(Math.random() * 8), c = 3 + Math.floor(Math.random() * 7);
+  const s = sheet(`<h2>부모님 확인</h2>
+    <p>설정은 부모님만 바꿀 수 있어요. 답을 적어 주세요.</p>
+    <form id="gateForm"><label for="gateAns">${a} × ${c} = ?</label>
+    <input id="gateAns" inputmode="numeric" autocomplete="off">
+    <p class="err" id="gateErr"></p>
+    <div class="actions"><button type="button" class="icon-btn" data-close>닫기</button><button class="big-btn" type="submit">확인</button></div></form>`);
+  const input = s.querySelector("#gateAns");
+  input.focus();
+  s.querySelector("#gateForm").onsubmit = (e) => {
+    e.preventDefault();
+    if (Number(input.value) === a * c) { s.remove(); openSettings(); }
+    else { s.querySelector("#gateErr").textContent = "답이 맞지 않아요."; input.value = ""; }
+  };
+}
+
+function openSettings() {
+  const opts = Object.entries(MODELS).map(([id, name]) => `<option value="${id}"${id === model() ? " selected" : ""}>${name}</option>`).join("");
+  const s = sheet(`<h2>부모님 설정</h2>
+    <p>원은 Anthropic의 Claude API로 대답해요. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude Console</a>에서 API 키를 만들어 붙여 넣어 주세요. 키는 이 기기 안에만 저장되고, Anthropic 말고는 어디에도 보내지 않아요.</p>
+    <form id="setForm">
+      <label for="keyIn">API 키</label>
+      <input id="keyIn" type="password" autocomplete="off" placeholder="sk-ant-..." value="">
+      <label for="modelIn">원의 머리</label>
+      <select id="modelIn">${opts}</select>
+      <p class="err" id="setErr"></p>
+      <div class="actions">
+        <button type="button" class="icon-btn" id="forget"${apiKey() ? "" : " hidden"}>키 지우기</button>
+        <button type="button" class="icon-btn" data-close>닫기</button>
+        <button class="big-btn" type="submit">저장</button>
+      </div>
+    </form>
+    <p>Console의 Limits 메뉴에서 한 달 사용 한도를 정해 두면 요금이 걱정 없어요.</p>`);
+  const keyIn = s.querySelector("#keyIn");
+  if (apiKey()) keyIn.placeholder = "저장된 키가 있어요 (바꿀 때만 입력)";
+  s.querySelector("#forget").onclick = () => { store.del(KEY_STORE); s.remove(); render(); };
+  s.querySelector("#setForm").onsubmit = (e) => {
+    e.preventDefault();
+    const k = keyIn.value.trim();
+    if (k && !k.startsWith("sk-ant-")) { s.querySelector("#setErr").textContent = "키는 sk-ant- 로 시작해요."; return; }
+    if (k) store.set(KEY_STORE, k);
+    store.set(MODEL_STORE, s.querySelector("#modelIn").value);
+    s.remove();
+    render();
+  };
+}
+
+// ---------- 버튼 연결 ----------
+const chips = $("chips");
+CHIPS.forEach((c) => {
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "chip"; btn.textContent = c;
+  btn.onclick = () => ask(c);
+  chips.append(btn);
+});
+
+$("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (busy) { ctl?.abort(); return; }
+  ask(msg.value);
+});
+$("reset").onclick = () => {
+  ctl?.abort();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  view = []; api = []; save(); render(); wave();
+};
+$("gear").onclick = openParentGate;
+const voiceBtn = $("voice");
+if (!("speechSynthesis" in window)) voiceBtn.hidden = true;
+voiceBtn.onclick = () => {
+  speak = !speak;
+  voiceBtn.setAttribute("aria-pressed", String(speak));
+  voiceBtn.textContent = speak ? "🔊 소리" : "🔈 소리";
+  if (!speak) { try { speechSynthesis.cancel(); } catch (e) {} talk(false); }
+};
+fig.onclick = wave;
+
+try {
+  const saved = JSON.parse(store.get(CHAT_STORE) || "null");
+  if (saved && Array.isArray(saved.view) && Array.isArray(saved.api)) { view = saved.view; api = saved.api; }
+} catch (e) {}
+render();
+wave();
+
+// ---------- 홈 화면에 설치하기 ----------
+// 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+// 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+(() => {
+  const btn = $("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    sheet(`<h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <div class="actions"><button class="big-btn" data-close>알겠어요</button></div>`);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

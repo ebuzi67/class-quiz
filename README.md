@@ -46,3 +46,12 @@
 - `tools/pe/build.py`: `lib/`을 다시 받고 앱마다 아이콘을 만들어요.
 - `mugunghwa/`: 예전 무궁화 꽃 주소예요. 열면 새 주소(`pe/mugunghwa/`)로 넘어가요.
 - `체육시간/`: 잠깐 쓰던 한글 주소예요. 열면 `pe/` 아래 같은 곳으로 넘어가요.
+
+## 원이랑 수다 (따로 분리된 앱)
+
+넘버블럭스 원(One)과 이야기하는 아이용 채팅 앱이에요. 대답은 Anthropic의 Claude API가 그때그때 만들어요. 첫 화면(`index.html`)에는 나오지 않고, `…/class-quiz/one-chat/` 주소로 열어서 "원이랑 수다" 앱으로 설치해요.
+
+- 처음 한 번, ⚙︎(부모님 설정, 곱셈 문제로 잠김)에서 [Claude Console](https://console.anthropic.com/settings/keys)의 API 키를 넣어요. 키는 그 기기의 브라우저 안에만 저장되고 저장소에는 없어요.
+- 원의 머리: Claude Opus 5.5(기본) 또는 Claude Haiku 5.5(더 빠르고 저렴). 요금은 키 주인의 Anthropic 계정에서 나가요. Console에서 월 사용 한도를 정해 두세요.
+- 🎤 말로 하기(지원하는 브라우저만), 🔊 대답 소리로 읽기, ↺ 처음부터. 대화는 기기에 남아서 앱을 다시 열어도 이어져요.
+- `tools/one-chat/make_icons.py`: `tools/one-chat/one.jpg`(원 그림)로 `one-chat/icons/` 아이콘을 만들어요.
