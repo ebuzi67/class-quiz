@@ -46,6 +46,9 @@ button.small{padding:8px 14px;font-size:.9rem}
 .seg input:checked+span{border-color:var(--pink);background:var(--pink-soft);color:var(--pink)}
 .seg input:focus-visible+span{outline:3px solid #f7a1c0}
 .card small{display:block;color:var(--muted);margin-top:8px;line-height:1.5}
+.card.inapp{background:#FFF4D6;border-color:#F2C14E;line-height:1.6}
+.card.inapp h2{color:#8a5a00}
+.card.inapp p{margin:0 0 10px}
 .how{line-height:1.7;margin:0;padding-left:1.3em}
 .start-row{display:flex;gap:10px;justify-content:center;margin:18px 0 8px;flex-wrap:wrap}
 .start-row button{font-size:1.25rem;padding:14px 34px}
@@ -104,6 +107,13 @@ body.green .msg .big{color:#34C27E;-webkit-text-stroke:8px #fff;paint-order:stro
     <a class="back" href="../">← 체육시간</a>
     <h1>🌸 무궁화 꽃이 피었습니다</h1>
     <p class="sub">카메라가 술래예요. 술래가 볼 때 움직이면 걸려요!</p>
+
+    <div class="card inapp" id="inapp" hidden>
+      <h2>🔇 여기서는 술래 목소리가 안 나와요</h2>
+      <p><b id="inappName">메신저</b> 안에서 열면 목소리 기능이 막혀 있어요.
+        <span id="inappHow">화면 메뉴(⋮ 또는 ⋯)에서 <b>"다른 브라우저로 열기"</b>를 눌러 크롬이나 사파리로 열어 주세요.</span></p>
+      <button class="small" id="inappBtn" hidden>크롬·사파리로 열기</button>
+    </div>
 
     <div class="card">
       <h2>몇 명이 하나요?</h2>
@@ -227,6 +237,24 @@ function saveSettings(cfg) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(cfg)); } catch (_) {}
 }
 loadSettings();
+
+// ---------- 메신저 안 브라우저 안내 ----------
+// 카카오톡 등 앱 안에서 링크를 열면 목소리(음성 합성)가 막혀 있어서, 다른 브라우저로 열도록 알려 줘요.
+(() => {
+  const ua = navigator.userAgent;
+  const apps = [[/KAKAOTALK/i, "카카오톡"], [/NAVER\(inapp/i, "네이버 앱"], [/Instagram/i, "인스타그램"],
+    [/FBAN|FBAV/i, "페이스북"], [/Line\//i, "라인"], [/Barcelona/i, "스레드"], [/DaumApps/i, "다음 앱"]];
+  const hit = apps.find(([re]) => re.test(ua));
+  if (!hit) return;
+  $("inapp").hidden = false;
+  $("inappName").textContent = hit[1];
+  if (hit[1] === "카카오톡") {
+    // 카카오톡은 이 주소로 열면 기기의 기본 브라우저로 넘겨 줘요.
+    const btn = $("inappBtn"); btn.hidden = false;
+    $("inappHow").innerHTML = '아래 버튼을 누르거나, 오른쪽 위 메뉴에서 <b>"다른 브라우저로 열기"</b>를 눌러 주세요.';
+    btn.onclick = () => { location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href); };
+  }
+})();
 
 // ---------- 소리 ----------
 let actx = null;
