@@ -272,7 +272,6 @@
       m.width = 200; m.height = Math.round(sc.h * T * s);
       const mc = m.getContext("2d");
       mc.drawImage(bgs[sc.id], 0, 0, m.width, m.height);
-      (sc.sprites || []).forEach((sp) => { if (sp.kind === "tree") { mc.fillStyle = "#3f8f3c"; mc.beginPath(); mc.arc(sp.x * s, (sp.y - 20) * s, 3.2, 0, 7); mc.fill(); } });
       minis[sc.id] = m;
     }));
   }
@@ -383,12 +382,12 @@
     const npc = scene.npcs.find((n) => n.x === tx && (n.y === ty || n.y - 1 === ty));
     if (npc) { Sound.sfx("tap"); walkNextTo({ x: npc.x, y: npc.y }, () => talk(npc)); return; }
     const st = scene.stations.find((s) => tx >= s.x && tx < s.x + s.w && ty >= s.y - 1 && ty < s.y + s.h);
+    if (st && st.walkable) { Sound.sfx("tap"); if (!walkTo(tx, ty, () => openActivity(st.activity))) openActivity(st.activity); return; }
     if (st) { Sound.sfx("tap"); walkNextTo(st, () => { faceToward(st.x, st.y); openActivity(st.activity); }); return; }
     const door = scene.doors.find((d) => ty === d.y && tx >= d.x && tx < d.x + (d.w || 1));
     if (door) { walkTo(tx, ty); return; }
-    const b = (scene.buildings || []).find((b) => tx >= b.x && tx < b.x + b.w && ty >= b.y && ty < b.y + b.h);
-    if (b) { walkTo(b.door.x, b.door.y); return; }
-    if (scene.garden && tx >= scene.garden.x && tx < scene.garden.x + scene.garden.w && ty >= scene.garden.y && ty < scene.garden.y + scene.garden.h) { walkTo(21, scene.garden.y); return; }
+    const area = scene.areas.find(({ r }) => tx >= r[0] && tx <= r[2] && ty >= r[1] && ty <= r[3]);
+    if (area) { walkTo(area.door.x, area.door.y); return; }
     let target = { x: tx, y: ty };
     if (solidAt(tx, ty)) target = nearestFree(tx, ty, tileOf(me.x, me.y));
     if (target && walkTo(target.x, target.y)) showTapMark(target);
@@ -405,9 +404,9 @@
     if (!doorArmed) return;
     doorArmed = false;
     if (door.to === "village") {
-      const b = scenes.village.buildings.find((x) => x.id === scene.id);
+      const out = scenes.village.doors.find((x) => x.id === scene.id).out;
       Sound.sfx("door");
-      setScene("village", b.door.x, b.door.y + 1, "down");
+      setScene("village", out.x, out.y, out.dir);
     } else if (door.to) {
       Sound.sfx("door");
       const target = scenes[door.to];
@@ -417,8 +416,7 @@
       const text = door.emoji + " " + door.name + "은(는) 곧 열려요! 조금만 기다려 줘요.";
       toast(text, 2600); speak(door.name + "은 곧 열려요! 조금만 기다려 줘요.");
       me.path = []; me.onArrive = null;
-      const back = scene.id === "village" && door.id === "garden" ? { x: t.x, y: t.y - 1 } : { x: t.x, y: t.y + 1 };
-      if (!solidAt(back.x, back.y)) walkTo(back.x, back.y);
+      if (door.out) walkTo(door.out.x, door.out.y);
     }
   }
 
@@ -637,12 +635,16 @@
     return { x, y, s, vw, vh };
   }
 
+  // 건물 안 그림은 마을보다 크게 그려져 있어서 캐릭터도 조금 크게 그려요
+  const charScale = () => (scene.indoor ? 1.35 : 1);
+  const headY = (y) => y - 46 * charScale();
+
   function drawChar(cfg, x, y, dir, frame) {
     const spr = Avatar.sprite(cfg, dir, frame);
-    const s = 2;
+    const k = charScale(), s = 2 * k;
     g.fillStyle = "rgba(0,0,0,.18)";
-    g.beginPath(); g.ellipse(x, y + 10, 11, 4, 0, 0, 7); g.fill();
-    g.drawImage(spr, Math.round(x - (Avatar.W * s) / 2), Math.round(y + 12 - 26 * s), Avatar.W * s, Avatar.H * s);
+    g.beginPath(); g.ellipse(x, y + 10 * k, 11 * k, 4 * k, 0, 0, 7); g.fill();
+    g.drawImage(spr, x - (Avatar.W * s) / 2, y + 12 * k - 26 * s, Avatar.W * s, Avatar.H * s);
   }
 
   let last = 0;
@@ -700,12 +702,13 @@
     const v = view();
     const k = dpr * v.s;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = scene.indoor ? "#2a1712" : "#5e9e4a";
+    g.fillStyle = scene.backdrop;
     g.fillRect(0, 0, canvas.width, canvas.height);
-    g.imageSmoothingEnabled = false;
     g.setTransform(k, 0, 0, k, Math.round(-v.x * k), Math.round(-v.y * k));
-    const bg = bgs[scene.id];
-    g.drawImage(bg, 0, 0, scene.w * T, scene.h * T);
+    // 배경 그림은 부드럽게, 캐릭터 픽셀은 또렷하게 그려요
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+    g.drawImage(bgs[scene.id], 0, 0, scene.w * T, scene.h * T);
+    g.imageSmoothingEnabled = false;
 
     // 누른 자리 표시
     if (tapMark && now - tapMark.at < 600 && me.path.length) {
@@ -716,7 +719,6 @@
 
     // 깊이 순서대로(아래쪽에 있을수록 나중에)
     const items = [];
-    scene.sprites.forEach((sp) => items.push({ y: sp.y - 2, draw: () => { const img = Maps.tree(sp.v); g.drawImage(img, sp.x - 32, sp.y - 80); } }));
     scene.npcs.forEach((n) => items.push({ y: (n.y + 0.5) * T, draw: () => drawChar(n.look, (n.x + 0.5) * T, (n.y + 0.5) * T, n.dir, 0) }));
     others.forEach((o) => { if (o.scene === scene.id) items.push({ y: o.y, draw: () => drawChar(o.profile.avatar, o.x, o.y, o.dir, walkFrame(o.anim, o.moving)) }); });
     items.push({ y: me.y + 0.1, draw: () => drawChar(profile.avatar, me.x, me.y, me.dir, walkFrame(me.anim, me.moving)) });
@@ -726,10 +728,10 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sx = (wx) => (wx - v.x) * v.s, sy = (wy) => (wy - v.y) * v.s;
     const fs = Math.round(Math.max(12, Math.min(16, v.s * 6.5)));
-    scene.labels.forEach((l) => tag(l.text, sx(l.x), sy(l.y), l.exit ? "exit" : l.locked ? "locked" : "place", fs));
+    scene.labels.forEach((l) => tag(l.text, sx(l.x), sy(l.y), l.exit ? "exit" : "place", fs));
     const myT = tileOf(me.x, me.y);
     scene.npcs.forEach((n) => {
-      const cx = sx((n.x + 0.5) * T), top = sy((n.y + 0.5) * T - 46);
+      const cx = sx((n.x + 0.5) * T), top = sy(headY((n.y + 0.5) * T));
       tag(n.name, cx, top - 6, "npc", fs);
       if (Math.hypot(n.x - myT.x, n.y - myT.y) < 4 && !talking) bubble("💬", cx + 22, top - 18 + Math.sin(now / 250) * 3, fs + 4);
     });
@@ -738,16 +740,16 @@
     });
     others.forEach((o) => {
       if (o.scene !== scene.id) return;
-      tag(labelOf(o.profile), sx(o.x), sy(o.y - 46) - 6, o.profile.teacher ? "teacher" : "friend", fs);
-      if (o.emoteUntil > now) emoteBubble(o.emote, sx(o.x), sy(o.y - 46) - 30, fs);
+      tag(labelOf(o.profile), sx(o.x), sy(headY(o.y)) - 6, o.profile.teacher ? "teacher" : "friend", fs);
+      if (o.emoteUntil > now) emoteBubble(o.emote, sx(o.x), sy(headY(o.y)) - 30, fs);
     });
-    tag(labelOf(profile), sx(me.x), sy(me.y - 46) - 6, profile.teacher ? "teacher" : "me", fs);
-    if (me.emoteUntil > now) emoteBubble(me.emote, sx(me.x), sy(me.y - 46) - 30, fs);
+    tag(labelOf(profile), sx(me.x), sy(headY(me.y)) - 6, profile.teacher ? "teacher" : "me", fs);
+    if (me.emoteUntil > now) emoteBubble(me.emote, sx(me.x), sy(headY(me.y)) - 30, fs);
 
     if (!scene.indoor) drawMini(v);
   }
 
-  const TAGS = { place: ["#fff3d6", "#5e3820"], locked: ["rgba(255,243,214,.85)", "#8a7a6a"], exit: ["#fff3d6", "#c0392b"], npc: ["#ffe9a8", "#5e3820"], friend: ["rgba(255,255,255,.92)", "#333"], me: ["#5e3820", "#fff"], teacher: ["#ffcc33", "#5e3820"] };
+  const TAGS = { place: ["#fff3d6", "#5e3820"], exit: ["#fff3d6", "#c0392b"], npc: ["#ffe9a8", "#5e3820"], friend: ["rgba(255,255,255,.92)", "#333"], me: ["#5e3820", "#fff"], teacher: ["#ffcc33", "#5e3820"] };
   function tag(text, x, y, kind, fs) {
     const [bgc, fg] = TAGS[kind];
     g.font = "bold " + fs + "px Jua, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";

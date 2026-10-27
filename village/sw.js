@@ -1,7 +1,7 @@
 // 꼬마 발명가 마을 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // (친구들과 함께 놀기는 인터넷이 있어야 해요. 혼자 둘러보기는 저장분으로도 돼요.)
-const CACHE = "village-v1";
+const CACHE = "village-v2";
 const FILES = [
   "./",
   "./index.html",
@@ -12,6 +12,13 @@ const FILES = [
   "./js/activities.js",
   "./js/main.js",
   "./lib/peerjs.min.js",
+  "./assets/village.webp",
+  "./assets/robot.webp",
+  "./assets/magnet.webp",
+  "./assets/greenhouse.webp",
+  "./assets/observatory.webp",
+  "./assets/workshop.webp",
+  "./assets/garden.webp",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-180.png"
@@ -33,7 +40,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// 이 앱 폴더 안의 파일(나중에 넣을 assets/ 그림 포함)만 맡아요.
+// 이 앱 폴더 안의 파일만 맡아요.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || !url.href.startsWith(SCOPE)) return;
