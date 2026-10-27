@@ -97,13 +97,13 @@ const Net = (() => {
   let frozen = false;
 
   // 방장(선생님) 쪽
-  const players = new Map();             // id → {profile, scene, x, y, dir, moving, stamps, last, conn}
+  const players = new Map();             // id → {profile, scene, x, y, dir, moving, stamps, progress, last, conn}
   let tickTimer = null;
 
   function roster() { return [...players.entries()].map(([id, p]) => ({ id, profile: p.profile, stamps: p.stamps || {} })); }
   function broadcast(o, except) { players.forEach((p) => { if (p.conn && p.conn !== except) p.conn.send(o); }); }
   function rosterChanged() { const r = roster(); broadcast({ t: "roster", r }); emit("roster", r); emit("students", students()); }
-  function students() { return [...players.entries()].filter(([id]) => id !== "host").map(([id, p]) => ({ id, profile: p.profile, scene: p.scene, stamps: p.stamps || {} })); }
+  function students() { return [...players.entries()].filter(([id]) => id !== "host").map(([id, p]) => ({ id, profile: p.profile, scene: p.scene, stamps: p.stamps || {}, progress: p.progress || {} })); }
 
   function hostOnConn(conn) {
     let cid = null;
@@ -113,7 +113,7 @@ const Net = (() => {
         cid = String(m.cid || conn.id).slice(0, 40);
         const old = players.get(cid);
         if (old && old.conn && old.conn !== conn) old.conn.close();
-        players.set(cid, Object.assign({ scene: "village", x: 0, y: 0, dir: "down", moving: false }, old || {}, m.state || {}, { profile: m.profile, stamps: m.stamps || (old && old.stamps) || {}, last: Date.now(), conn }));
+        players.set(cid, Object.assign({ scene: "village", x: 0, y: 0, dir: "down", moving: false }, old || {}, m.state || {}, { profile: m.profile, stamps: m.stamps || (old && old.stamps) || {}, progress: m.progress || (old && old.progress) || {}, last: Date.now(), conn }));
         conn.send({ t: "welcome", you: cid, r: roster(), frozen });
         rosterChanged();
         return;
@@ -123,7 +123,7 @@ const Net = (() => {
       p.last = Date.now();
       if (m.t === "pos") { p.scene = m.s; p.x = m.x; p.y = m.y; p.dir = m.d; p.moving = m.m; if (m.s !== p.lastScene) { p.lastScene = m.s; emit("students", students()); } }
       else if (m.t === "emote") { broadcast({ t: "emote", id: cid, e: String(m.e).slice(0, 4) }); emit("emote", cid, m.e); }
-      else if (m.t === "stamps") { p.stamps = m.stamps || {}; rosterChanged(); }
+      else if (m.t === "record") { p.stamps = m.stamps || {}; p.progress = m.progress || {}; rosterChanged(); }
       else if (m.t === "profile") { p.profile = m.profile; rosterChanged(); }
     };
     conn.onclose = () => {
@@ -192,12 +192,13 @@ const Net = (() => {
   }
 
   // 2단계: 캐릭터를 다 꾸미면 들어가요
-  function enter(profile, stamps, state) {
-    joinArgs.profile = profile; joinArgs.stamps = stamps; me = state;
+  // record: 이 기기의 도장과 활동 진행 {stamps, progress}
+  function enter(profile, record, state) {
+    joinArgs.profile = profile; joinArgs.record = record; me = state;
     if (!conn) return reconnect();
     conn.onmessage = clientOnMessage;
     conn.onclose = lost;
-    conn.send({ t: "join", cid: clientId(), profile, stamps, state: { scene: state.scene, x: state.x, y: state.y, dir: state.dir } });
+    conn.send({ t: "join", cid: clientId(), profile, stamps: record.stamps, progress: record.progress, state: { scene: state.scene, x: state.x, y: state.y, dir: state.dir } });
     clearInterval(sendTimer);
     sendTimer = setInterval(clientSend, TICK);
   }
@@ -223,7 +224,7 @@ const Net = (() => {
     if (role !== "join" || !joinArgs) return;
     if (handle) handle.close();
     handle = transport.join(joinArgs.code, {
-      onOpen: (c) => { conn = c; enter(joinArgs.profile, joinArgs.stamps, me); },
+      onOpen: (c) => { conn = c; enter(joinArgs.profile, joinArgs.record, me); },
       onError: () => { clearTimeout(retryTimer); retryTimer = setTimeout(reconnect, 4000); }
     });
   }
@@ -246,9 +247,9 @@ const Net = (() => {
     if (role === "host") broadcast({ t: "emote", id: "host", e });
     else if (conn) conn.send({ t: "emote", e });
   }
-  function sendStamps(stamps) {
-    if (role === "host") { const p = players.get("host"); if (p) p.stamps = stamps; }
-    else if (conn) { conn.send({ t: "stamps", stamps }); if (joinArgs) joinArgs.stamps = stamps; }
+  function sendRecord(record) {
+    if (role === "host") { const p = players.get("host"); if (p) p.stamps = record.stamps; }
+    else if (conn) { conn.send({ t: "record", stamps: record.stamps, progress: record.progress }); if (joinArgs) joinArgs.record = record; }
   }
   function command(c, a) {
     if (role !== "host") return;
@@ -260,7 +261,7 @@ const Net = (() => {
   function leave() { clearInterval(sendTimer); clearInterval(tickTimer); clearTimeout(retryTimer); if (handle) handle.close(); handle = null; conn = null; role = "solo"; }
 
   return {
-    on, host, connect, enter, updateMe, emote, sendStamps, command, newCode, leave,
+    on, host, connect, enter, updateMe, emote, sendRecord, command, newCode, leave,
     get role() { return role; }, get myId() { return myId; }, get local() { return transport === localTransport; }
   };
 })();

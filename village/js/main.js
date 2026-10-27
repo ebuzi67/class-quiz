@@ -240,6 +240,7 @@
         return;
       }
       store.set("host", { code: realCode, at: Date.now() });
+      loadBoard(realCode);
       $("#teacher-code").textContent = realCode;
       $("#teacher-err").hidden = true;
       setStatus("🟢 방 열림 · 코드 " + realCode);
@@ -479,7 +480,7 @@
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
-    stamps[id] = true; store.set("stamps", stamps); Net.sendStamps(stamps);
+    stamps[id] = true; store.set("stamps", stamps); Net.sendRecord({ stamps, progress });
     const s = STAMPS.find((x) => x[0] === id);
     setTimeout(() => {
       Sound.sfx("stamp");
@@ -511,6 +512,7 @@
   }
 
   // ── 인사(이모지) ──
+  const HELP_EMOTE = 1; // 🙋 도와줘!
   const EMOTES = [["👋", "안녕!"], ["🙋", "도와줘!"], ["🤝", "같이 하자!"], ["👍", "좋아!"], ["🎉", "성공했어!"], ["❤️", "고마워!"], ["😂", "하하!"], ["😮", "우와!"]];
   function buildEmotes() {
     const box = $("#emote-list");
@@ -548,7 +550,11 @@
       o.scene = sc; o.tx = x; o.ty = y; o.dir = dir; o.moving = !!moving;
     });
   });
-  Net.on("emote", (id, e) => { const o = others.get(id); if (o) { o.emote = +e; o.emoteUntil = performance.now() + 4000; } });
+  Net.on("emote", (id, e) => {
+    const o = others.get(id);
+    if (o) { o.emote = +e; o.emoteUntil = performance.now() + 4000; }
+    if (mode === "host" && +e === HELP_EMOTE) noteHelp(id);
+  });
   Net.on("status", (s) => {
     if (s === "ok") setStatus("🟢 선생님과 연결됐어요");
     else if (s === "lost") setStatus("🟡 다시 연결하는 중…");
@@ -570,22 +576,143 @@
     for (let r = 0; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const a = x + dx, b = y + dy; if (sc.solid[b] && sc.solid[b][a] === false) return { x: a, y: b }; }
     return sc.spawn;
   }
+  // ── 선생님: 학생 목록과 반 전체 진행판 ──
+  // 한 번 들어온 학생은 나가도 진행판에 남아요(🔌 나감). 같은 입장 코드로 다시 열면 이어서 보여요.
+  const board = new Map(); // id → {profile, scene, stamps, progress, online, help}
+  let hostCode = null;
+  let boardSort = "num";
+  const HELP_MS = 3 * 60e3;
+
+  function saveBoard() { if (hostCode) store.set("board-" + hostCode, [...board.entries()].map(([id, b]) => [id, Object.assign({}, b, { online: false, help: 0 })])); }
+  function loadBoard(code) {
+    hostCode = code;
+    board.clear();
+    (store.get("board-" + code, []) || []).forEach(([id, b]) => board.set(id, b));
+    renderTeacher();
+  }
+
   Net.on("students", (list) => {
+    const ids = new Set(list.map((x) => x.id));
+    board.forEach((b, id) => { if (!ids.has(id)) b.online = false; });
+    list.forEach((x) => {
+      const b = board.get(x.id) || { help: 0 };
+      Object.assign(b, { profile: x.profile, scene: x.scene, stamps: x.stamps, progress: x.progress, online: true });
+      board.set(x.id, b);
+    });
+    saveBoard();
+    renderTeacher();
+  });
+
+  function needsHelp(b) { return b.help && Date.now() - b.help < HELP_MS; }
+  function stampCount(b) { return STAMPS.filter(([id]) => b.stamps && b.stamps[id]).length; }
+  function sortedBoard(onlyOnline) {
+    const rows = [...board.entries()].filter(([, b]) => !onlyOnline || b.online);
+    const num = ([, b]) => (b.profile.num || 99);
+    if (boardSort === "stamps") rows.sort((a, b) => stampCount(b[1]) - stampCount(a[1]) || num(a) - num(b));
+    else rows.sort((a, b) => num(a) - num(b));
+    return rows;
+  }
+  function faceCanvas(profile) {
+    const face = document.createElement("canvas"); face.width = 32; face.height = 32;
+    Avatar.drawFace(face, profile.avatar);
+    return face;
+  }
+
+  function renderTeacher() {
+    if (mode !== "host") return;
+    const online = [...board.values()].filter((b) => b.online);
+    $("#student-count").textContent = online.length;
     const box = $("#student-list");
     box.innerHTML = "";
-    $("#student-count").textContent = list.length;
-    list.sort((a, b) => (a.profile.num || 99) - (b.profile.num || 99)).forEach((s) => {
-      const row = document.createElement("div"); row.className = "stu";
-      const face = document.createElement("canvas"); face.width = 32; face.height = 32;
-      Avatar.drawFace(face, s.profile.avatar);
-      const where = scenes[s.scene] ? scenes[s.scene].name : "";
-      const got = STAMPS.filter(([id]) => s.stamps[id]).map((x) => x[1]).join("");
+    sortedBoard(true).forEach(([id, b]) => {
+      const row = document.createElement("div"); row.className = "stu" + (needsHelp(b) ? " help" : "");
+      const where = scenes[b.scene] ? scenes[b.scene].name : "";
+      const got = STAMPS.filter(([k]) => b.stamps[k]).map((x) => x[1]).join("");
       const txt = document.createElement("div");
-      txt.innerHTML = "<b>" + escapeHtml(labelOf(s.profile)) + "</b><small>" + where + (got ? " · " + got : "") + "</small>";
-      row.append(face, txt); box.append(row);
+      txt.innerHTML = "<b>" + (needsHelp(b) ? "🙋 " : "") + escapeHtml(labelOf(b.profile)) + "</b><small>" + where + (got ? " · " + got : "") + "</small>";
+      row.append(faceCanvas(b.profile), txt); box.append(row);
     });
-    if (!list.length) box.innerHTML = "<p class='empty'>아직 들어온 학생이 없어요.<br>학생들에게 위 숫자를 알려 주세요.</p>";
-  });
+    if (!online.length) box.innerHTML = "<p class='empty'>아직 들어온 학생이 없어요.<br>학생들에게 위 숫자를 알려 주세요.</p>";
+    if (!$("#board").hidden) renderBoard();
+  }
+
+  // 아직 도장을 못 받은 활동은 진행 정도를 보여 줘요
+  function progressText(id, b) {
+    const p = b.progress || {};
+    if (id === "robot" && p.robot) return p.robot.cleared + "/" + Activities.LEVELS.length;
+    if (id === "garden" && p.garden) return p.garden.cleared + "/6";
+    if (id === "workshop" && p.workshop) return p.workshop.done.length + "/4";
+    return "";
+  }
+
+  function renderBoard() {
+    const all = [...board.values()];
+    const online = all.filter((b) => b.online).length;
+    $("#board-sum").textContent = "접속 " + online + "명 · 전체 " + all.length + "명";
+    const t = $("#board-table");
+    t.innerHTML = "";
+    const head = document.createElement("div"); head.className = "br-row br-head";
+    head.innerHTML = "<div class='br-name'>학생</div><div class='br-where'>지금 있는 곳</div>" +
+      STAMPS.map(([id, e, name]) => "<div class='br-cell' title='" + name + "'>" + e + "<small>" + all.filter((b) => b.stamps && b.stamps[id]).length + "명</small></div>").join("") +
+      "<div class='br-cell br-total'>합계</div><div class='br-act'></div>";
+    t.append(head);
+    sortedBoard(false).forEach(([id, b]) => {
+      const row = document.createElement("div");
+      row.className = "br-row" + (b.online ? "" : " off") + (needsHelp(b) ? " help" : "");
+      const name = document.createElement("div"); name.className = "br-name";
+      const label = document.createElement("span"); label.textContent = labelOf(b.profile);
+      name.append(faceCanvas(b.profile), label);
+      if (needsHelp(b)) {
+        const h = document.createElement("button"); h.className = "br-help"; h.textContent = "🙋"; h.title = "도움 요청 지우기";
+        h.onclick = () => { b.help = 0; Sound.sfx("tap"); renderTeacher(); };
+        name.append(h);
+      }
+      const where = document.createElement("div"); where.className = "br-where";
+      where.textContent = b.online ? (scenes[b.scene] ? scenes[b.scene].name : "") : "🔌 나감";
+      row.append(name, where);
+      STAMPS.forEach(([k, e]) => {
+        const c = document.createElement("div");
+        const got = b.stamps && b.stamps[k];
+        c.className = "br-cell" + (got ? " got" : "");
+        c.textContent = got ? e : progressText(k, b) || "·";
+        row.append(c);
+      });
+      const total = document.createElement("div"); total.className = "br-cell br-total"; total.textContent = stampCount(b) + "/" + STAMPS.length;
+      const act = document.createElement("div"); act.className = "br-act";
+      if (b.online) {
+        const go = document.createElement("button"); go.className = "btn btn-soft"; go.textContent = "👀 가 보기";
+        go.onclick = () => visit(id);
+        act.append(go);
+      }
+      row.append(total, act);
+      t.append(row);
+    });
+    if (!all.length) t.insertAdjacentHTML("beforeend", "<p class='empty'>아직 들어온 학생이 없어요.</p>");
+    $$("#board-sort button").forEach((b) => b.classList.toggle("on", b.dataset.sort === boardSort));
+  }
+
+  // 선생님 캐릭터를 그 학생 옆으로 옮겨요
+  function visit(id) {
+    const o = others.get(id);
+    if (!o || !scenes[o.scene]) return;
+    Sound.sfx("door");
+    $("#board").hidden = true;
+    const sc = scenes[o.scene], t = { x: Math.floor(o.x / T), y: Math.floor(o.y / T) };
+    const spot = nearestFreeIn(sc, t.x + 1, t.y);
+    setScene(o.scene, spot.x, spot.y, "left");
+  }
+
+  // 학생이 🙋 도와줘! 를 보내면 선생님에게 알려 줘요
+  function noteHelp(id) {
+    const b = board.get(id);
+    if (!b) return;
+    b.help = Date.now();
+    const where = scenes[b.scene] ? " (" + scenes[b.scene].name + ")" : "";
+    toast("🙋 " + labelOf(b.profile) + "이(가) 도움을 요청했어요" + where, 4000);
+    Sound.sfx("pop");
+    renderTeacher();
+  }
+
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
   function setStatus(text) { $("#net-status").textContent = text; $("#net-status").hidden = false; }
@@ -598,7 +725,7 @@
   // ───────────────────────── 시작 ─────────────────────────
   async function enterGame() {
     show("screen-game");
-    if (mode === "join") Net.enter(profile, stamps, { scene: "village", x: 0, y: 0, dir: "down" });
+    if (mode === "join") Net.enter(profile, { stamps, progress }, { scene: "village", x: 0, y: 0, dir: "down" });
     $("#teacher-panel").hidden = mode !== "host";
     $("#btn-teacher-panel").hidden = true;
     if (mode === "solo") setStatus("🙂 혼자 둘러보기");
@@ -606,7 +733,8 @@
     resize();
     if (!Object.keys(bgs).length) await Promise.all([loadBackgrounds(), loadNpcImages()]);
     const sp = scenes.village.spawn;
-    const spot = nearestFreeIn(scenes.village, sp.x + Math.floor(Math.random() * 5) - 2, sp.y + Math.floor(Math.random() * 2));
+    // 20명이 한자리에 겹치지 않게 광장 앞 넓은 곳에 흩어져 나타나요
+    const spot = nearestFreeIn(scenes.village, sp.x + Math.floor(Math.random() * 11) - 5, sp.y + Math.floor(Math.random() * 4) - 1);
     setScene("village", spot.x, spot.y, "down");
     if (settings.music) Sound.music(true);
     updateButtons();
@@ -892,6 +1020,15 @@
   // 선생님 패널
   $("#btn-teacher-panel").onclick = () => { Sound.sfx("tap"); $("#teacher-panel").hidden = false; $("#btn-teacher-panel").hidden = true; };
   $("#t-hide").onclick = () => { Sound.sfx("tap"); $("#teacher-panel").hidden = true; $("#btn-teacher-panel").hidden = false; };
+  $("#t-board").onclick = () => { Sound.sfx("tap"); $("#board").hidden = false; renderBoard(); };
+  $("#board-close").onclick = () => { Sound.sfx("tap"); $("#board").hidden = true; };
+  $$("#board-sort button").forEach((b) => { b.onclick = () => { Sound.sfx("tap"); boardSort = b.dataset.sort; renderBoard(); }; });
+  $("#board-clear").onclick = () => {
+    Sound.sfx("tap");
+    [...board.entries()].forEach(([id, b]) => { if (!b.online) board.delete(id); });
+    saveBoard(); renderTeacher();
+  };
+  setInterval(() => { if (mode === "host") renderTeacher(); }, 30e3); // 🙋 표시가 3분 뒤 저절로 꺼지게
   $("#t-gather").onclick = () => { Sound.sfx("tap"); Net.command("gather"); toast("📢 모두 광장으로 불렀어요"); };
   $("#t-freeze").onclick = () => {
     Sound.sfx("tap");
@@ -906,7 +1043,7 @@
     speak, sfx: Sound.sfx, award,
     close: () => {},
     getProgress: (id) => progress[id],
-    setProgress: (id, v) => { progress[id] = v; store.set("progress", progress); }
+    setProgress: (id, v) => { progress[id] = v; store.set("progress", progress); Net.sendRecord({ stamps, progress }); }
   });
 
   // 자동 시험용(화면에는 영향 없어요)
