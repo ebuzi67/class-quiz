@@ -1,5 +1,7 @@
 // 건물 안 활동: 로봇 조종(코딩: 순서), 자석 실험(창의과학: 예상 → 실험 → 확인)
 // 활동 화면은 캔버스 위에 띄우는 큰 창이에요. 태블릿에서 누르기 쉽게 버튼을 크게 했어요.
+// 다른 활동(반복 정원, 관찰 온실, 별 관측소, 발명 공방)은 act-*.js 파일에 따로 있고,
+// Activities.register(아이디, 함수)로 여기에 끼워져요. 함수는 kit(그리기 도구와 ctx)을 받아요.
 "use strict";
 
 const Activities = (() => {
@@ -272,9 +274,13 @@ const Activities = (() => {
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  const registry = { robot, magnet };
+  const kit = { el, frame, wait, shuffle, get ctx() { return ctx; } };
+
   function init(rootEl, context) { root = rootEl; ctx = context; }
-  function open(id) { if (id === "robot") robot(); else if (id === "magnet") magnet(); }
+  function register(id, fn) { registry[id] = () => fn(kit); }
+  function open(id) { if (registry[id]) registry[id](); }
   function isOpen() { return root && !root.hidden; }
 
-  return { init, open, close: () => isOpen() && close(), isOpen, LEVELS };
+  return { init, register, open, close: () => isOpen() && close(), isOpen, LEVELS };
 })();

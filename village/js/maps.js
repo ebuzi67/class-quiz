@@ -61,7 +61,7 @@ const Maps = (() => {
     npcs: [
       { id: "chief", name: "반짝 촌장", x: 19, y: 16, dir: "down",
         look: { skin: 1, hair: "short", hairColor: "#ffffff", shirt: "#7b6ef0", acc: "glasses" },
-        lines: ["안녕! 꼬마 발명가 마을에 온 걸 환영해!", "이 마을 건물마다 코딩 놀이와 과학 실험이 숨어 있어.", "로봇 공장과 자석 실험실에서는 지금 바로 활동을 할 수 있어. 문 앞까지 걸어가 봐!", "활동을 마치면 도장을 받아. 오른쪽 아래 📒 도장책을 눌러 봐.", "친구를 만나면 😊 버튼으로 인사해 보자!"] }
+        lines: ["안녕! 꼬마 발명가 마을에 온 걸 환영해!", "이 마을 건물마다 코딩 놀이와 과학 실험이 숨어 있어.", "건물 여섯 곳에서 모두 활동을 할 수 있어. 가고 싶은 건물 문 앞까지 걸어가 봐!", "활동을 마치면 도장을 받아. 오른쪽 아래 📒 도장책을 눌러 봐.", "친구를 만나면 😊 버튼으로 인사해 보자!"] }
     ]
   };
 
@@ -93,36 +93,36 @@ const Maps = (() => {
     greenhouse: {
       name: "관찰 온실", emoji: "🌱", floor: [3, 5, 17, 13], door: { x: 9, y: 14, w: 2 },
       solid: [[6, 5, 13, 5], [14, 5, 17, 6], [17, 6, 17, 13], [3, 5, 4, 6], [3, 7, 4, 7], [3, 8, 3, 11], [7, 7, 12, 11]],
-      stations: [],
-      npcs: [{ id: "sprout", name: "새싹 정원사", x: 15, y: 9, dir: "left",
+      stations: [{ x: 7, y: 7, w: 6, h: 5, activity: "greenhouse", label: "🌱 관찰 탁자" }],
+      npcs: [{ id: "sprout", name: "새싹 정원사", x: 15, y: 9, dir: "left", activity: "greenhouse", actionLabel: "🌱 새싹 키우기",
         look: { skin: 2, hair: "bun", hairColor: "#7a4a26", shirt: "#6cc56c", acc: "none" },
-        lines: ["어서 와! 여기는 관찰 온실이야.", "저기 화분들 보이니? 씨앗 → 싹 → 잎 → 꽃 순서로 자라고 있어.", "곧 여기서 식물이 자라는 순서를 알아보고, 그림자 놀이도 할 거야. 기대해 줘!"] }]
+        lines: ["어서 와! 여기는 관찰 온실이야.", "저기 화분들 보이니? 씨앗 → 싹 → 잎 → 꽃 순서로 자라고 있어.", "식물은 무엇을 먹고 자랄까? 직접 새싹을 키워 보면서 알아보자!"] }]
     },
     observatory: {
       name: "별 관측소", emoji: "🔭", floor: [2, 5, 18, 14], door: { x: 9, y: 15, w: 2 }, backdrop: "#1c1a33",
       solid: [[2, 5, 7, 5], [2, 6, 3, 6], [9, 5, 11, 6], [13, 5, 18, 5], [16, 6, 18, 6], [2, 7, 3, 10], [2, 11, 4, 13], [4, 12, 4, 13],
         [16, 7, 18, 10], [16, 11, 18, 14], [15, 13, 15, 14], ...LAMPS],
-      stations: [],
-      npcs: [{ id: "luna", name: "별지기 루나", x: 6, y: 8, dir: "right",
+      stations: [{ x: 9, y: 5, w: 3, h: 2, activity: "observatory", label: "🔭 망원경" }],
+      npcs: [{ id: "luna", name: "별지기 루나", x: 6, y: 8, dir: "right", activity: "observatory", actionLabel: "🔭 관측 시작",
         look: { skin: 0, hair: "long", hairColor: "#5b8def", shirt: "#2f3a7a", acc: "bow" },
-        lines: ["반가워! 나는 밤하늘을 지키는 루나야.", "망원경으로 보면 달 모양이 날마다 조금씩 바뀌어.", "곧 여기서 낮과 밤, 달 모양이 왜 바뀌는지 알아볼 거야. 조금만 기다려 줘!"] }]
+        lines: ["반가워! 나는 밤하늘을 지키는 루나야.", "망원경으로 보면 달 모양이 날마다 조금씩 바뀌어.", "낮과 밤은 왜 생길까? 달 모양은 어떻게 바뀔까? 같이 관측해 보자!"] }]
     },
     workshop: {
       name: "발명 공방", emoji: "🛠️", floor: [3, 5, 16, 14], door: { x: 9, y: 15, w: 2 },
       solid: [[3, 6, 3, 10], [8, 5, 8, 5], [7, 7, 13, 11], [6, 8, 6, 10], [16, 9, 16, 9], [3, 11, 3, 13], ...LAMPS],
-      stations: [],
-      npcs: [{ id: "tinker", name: "뚝딱 발명가", x: 5, y: 6, dir: "down",
+      stations: [{ x: 7, y: 7, w: 7, h: 5, activity: "workshop", label: "🛠️ 작업대" }],
+      npcs: [{ id: "tinker", name: "뚝딱 발명가", x: 5, y: 6, dir: "down", activity: "workshop", actionLabel: "🛠️ 발명 시작",
         look: { skin: 3, hair: "spiky", hairColor: "#d08a3e", shirt: "#f59e3b", acc: "cap", capColor: "#4fb3e8" },
-        lines: ["뚝딱뚝딱! 나는 발명가야.", "여기 바퀴, 프로펠러, 용수철, 전구가 잔뜩 있지?", "곧 이 부품들을 모아서 나만의 발명품을 만들 거야. 같이 만들자!"] }]
+        lines: ["뚝딱뚝딱! 나는 발명가야.", "여기 바퀴, 프로펠러, 용수철, 전구가 잔뜩 있지?", "자동차, 날아다니는 것, 등불, 배! 부품을 잘 골라서 미션을 해결해 보자!"] }]
     },
     garden: {
       name: "반복 정원", emoji: "🌻", floor: [3, 4, 17, 12], door: { x: 9, y: 14, w: 2 }, backdrop: "#3f7a34",
       extra: [[6, 13, 13, 13]],
       solid: [[15, 4, 17, 4], [17, 4, 17, 6], [3, 5, 3, 7], [17, 10, 17, 12]],
-      stations: [],
-      npcs: [{ id: "farmer", name: "콩콩 농부", x: 16, y: 8, dir: "left",
+      stations: [{ x: 4, y: 5, w: 12, h: 7, walkable: true, activity: "garden", label: "🌻 꽃밭" }],
+      npcs: [{ id: "farmer", name: "콩콩 농부", x: 16, y: 8, dir: "left", activity: "garden", actionLabel: "🌻 꽃 심기",
         look: { skin: 1, hair: "short", hairColor: "#3b2a20", shirt: "#e8b04a", acc: "cap", capColor: "#f5d33b" },
-        lines: ["안녕! 여기는 반복 정원이야.", "밭이 가로 6칸, 세로 4칸이야. 한 칸씩 심으면 24번이나 해야 해!", "\"씨앗 심기를 6번 반복해!\" 이렇게 말하면 한 줄을 한 번에 심을 수 있지. 곧 같이 해 보자!"] }]
+        lines: ["안녕! 여기는 반복 정원이야.", "밭이 가로 6칸, 세로 4칸이야. 한 칸씩 심으면 24번이나 해야 해!", "\"해바라기 심기를 6번 반복해!\" 이렇게 말하면 한 줄을 한 번에 심을 수 있지. 같이 해 보자!"] }]
     }
   };
 
