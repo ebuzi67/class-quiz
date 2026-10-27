@@ -1,0 +1,17 @@
+{
+  "name": "꼬마 발명가 마을",
+  "short_name": "발명가 마을",
+  "description": "친구들과 함께 걸어 다니며 코딩과 과학 실험을 하는 우리 반 메타버스 마을",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#f3d7a6",
+  "theme_color": "#f3d7a6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

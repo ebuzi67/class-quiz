@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>꼬마 발명가 마을</title>
+<meta name="theme-color" content="#f3d7a6">
+<link rel="manifest" href="manifest.json?v=1">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood: #5e3820; --wood2: #8a5a35; --cream: #fff3d6; --paper: #fffaf0; --frame: #f3d7a6;
+    --go: #4caf50; --go-d: #2e7d32; --bad: #e8505b; --sky: #4fb3e8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--frame); color: #3a2a22;
+    font-family: Jua, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; user-select: none; -webkit-user-select: none; }
+  button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+  [hidden] { display: none !important; }
+
+  .btn { border: 3px solid var(--wood); background: var(--cream); border-radius: 12px; padding: 10px 16px; font-size: 20px; box-shadow: 0 4px 0 var(--wood); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--wood); }
+  .btn:disabled { opacity: .45; }
+  .btn-go { background: #8fd16a; }
+  .btn-soft { background: #fff; }
+  .btn-big { font-size: 26px; padding: 14px 22px; }
+
+  /* 들어가기 화면 */
+  .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;
+    background: radial-gradient(circle at 50% 30%, #c8ecb0 0%, #9fd67f 60%, #7cc25a 100%); }
+  .card { background: var(--paper); border: 4px solid var(--wood); border-radius: 22px; padding: 22px; width: 100%; max-width: 560px; box-shadow: 0 8px 0 rgba(94,56,32,.5); text-align: center; margin: auto; }
+  .card h1 { font-size: 38px; margin: 4px 0; color: var(--wood); }
+  .card h2 { font-size: 28px; margin: 0 0 12px; color: var(--wood); }
+  .card .sub { color: #7a6250; margin: 0 0 18px; font-size: 18px; }
+  .logo { font-size: 56px; line-height: 1; }
+  .menu { display: grid; gap: 14px; }
+  .menu .btn { display: flex; align-items: center; gap: 14px; text-align: left; font-size: 24px; padding: 14px 18px; }
+  .menu .btn span.i { font-size: 38px; }
+  .menu .btn small { display: block; font-size: 15px; color: #7a6250; }
+  .menu .btn.quick { background: #ffe9a8; }
+
+  #code-boxes { display: flex; gap: 10px; justify-content: center; margin: 6px 0 12px; }
+  #code-boxes span { width: 62px; height: 74px; border: 4px solid var(--wood); border-radius: 14px; background: #fff; font-size: 44px; display: flex; align-items: center; justify-content: center; }
+  #code-boxes span.on { border-color: var(--sky); box-shadow: 0 0 0 4px #bfe6f8; }
+  #code-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 330px; margin: 0 auto; }
+  .pad-key { font-size: 34px; padding: 10px 0; border: 3px solid var(--wood); border-radius: 14px; background: #fff; box-shadow: 0 4px 0 var(--wood); }
+  .pad-key.soft { background: var(--cream); font-size: 28px; }
+  .pad-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--wood); }
+  .msg { min-height: 30px; font-size: 19px; margin: 8px 0; }
+  .msg.bad { color: #c0392b; } .msg.good { color: var(--go-d); } .msg.wait { color: #2a7ab8; }
+  #code-hint { color: #9a8270; font-size: 15px; margin-top: 8px; min-height: 18px; }
+  .row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+
+  #num-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 14px; }
+  .num { font-size: 24px; padding: 8px 0; border: 3px solid var(--wood); border-radius: 12px; background: #fff; }
+  .num.on { background: #ffcc33; transform: scale(1.06); }
+  #name-input { font: inherit; font-size: 22px; padding: 10px 14px; border: 3px solid var(--wood); border-radius: 12px; width: 100%; max-width: 280px; text-align: center; }
+  label.lbl { display: block; color: #7a6250; margin-bottom: 6px; font-size: 17px; }
+
+  .avatar-wrap { display: flex; gap: 16px; align-items: flex-start; text-align: left; }
+  .avatar-left { flex: none; text-align: center; }
+  #avatar-preview { width: 150px; height: 220px; background: #9fd67f; border: 4px solid var(--wood); border-radius: 16px; image-rendering: pixelated; }
+  #avatar-name { margin-top: 6px; font-size: 20px; }
+  #avatar-options { flex: 1; display: grid; gap: 8px; }
+  .opt-title { font-size: 16px; color: #7a6250; margin-bottom: 3px; }
+  .opt-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opt { border: 3px solid #d9c3a3; border-radius: 10px; background: #fff; padding: 4px 9px; font-size: 16px; min-height: 38px; }
+  .opt.swatch { width: 38px; height: 38px; padding: 0; }
+  .opt.on { border-color: var(--wood); box-shadow: 0 0 0 3px #ffcc33; }
+  @media (max-width: 560px) { .avatar-wrap { flex-direction: column; align-items: center; } #avatar-preview { width: 120px; height: 176px; } }
+
+  /* 게임 화면 */
+  #screen-game { background: var(--frame); padding: 10px; }
+  .game-frame { position: relative; width: 100%; height: 100%; border: 4px solid #c9955a; border-radius: 6px; overflow: hidden; background: #2a1712; box-shadow: inset 0 0 0 2px #fff3d6; }
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .hud { position: absolute; display: flex; gap: 8px; z-index: 5; }
+  .hud-tl { top: 12px; left: 12px; }
+  .hud-btn { border: 3px solid var(--wood); background: var(--cream); border-radius: 6px; min-width: 44px; height: 44px; font-size: 22px; padding: 0 10px; box-shadow: 2px 3px 0 rgba(0,0,0,.25); }
+  .hud-btn.text { font-size: 18px; }
+  #net-status { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); background: rgba(255,250,240,.92); border: 2px solid var(--wood); border-radius: 20px; padding: 4px 14px; font-size: 16px; z-index: 5; white-space: nowrap; }
+  #minimap-wrap { position: absolute; top: 10px; right: 10px; z-index: 5; border: 4px solid #3f2a1a; border-radius: 4px; background: #3f2a1a; line-height: 0; }
+  #minimap { width: 200px; image-rendering: pixelated; cursor: pointer; }
+  @media (max-width: 760px) { #minimap { width: 130px; } #net-status { top: 64px; } }
+  .hud-bl { bottom: 12px; left: 12px; }
+  .hud-br { bottom: 12px; right: 12px; }
+  .round-btn { width: 64px; height: 64px; border-radius: 50%; border: 4px solid var(--wood); background: var(--cream); font-size: 32px; box-shadow: 0 4px 0 var(--wood); display: flex; align-items: center; justify-content: center; flex-direction: column; line-height: 1; }
+  .round-btn small { font-size: 12px; margin-top: 2px; }
+  #emote-list { position: absolute; bottom: 86px; left: 12px; z-index: 6; background: var(--paper); border: 3px solid var(--wood); border-radius: 16px; padding: 8px; display: grid; grid-template-columns: repeat(2, auto); gap: 6px; }
+  #emote-list button { border: 2px solid #d9c3a3; background: #fff; border-radius: 10px; padding: 6px 10px; font-size: 18px; text-align: left; display: flex; gap: 6px; align-items: center; }
+  #emote-list button span { font-size: 24px; }
+
+  #toast { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 7; background: var(--wood); color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 20px; white-space: nowrap; pointer-events: none; }
+  #toast.show { animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: translateX(-50%) scale(.7); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+  #fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .18s; z-index: 4; }
+  #fade.on { opacity: 1; }
+
+  /* 대화창 */
+  #dialog { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(720px, calc(100% - 28px)); z-index: 8;
+    background: var(--paper); border: 4px solid var(--wood); border-radius: 6px; box-shadow: 4px 6px 0 rgba(0,0,0,.25); padding: 14px 44px 14px 14px; display: flex; gap: 14px; cursor: pointer; }
+  #dlg-face { width: 72px; height: 72px; border: 3px solid var(--wood); background: #cfe9f5; image-rendering: pixelated; flex: none; }
+  #dlg-name { display: inline-block; background: #e8743b; color: #fff; padding: 2px 12px; border: 2px solid var(--wood); font-size: 18px; margin-bottom: 6px; }
+  #dlg-text { font-size: 22px; line-height: 1.45; min-height: 64px; }
+  #dlg-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  #dlg-actions .btn { font-size: 20px; padding: 8px 14px; }
+  #dlg-close { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; border: 2px solid var(--wood); background: #fff; font-size: 18px; }
+  #dlg-next { position: absolute; right: 16px; bottom: 8px; animation: bob 1s infinite; font-size: 16px; }
+  @keyframes bob { 50% { transform: translateY(4px); } }
+
+  /* 얼음 */
+  #freeze { position: absolute; inset: 0; z-index: 20; background: rgba(160,210,240,.55); display: flex; align-items: center; justify-content: center; }
+  #freeze div { background: #fff; border: 5px solid #4f7fe8; border-radius: 24px; padding: 24px 36px; font-size: 40px; text-align: center; color: #2a4fa8; }
+  #freeze small { display: block; font-size: 22px; color: #555; margin-top: 6px; }
+
+  /* 도장책 */
+  .overlay { position: absolute; inset: 0; z-index: 15; background: rgba(42,23,18,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .sheet { background: var(--paper); border: 4px solid var(--wood); border-radius: 18px; padding: 18px; width: min(620px, 100%); max-height: 100%; overflow: auto; text-align: center; position: relative; }
+  .sheet h2 { margin: 0 0 4px; color: var(--wood); }
+  #stamp-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+  .stamp { border: 3px dashed #d9c3a3; border-radius: 16px; padding: 12px 6px; background: #fff; }
+  .stamp .e { font-size: 44px; filter: grayscale(1); opacity: .35; }
+  .stamp b { display: block; font-size: 18px; }
+  .stamp small { color: #9a8270; }
+  .stamp.got { border: 3px solid #e8505b; background: #fff1f1; transform: rotate(-2deg); }
+  .stamp.got .e { filter: none; opacity: 1; }
+  .stamp.got small { color: #e8505b; }
+  .stamp.locked { background: #f4efe6; }
+  @media (max-width: 520px) { #stamp-list { grid-template-columns: repeat(2, 1fr); } }
+  #stamp-pop { position: absolute; z-index: 30; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #fff; border: 5px solid #e8505b; border-radius: 24px; padding: 20px 34px; text-align: center; animation: stampIn .5s cubic-bezier(.2,1.6,.4,1); pointer-events: none; }
+  #stamp-pop .big { font-size: 80px; }
+  #stamp-pop .txt { font-size: 26px; color: #c0392b; }
+  @keyframes stampIn { from { transform: translate(-50%, -50%) scale(2.2) rotate(-12deg); opacity: 0; } to { transform: translate(-50%, -50%) scale(1) rotate(-3deg); opacity: 1; } }
+
+  /* 선생님 패널 */
+  #btn-teacher-panel { position: absolute; right: 12px; top: 180px; z-index: 9; }
+  #teacher-panel { position: absolute; right: 12px; top: 180px; bottom: 90px; width: 280px; z-index: 9; background: var(--paper); border: 4px solid var(--wood); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  #teacher-panel .code-lbl { font-size: 15px; color: #7a6250; }
+  #teacher-code { font-size: 54px; letter-spacing: 8px; line-height: 1; color: var(--wood); }
+  #teacher-err { color: #c0392b; font-size: 14px; }
+  #teacher-panel .btn { font-size: 18px; padding: 8px 10px; }
+  #student-list { flex: 1; overflow: auto; border-top: 2px dashed #d9c3a3; padding-top: 6px; }
+  .stu { display: flex; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid #efe4d2; }
+  .stu canvas { width: 32px; height: 32px; image-rendering: pixelated; background: #cfe9f5; border-radius: 6px; flex: none; }
+  .stu b { display: block; font-size: 16px; } .stu small { color: #7a6250; font-size: 13px; }
+  .empty { color: #9a8270; font-size: 15px; }
+  #local-note { position: fixed; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 12px; background: #fff3a8; padding: 2px 8px; border-radius: 8px; z-index: 99; }
+  @media (max-width: 760px) { #teacher-panel { width: auto; left: 12px; top: auto; height: 46%; } }
+
+  /* 활동 창 */
+  #activity { position: absolute; inset: 0; z-index: 12; background: rgba(42,23,18,.6); display: flex; align-items: center; justify-content: center; padding: 10px; }
+  .act-box { background: var(--paper); border: 4px solid var(--wood); border-radius: 18px; width: min(980px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .act-head { display: flex; align-items: center; justify-content: space-between; background: #ffe9a8; border-bottom: 3px solid var(--wood); padding: 8px 12px; }
+  .act-title { font-size: 24px; color: var(--wood); }
+  .act-close { width: 44px; height: 44px; border: 3px solid var(--wood); border-radius: 10px; background: #fff; font-size: 22px; }
+  .act-body { padding: 12px 16px 16px; overflow: auto; }
+
+  .rb-top { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .rb-level { background: var(--wood); color: #fff; border-radius: 10px; padding: 4px 12px; font-size: 18px; }
+  .rb-hint { font-size: 20px; }
+  .rb-main { display: flex; gap: 16px; align-items: flex-start; }
+  .rb-board { position: relative; flex: none; width: min(46vh, 380px, 44vw); aspect-ratio: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); background: #7d808c; border: 4px solid #5c5f6b; border-radius: 8px; gap: 3px; padding: 3px; }
+  .rb-cell { background: #dde0e6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: clamp(22px, 5vh, 42px); }
+  .rb-cell:nth-child(odd) { background: #e8eaee; }
+  .rb-cell.goal { background: #d9f7c8; animation: glow 1.2s infinite alternate; }
+  @keyframes glow { to { box-shadow: inset 0 0 0 4px #6cc56c; } }
+  .rb-robot { position: absolute; width: 20%; height: 20%; display: flex; align-items: center; justify-content: center; font-size: clamp(26px, 6vh, 50px); transition: left .4s ease, top .4s ease; z-index: 2; padding: 3px; }
+  .rb-robot.shake { animation: shake .3s 2; }
+  .rb-robot.happy { animation: hop .4s 3; }
+  @keyframes shake { 25% { transform: translateX(-6px) rotate(-8deg); } 75% { transform: translateX(6px) rotate(8deg); } }
+  @keyframes hop { 50% { transform: translateY(-14px) scale(1.15); } }
+  .rb-msg { position: absolute; left: 6%; right: 6%; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.96); border: 3px solid var(--wood); border-radius: 14px; padding: 12px; font-size: 20px; text-align: center; z-index: 3; }
+  .rb-msg.bad { border-color: var(--bad); }
+  .rb-msg.good { border-color: var(--go); }
+  .rb-next { margin-top: 10px; }
+  .rb-side { flex: 1; min-width: 0; }
+  .rb-label { font-size: 17px; color: #7a6250; margin: 4px 0 6px; }
+  .rb-palette { display: flex; gap: 10px; flex-wrap: wrap; }
+  .rb-arrow { width: 74px; height: 74px; font-size: 40px; border: 3px solid var(--wood); border-radius: 14px; background: #fff; box-shadow: 0 4px 0 var(--wood); }
+  .rb-arrow:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--wood); }
+  .rb-strip { min-height: 70px; background: #f2ead9; border: 3px dashed #c9b28e; border-radius: 12px; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .rb-card { width: 48px; height: 48px; font-size: 26px; border: 2px solid var(--wood); border-radius: 10px; background: #fff; padding: 0; }
+  .rb-card.active { background: #ffcc33; transform: scale(1.15); }
+  .rb-empty { color: #b0987a; font-size: 17px; }
+  .rb-controls { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .rb-controls .btn { font-size: 19px; }
+  .rb-controls .btn-go { font-size: 24px; padding: 10px 26px; }
+  @media (max-width: 700px) { .rb-main { flex-direction: column; align-items: center; } .rb-board { width: min(80vw, 340px); } .rb-arrow { width: 62px; height: 62px; font-size: 32px; } }
+
+  .mg-steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .mg-steps span { padding: 4px 12px; border-radius: 20px; background: #efe4d2; color: #9a8270; font-size: 17px; }
+  .mg-steps span.on { background: #4f7fe8; color: #fff; }
+  .mg-count { text-align: center; color: #7a6250; font-size: 16px; }
+  .mg-stage { position: relative; height: min(24vh, 190px); margin: 6px auto; max-width: 520px; background: #f4f4f4; border: 3px solid #b9c2c9; border-radius: 16px; overflow: hidden; }
+  .mg-magnet { position: absolute; left: 10%; top: 50%; transform: translateY(-50%) rotate(-90deg); font-size: min(14vh, 96px); }
+  .mg-item { position: absolute; left: 70%; top: 50%; transform: translate(-50%, -50%); font-size: min(12vh, 84px); transition: left .8s ease-in-out; }
+  .mg-item.near { left: 46%; }
+  .mg-item.stick { left: 33%; transition: left .15s ease-in; animation: stuck .4s .15s; }
+  .mg-item.wobble { left: 70%; transition: left .6s ease-out; }
+  @keyframes stuck { 30% { transform: translate(-50%, -50%) rotate(-10deg); } 60% { transform: translate(-50%, -50%) rotate(8deg); } }
+  .mg-spark { position: absolute; left: 30%; top: 22%; font-size: 40px; opacity: 0; }
+  .mg-spark.on { animation: spark .7s; }
+  @keyframes spark { 30% { opacity: 1; transform: scale(1.4); } 100% { opacity: 0; } }
+  .mg-q { text-align: center; font-size: 26px; margin: 8px 0; }
+  .mg-btns { display: flex; gap: 16px; justify-content: center; }
+  .mg-yes { background: #ffd6d9; } .mg-no { background: #d6e6ff; }
+  .mg-result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .mg-verdict { font-size: 24px; } .mg-verdict.good { color: var(--go-d); } .mg-verdict.soso { color: #b26a00; }
+  .mg-why { font-size: 20px; background: #fff7d6; border-radius: 12px; padding: 8px 14px; }
+  .mg-baskets { display: flex; gap: 12px; margin-top: 12px; }
+  .mg-basket { flex: 1; border: 3px solid #d9c3a3; border-radius: 14px; padding: 6px 10px; min-height: 64px; background: #fff; text-align: center; }
+  .mg-basket b { font-size: 16px; color: #7a6250; }
+  .mg-basket div { font-size: 30px; letter-spacing: 4px; }
+</style>
+</head>
+<body>
+
+<!-- 첫 화면 -->
+<section class="screen" id="screen-start" hidden>
+  <div class="card">
+    <div class="logo">🏡🤖🧲</div>
+    <h1>꼬마 발명가 마을</h1>
+    <p class="sub">친구들과 함께 코딩하고 실험하는 마을이에요</p>
+    <div class="menu">
+      <button class="btn quick" id="btn-quick" hidden><span class="i">⚡</span><span>지난번처럼 들어가기<small></small></span></button>
+      <button class="btn" id="btn-student"><span class="i">🎒</span><span>학생으로 들어가기<small>선생님이 알려 준 숫자로 들어가요</small></span></button>
+      <button class="btn" id="btn-solo"><span class="i">🙂</span><span>혼자 둘러보기<small>연결 없이 혼자 놀아요</small></span></button>
+      <button class="btn" id="btn-teacher"><span class="i">🧑‍🏫</span><span>선생님: 방 만들기<small>이 기기가 방장이 되어 학생들을 받아요</small></span></button>
+    </div>
+  </div>
+</section>
+
+<!-- 입장 코드 -->
+<section class="screen" id="screen-code" hidden>
+  <div class="card">
+    <h2>🔢 입장 코드</h2>
+    <div id="code-boxes"><span></span><span></span><span></span><span></span></div>
+    <div class="msg" id="code-msg"></div>
+    <div id="code-pad"></div>
+    <div id="code-hint"></div>
+    <div class="row"><button class="btn btn-soft" id="code-back">◀ 처음으로</button></div>
+  </div>
+</section>
+
+<!-- 번호와 이름 -->
+<section class="screen" id="screen-number" hidden>
+  <div class="card">
+    <h2>🙋 내 번호를 눌러요</h2>
+    <div id="num-grid"></div>
+    <label class="lbl" for="name-input">이름 (안 써도 돼요)</label>
+    <input id="name-input" maxlength="6" autocomplete="off" placeholder="예: 민준">
+    <div class="row">
+      <button class="btn btn-soft" id="num-back">◀ 처음으로</button>
+      <button class="btn btn-go" id="num-next" disabled>다음 ▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- 캐릭터 꾸미기 -->
+<section class="screen" id="screen-avatar" hidden>
+  <div class="card">
+    <h2>✨ 내 캐릭터 꾸미기</h2>
+    <div class="avatar-wrap">
+      <div class="avatar-left">
+        <canvas id="avatar-preview" width="144" height="224"></canvas>
+        <div id="avatar-name"></div>
+        <button class="btn btn-soft" id="avatar-random" style="margin-top:8px;font-size:18px">🎲 아무거나</button>
+      </div>
+      <div id="avatar-options"></div>
+    </div>
+    <div class="row">
+      <button class="btn btn-soft" id="avatar-back">◀ 뒤로</button>
+      <button class="btn btn-go btn-big" id="avatar-go">마을로 출발! 🏡</button>
+    </div>
+  </div>
+</section>
+
+<!-- 게임 -->
+<section class="screen" id="screen-game" hidden>
+  <div class="game-frame">
+    <canvas id="game"></canvas>
+    <div id="fade"></div>
+
+    <div class="hud hud-tl">
+      <button class="hud-btn" id="btn-zoom-out" aria-label="작게">−</button>
+      <button class="hud-btn" id="btn-zoom-in" aria-label="크게">+</button>
+      <button class="hud-btn text" id="btn-music">♪ 음악 끄기</button>
+      <button class="hud-btn" id="btn-voice">🔊</button>
+    </div>
+    <div id="net-status" hidden></div>
+    <div id="minimap-wrap"><canvas id="minimap" width="200" height="140"></canvas></div>
+
+    <div class="hud hud-bl"><button class="round-btn" id="btn-emote" aria-label="인사하기">😊<small>인사</small></button></div>
+    <div id="emote-list" hidden></div>
+    <div class="hud hud-br"><button class="round-btn" id="btn-stamps" aria-label="도장책">📒<small>도장</small></button></div>
+
+    <button class="hud-btn text" id="btn-teacher-panel" hidden>🧑‍🏫 선생님 ◂</button>
+    <aside id="teacher-panel" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="code-lbl">학생 입장 코드</span><button class="hud-btn text" id="t-hide" style="height:34px;font-size:15px">접기 ▸</button></div>
+      <div id="teacher-code">····</div>
+      <div id="teacher-err" hidden></div>
+      <div>접속한 학생 <b id="student-count">0</b>명</div>
+      <button class="btn" id="t-gather">📢 모두 광장으로!</button>
+      <button class="btn" id="t-freeze">❄️ 얼음!</button>
+      <div id="student-list"><p class="empty">아직 들어온 학생이 없어요.<br>학생들에게 위 숫자를 알려 주세요.</p></div>
+    </aside>
+
+    <div id="dialog" hidden>
+      <canvas id="dlg-face" width="64" height="64"></canvas>
+      <div style="flex:1;min-width:0">
+        <div id="dlg-name"></div>
+        <div id="dlg-text"></div>
+        <div id="dlg-actions"></div>
+      </div>
+      <button id="dlg-close" aria-label="닫기">✕</button>
+      <div id="dlg-next">▼</div>
+    </div>
+
+    <div id="activity" hidden></div>
+
+    <div class="overlay" id="stampbook" hidden>
+      <div class="sheet">
+        <h2>📒 나의 도장책</h2>
+        <div id="stamp-count"></div>
+        <div id="stamp-list"></div>
+        <button class="btn" id="stamp-close">닫기</button>
+      </div>
+    </div>
+    <div id="stamp-pop" hidden><div class="big"></div><div class="txt"></div></div>
+
+    <div id="freeze" hidden><div>❄️ 얼음!<small>선생님을 봐 주세요</small></div></div>
+    <div id="toast" hidden></div>
+  </div>
+</section>
+<div id="local-note" hidden>시험 모드: 같은 브라우저의 탭끼리 연결해요</div>
+
+<script src="lib/peerjs.min.js"></script>
+<script src="js/avatar.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/net.js"></script>
+<script src="js/activities.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
