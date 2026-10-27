@@ -147,6 +147,30 @@
   .stu canvas { width: 32px; height: 32px; image-rendering: pixelated; background: #cfe9f5; border-radius: 6px; flex: none; }
   .stu b { display: block; font-size: 16px; } .stu small { color: #7a6250; font-size: 13px; }
   .empty { color: #9a8270; font-size: 15px; }
+  .stu.help { background: #fff1c2; border-radius: 8px; }
+  .board-sheet { width: min(1100px, 100%); text-align: left; display: flex; flex-direction: column; max-height: 100%; }
+  .board-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .board-top h2 { margin: 0; }
+  #board-sum { color: #7a6250; }
+  #board-sort { display: flex; gap: 4px; margin-left: auto; }
+  #board-sort button { border: 2px solid #d9c3a3; background: #fff; border-radius: 10px; padding: 4px 10px; font-size: 16px; }
+  #board-sort button.on { border-color: var(--wood); background: #ffe9a8; }
+  .board-help { color: #9a8270; font-size: 14px; margin: 6px 0; }
+  #board-table { overflow: auto; flex: 1; border-top: 2px solid #efe4d2; }
+  .br-row { display: grid; grid-template-columns: minmax(150px, 1.6fr) minmax(90px, 1fr) repeat(6, minmax(52px, .6fr)) 60px 104px; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #efe4d2; min-width: 760px; }
+  .br-head { position: sticky; top: 0; background: var(--paper); z-index: 1; font-size: 15px; color: #7a6250; }
+  .br-name { display: flex; align-items: center; gap: 6px; font-size: 17px; }
+  .br-name canvas { width: 30px; height: 30px; image-rendering: pixelated; background: #cfe9f5; border-radius: 6px; flex: none; }
+  .br-where { font-size: 14px; color: #7a6250; }
+  .br-cell { text-align: center; font-size: 15px; color: #b0987a; display: flex; flex-direction: column; align-items: center; }
+  .br-head .br-cell { font-size: 22px; } .br-head .br-cell small { font-size: 12px; color: #7a6250; }
+  .br-cell.got { font-size: 24px; }
+  .br-total { color: #3a2a22; font-size: 16px; }
+  .br-act .btn { font-size: 14px; padding: 4px 8px; box-shadow: 0 2px 0 var(--wood); }
+  .br-row.off { opacity: .5; }
+  .br-row.help { background: #fff1c2; }
+  .br-help { border: 2px solid #f59e3b; background: #fff; border-radius: 50%; width: 32px; height: 32px; font-size: 18px; padding: 0; animation: bob 1s infinite; }
+  .board-bottom { margin-top: 8px; text-align: right; }
   #local-note { position: fixed; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 12px; background: #fff3a8; padding: 2px 8px; border-radius: 8px; z-index: 99; }
   @media (max-width: 760px) { #teacher-panel { width: auto; left: 12px; top: auto; height: 46%; } }
 
@@ -387,6 +411,7 @@
       <div id="teacher-code">····</div>
       <div id="teacher-err" hidden></div>
       <div>접속한 학생 <b id="student-count">0</b>명</div>
+      <button class="btn btn-go" id="t-board">📊 반 진행판</button>
       <button class="btn" id="t-gather">📢 모두 광장으로!</button>
       <button class="btn" id="t-freeze">❄️ 얼음!</button>
       <div id="student-list"><p class="empty">아직 들어온 학생이 없어요.<br>학생들에게 위 숫자를 알려 주세요.</p></div>
@@ -411,6 +436,19 @@
         <div id="stamp-count"></div>
         <div id="stamp-list"></div>
         <button class="btn" id="stamp-close">닫기</button>
+      </div>
+    </div>
+    <div class="overlay" id="board" hidden>
+      <div class="sheet board-sheet">
+        <div class="board-top">
+          <h2>📊 우리 반 진행판</h2>
+          <span id="board-sum"></span>
+          <span id="board-sort"><button data-sort="num">번호순</button><button data-sort="stamps">도장 많은 순</button></span>
+          <button class="act-close" id="board-close" aria-label="닫기">✕</button>
+        </div>
+        <p class="board-help">숫자(3/6)는 아직 도장 전, 그 활동을 어디까지 했는지예요. 🙋는 도움을 요청한 학생이에요(누르면 지워져요).</p>
+        <div id="board-table"></div>
+        <div class="board-bottom"><button class="btn btn-soft" id="board-clear">🧹 나간 학생 지우기</button></div>
       </div>
     </div>
     <div id="stamp-pop" hidden><div class="big"></div><div class="txt"></div></div>
