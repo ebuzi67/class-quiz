@@ -473,8 +473,8 @@
 
   // ── 활동·도장 ──
   const STAMPS = [
-    ["robot", "🤖", "로봇 공장", true], ["magnet", "🧲", "자석 실험실", true], ["greenhouse", "🌱", "관찰 온실", false],
-    ["observatory", "🔭", "별 관측소", false], ["workshop", "🛠️", "발명 공방", false], ["garden", "🌻", "반복 정원", false]
+    ["robot", "🤖", "로봇 공장", true], ["magnet", "🧲", "자석 실험실", true], ["greenhouse", "🌱", "관찰 온실", true],
+    ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true]
   ];
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
@@ -500,6 +500,8 @@
       d.className = "stamp" + (stamps[id] ? " got" : "") + (open ? "" : " locked");
       let sub = stamps[id] ? "받았어요!" : open ? "아직 못 받았어요" : "곧 열려요";
       if (id === "robot" && !stamps[id] && progress.robot) sub = (progress.robot.cleared || 0) + " / " + Activities.LEVELS.length + "단계";
+      if (id === "garden" && !stamps[id] && progress.garden) sub = (progress.garden.cleared || 0) + " / 6단계";
+      if (id === "workshop" && !stamps[id] && progress.workshop) sub = progress.workshop.done.length + " / 4 미션";
       d.innerHTML = "<div class='e'>" + e + "</div><b>" + name + "</b><small>" + sub + "</small>";
       list.append(d);
     });

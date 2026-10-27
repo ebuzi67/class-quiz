@@ -214,6 +214,90 @@
   .mg-basket { flex: 1; border: 3px solid #d9c3a3; border-radius: 14px; padding: 6px 10px; min-height: 64px; background: #fff; text-align: center; }
   .mg-basket b { font-size: 16px; color: #7a6250; }
   .mg-basket div { font-size: 30px; letter-spacing: 4px; }
+  /* 🌻 반복 정원 */
+  .gd-main { display: flex; gap: 16px; align-items: flex-start; }
+  .gd-board { position: relative; flex: none; width: min(48vh, 400px, 46vw); aspect-ratio: 6 / 4; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 6px; background: #7cc25a; border: 4px solid #a0673d; border-radius: 10px; }
+  .gd-board.one-row { aspect-ratio: 6 / 1.1; }
+  .gd-cell { position: relative; background: #8a5636; border: 2px solid #6b3f22; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: clamp(18px, 4vh, 34px); }
+  .gd-cell .ghost { position: absolute; opacity: .3; filter: grayscale(.3); }
+  .gd-cell .plant { position: relative; }
+  .gd-cell.on { background: #9a6040; }
+  .gd-cell.bad { box-shadow: 0 0 0 3px #e8505b; }
+  .gd-farmer { position: absolute; display: flex; align-items: flex-start; justify-content: flex-end; font-size: clamp(16px, 3vh, 26px); transition: left .12s, top .12s; z-index: 2; pointer-events: none; }
+  .gd-side { flex: 1; min-width: 0; }
+  .gd-card { font-size: 36px; }
+  .gd-loop { margin-top: 4px; border: 4px solid #f59e3b; border-radius: 14px; background: #fff3d6; padding: 8px; display: inline-block; }
+  .gd-loop-head { display: flex; align-items: center; gap: 8px; font-size: 22px; margin-bottom: 6px; }
+  .gd-step { width: 40px; height: 40px; border: 3px solid var(--wood); border-radius: 10px; background: #fff; font-size: 24px; }
+  .gd-times { font-size: 30px; min-width: 36px; text-align: center; color: #c0392b; }
+  .gd-slots { display: flex; gap: 8px; }
+  .gd-slot { width: 58px; height: 58px; border: 3px dashed #c9b28e; border-radius: 12px; background: #fff; font-size: 32px; padding: 0; }
+  .gd-slot.full { border-style: solid; border-color: var(--wood); }
+  .gd-reading { margin: 8px 0; font-size: 18px; background: #f2ead9; border-radius: 10px; padding: 6px 10px; }
+  .gd-msg { font-size: 19px; margin-top: 8px; min-height: 26px; }
+  .gd-msg.bad { color: #c0392b; } .gd-msg.good { color: var(--go-d); }
+  @media (max-width: 700px) { .gd-main { flex-direction: column; align-items: center; } .gd-board { width: min(90vw, 380px); } }
+
+  /* 🌱 관찰 온실 · 🔭 별 관측소 공통 */
+  .gh-area { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .gh-pot { position: relative; width: 150px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+  .gh-plant { font-size: 72px; line-height: 1; margin-bottom: -6px; }
+  .gh-plant.up { animation: hop .5s; }
+  .gh-soil { width: 120px; height: 50px; background: #c96a3a; border: 4px solid #8a4a26; border-radius: 0 0 26px 26px; }
+  .gh-needs { display: flex; gap: 10px; align-items: center; font-size: 28px; }
+  .gh-needs span { opacity: .25; } .gh-needs span.got { opacity: 1; }
+  .gh-needs small { font-size: 16px; color: #7a6250; }
+  .gh-give, .gh-deck { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .gh-item, .gh-card { border: 3px solid var(--wood); border-radius: 14px; background: #fff; padding: 8px 12px; font-size: 18px; display: flex; flex-direction: column; align-items: center; min-width: 86px; box-shadow: 0 4px 0 var(--wood); }
+  .gh-item span, .gh-card span { font-size: 40px; }
+  .gh-item.no, .gh-card.no, .ob-pick.no { animation: shake .3s 2; }
+  .gh-slots { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .gh-slot { width: 96px; height: 96px; border: 3px dashed #c9b28e; border-radius: 14px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; color: #b0987a; }
+  .gh-slot.full { border: 3px solid #6cc56c; background: #eefbe6; color: #3a2a22; }
+  .gh-slot span { font-size: 40px; }
+  .ob-space { position: relative; width: min(420px, 90%); height: 190px; background: radial-gradient(circle at 20% 50%, #3b3f78, #141633 70%); border-radius: 16px; overflow: hidden; }
+  .ob-sun { position: absolute; left: 4%; top: 50%; transform: translateY(-50%); font-size: 70px; }
+  .ob-rays { position: absolute; left: 22%; right: 0; top: 50%; height: 120px; transform: translateY(-50%); background: linear-gradient(90deg, rgba(255,220,100,.35), rgba(255,220,100,0)); }
+  .ob-earth { position: absolute; left: 62%; top: 50%; width: 120px; height: 120px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 40% 40%, #6fd36b 0 18%, #3f8fe0 19% 100%); box-shadow: 0 0 0 3px #8fc6ff; }
+  .ob-earth.spin { animation: spin .8s ease-out; }
+  @keyframes spin { from { rotate: -180deg; } to { rotate: 0deg; } }
+  .ob-shade { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(90deg, rgba(0,0,0,0) 50%, rgba(5,8,30,.72) 50%); }
+  .ob-kid { position: absolute; font-size: 30px; line-height: 1; }
+  .ob-day { background: #ffe9a8; } .ob-night { background: #c9d2ff; }
+  .ob-note { color: #7a6250; font-size: 16px; }
+  .ob-moons { display: flex; gap: 10px; }
+  .ob-moon { width: 76px; height: 76px; border-radius: 16px; background: #141633; display: flex; align-items: center; justify-content: center; font-size: 50px; }
+  .ob-moon.hole { background: #3b3f78; font-size: 40px; border: 3px dashed #ffcc33; }
+  .ob-choices { display: flex; gap: 14px; }
+  .ob-pick { width: 86px; height: 86px; border: 3px solid var(--wood); border-radius: 16px; background: #fff; font-size: 54px; box-shadow: 0 4px 0 var(--wood); }
+
+  /* 🛠️ 발명 공방 */
+  .ws-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 4px; }
+  .ws-tab { border: 3px solid #d9c3a3; border-radius: 12px; background: #fff; font-size: 24px; padding: 4px 12px; }
+  .ws-tab.on { border-color: var(--wood); background: #ffe9a8; } .ws-tab.done { background: #eefbe6; }
+  .ws-main { display: flex; gap: 16px; align-items: flex-start; }
+  .ws-shelf { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(330px, 44%); }
+  .ws-part { border: 3px solid var(--wood); border-radius: 12px; background: #fff; padding: 4px 2px; font-size: 14px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 3px 0 var(--wood); }
+  .ws-part span { font-size: 32px; }
+  .ws-right { flex: 1; min-width: 0; text-align: center; }
+  .ws-table { display: flex; gap: 6px; justify-content: center; padding: 8px; background: #c98250; border: 3px solid #8a5232; border-radius: 12px; }
+  .ws-stage { position: relative; height: 110px; margin-top: 10px; border-radius: 14px; background: #f4ead6; overflow: hidden; }
+  .ws-stage.road { background: linear-gradient(#bfe6f8 70%, #8a8a8a 70%); }
+  .ws-stage.sky { background: linear-gradient(#9fd8f5, #e6f6ff); }
+  .ws-stage.night { background: #1c1f45; }
+  .ws-stage.water { background: linear-gradient(#cfeaf8 55%, #4fa3d8 55%); }
+  .ws-thing { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 34px; white-space: nowrap; }
+  .ws-thing.shake { animation: shake .3s 2; }
+  .ws-thing.drive { animation: drive 1.6s ease-in-out; }
+  .ws-thing.fly { animation: fly 1.6s ease-in-out forwards; }
+  .ws-thing.glow { filter: drop-shadow(0 0 14px #ffe066) drop-shadow(0 0 28px #ffcc33); }
+  .ws-thing.float { animation: bob 1s infinite; top: 46%; }
+  .ws-thing.sink { animation: sink 1.2s forwards; }
+  .ws-thing.flop { transform: translate(-50%, -20%) rotate(20deg); }
+  @keyframes drive { 0% { left: 50%; } 45% { left: 85%; } 55% { left: 15%; } 100% { left: 50%; } }
+  @keyframes fly { to { top: 18%; left: 70%; } }
+  @keyframes sink { to { top: 95%; opacity: .4; } }
+  @media (max-width: 700px) { .ws-main { flex-direction: column; } .ws-shelf { width: 100%; grid-template-columns: repeat(4, 1fr); } }
 </style>
 </head>
 <body>
@@ -342,6 +426,10 @@
 <script src="js/maps.js"></script>
 <script src="js/net.js"></script>
 <script src="js/activities.js"></script>
+<script src="js/act-garden.js"></script>
+<script src="js/act-greenhouse.js"></script>
+<script src="js/act-observatory.js"></script>
+<script src="js/act-workshop.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
