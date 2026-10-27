@@ -429,7 +429,7 @@
     talking = { npc, i: 0 };
     const box = $("#dialog");
     box.hidden = false;
-    Avatar.drawFace($("#dlg-face"), npc.look);
+    drawNpcFace($("#dlg-face"), npc);
     $("#dlg-name").textContent = npc.name;
     showLine();
   }
@@ -602,7 +602,7 @@
     if (mode === "solo") setStatus("🙂 혼자 둘러보기");
     if (mode === "join") setStatus("🟡 연결하는 중…");
     resize();
-    if (!Object.keys(bgs).length) await loadBackgrounds();
+    if (!Object.keys(bgs).length) await Promise.all([loadBackgrounds(), loadNpcImages()]);
     const sp = scenes.village.spawn;
     const spot = nearestFreeIn(scenes.village, sp.x + Math.floor(Math.random() * 5) - 2, sp.y + Math.floor(Math.random() * 2));
     setScene("village", spot.x, spot.y, "down");
@@ -633,6 +633,54 @@
     x = W <= vw ? (W - vw) / 2 : Math.max(0, Math.min(W - vw, x));
     y = H <= vh ? (H - vh) / 2 : Math.max(0, Math.min(H - vh, y));
     return { x, y, s, vw, vh };
+  }
+
+  // NPC는 AI 그림(assets/npc/아이디.webp)으로 그려요. 그림이 없으면 코드 캐릭터(look)로 그려요.
+  const npcImgs = {};
+  const NPC_H = 60; // NPC 그림 키(월드 픽셀, 마을 기준)
+  function loadNpcImages() {
+    const ids = new Set();
+    Object.values(scenes).forEach((sc) => sc.npcs.forEach((n) => ids.add(n.id)));
+    return Promise.all([...ids].map((id) => new Promise((done) => {
+      const img = new Image();
+      img.onload = () => { img.headX = headCenter(img); npcImgs[id] = img; done(); };
+      img.onerror = done;
+      img.src = "assets/npc/" + id + ".webp";
+    })));
+  }
+  // 얼굴 그림을 자를 때 쓰려고, 그림 위쪽에서 색이 가장 많이 칠해진 가로 위치를 찾아요
+  function headCenter(img) {
+    try {
+      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const x = c.getContext("2d"); x.drawImage(img, 0, 0);
+      const rows = Math.round(img.height * 0.3), d = x.getImageData(0, 0, img.width, rows).data;
+      let sum = 0, n = 0;
+      for (let y = 0; y < rows; y++) for (let i = 0; i < img.width; i++) if (d[(y * img.width + i) * 4 + 3] > 128) { sum += i; n++; }
+      return n ? sum / n : img.width / 2;
+    } catch (e) { return img.width / 2; }
+  }
+  function drawNpc(n) {
+    const img = npcImgs[n.id], x = (n.x + 0.5) * T, y = (n.y + 0.5) * T;
+    if (!img) return drawChar(n.look, x, y, n.dir, 0);
+    const k = charScale(), h = NPC_H * k, w = (img.width * h) / img.height, feet = y + 12 * k;
+    g.fillStyle = "rgba(0,0,0,.18)";
+    g.beginPath(); g.ellipse(x, feet - 2 * k, 13 * k, 4 * k, 0, 0, 7); g.fill();
+    g.imageSmoothingEnabled = true;
+    g.drawImage(img, x - (img.headX / img.width) * w, feet - h, w, h);
+    g.imageSmoothingEnabled = false;
+  }
+  function npcTop(n) {
+    const y = (n.y + 0.5) * T;
+    return npcImgs[n.id] ? y + 12 * charScale() - NPC_H * charScale() : headY(y);
+  }
+  function drawNpcFace(canvas, n) {
+    const img = npcImgs[n.id];
+    if (!img) return Avatar.drawFace(canvas, n.look);
+    const ctx = canvas.getContext("2d"), side = Math.min(img.width, img.height * 0.5);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    const sx = Math.max(0, Math.min(img.width - side, img.headX - side / 2));
+    ctx.drawImage(img, sx, 0, side, side, 0, 0, canvas.width, canvas.height);
   }
 
   // 건물 안 그림은 마을보다 크게 그려져 있어서 캐릭터도 조금 크게 그려요
@@ -719,7 +767,7 @@
 
     // 깊이 순서대로(아래쪽에 있을수록 나중에)
     const items = [];
-    scene.npcs.forEach((n) => items.push({ y: (n.y + 0.5) * T, draw: () => drawChar(n.look, (n.x + 0.5) * T, (n.y + 0.5) * T, n.dir, 0) }));
+    scene.npcs.forEach((n) => items.push({ y: (n.y + 0.5) * T, draw: () => drawNpc(n) }));
     others.forEach((o) => { if (o.scene === scene.id) items.push({ y: o.y, draw: () => drawChar(o.profile.avatar, o.x, o.y, o.dir, walkFrame(o.anim, o.moving)) }); });
     items.push({ y: me.y + 0.1, draw: () => drawChar(profile.avatar, me.x, me.y, me.dir, walkFrame(me.anim, me.moving)) });
     items.sort((a, b) => a.y - b.y).forEach((it) => it.draw());
@@ -731,7 +779,7 @@
     scene.labels.forEach((l) => tag(l.text, sx(l.x), sy(l.y), l.exit ? "exit" : "place", fs));
     const myT = tileOf(me.x, me.y);
     scene.npcs.forEach((n) => {
-      const cx = sx((n.x + 0.5) * T), top = sy(headY((n.y + 0.5) * T));
+      const cx = sx((n.x + 0.5) * T), top = sy(npcTop(n));
       tag(n.name, cx, top - 6, "npc", fs);
       if (Math.hypot(n.x - myT.x, n.y - myT.y) < 4 && !talking) bubble("💬", cx + 22, top - 18 + Math.sin(now / 250) * 3, fs + 4);
     });

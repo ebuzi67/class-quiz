@@ -75,7 +75,9 @@
 파일:
 - `village/assets/*.webp`: 마을과 건물 안 배경 그림 7장(이미지 AI로 만든 그림을 WebP로 줄인 것)
 - `village/js/maps.js`: 그림 위의 "보이지 않는 지도"(걸을 수 있는 곳, 막힌 곳, 문, NPC 자리와 대사, 활동 자리). 마을 그림은 48x32칸, 건물 안 그림은 20x18칸으로 나눠서 적어요. 그림을 바꾸면 이 칸들도 그림에 맞게 고쳐야 해요.
-- `village/js/avatar.js`: 픽셀 캐릭터(피부·머리 모양·머리색·옷색·꾸미기)
+- `village/assets/npc/*.webp`: NPC 7명 그림(이미지 AI로 만든 그림에서 배경을 지운 것). 마을에 서 있는 모습과 대화창 얼굴에 써요.
+- `tools/village/cut_npcs.py`: NPC 그림의 회색 배경·그림자를 지우고 잘라서 `village/assets/npc/`에 저장해요. NPC 그림을 바꿀 때 다시 실행해요.
+- `village/js/avatar.js`: 학생 픽셀 캐릭터(피부·머리 모양·머리색·옷색·꾸미기)
 - `village/js/activities.js`: 로봇 조종과 자석 실험. 단계(`LEVELS`)와 물건(`ITEMS`)을 여기서 고쳐요.
 - `village/js/net.js`: 여러 명 연결. Firebase로 바꿀 때는 이 파일에 전송 방법만 하나 더 만들면 돼요.
 - `village/js/main.js`: 화면, 움직이기, 대화, 소리, 선생님 패널
