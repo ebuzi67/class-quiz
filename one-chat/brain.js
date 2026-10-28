@@ -320,6 +320,25 @@ function findTurn(t) {
 // FIRST_COUNT: 글자마다 그 글자로 시작하는 원의 낱말 수
 const FIRST_COUNT = {};
 WORDS.forEach((w) => { FIRST_COUNT[w[0]] = (FIRST_COUNT[w[0]] || 0) + 1; });
+
+// 아이가 가르쳐 준 낱말: 이 기기에 저장해 두고 다음 끝말잇기부터 원도 써요
+const LEARN_KEY = "one-learned-words";
+function addWord(w) {
+  if (WORDS.includes(w)) return false;
+  WORDS.push(w);
+  FIRST_COUNT[w[0]] = (FIRST_COUNT[w[0]] || 0) + 1;
+  return true;
+}
+function learnWord(w) {
+  if (!addWord(w)) return false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEARN_KEY) || "[]");
+    saved.push(w);
+    localStorage.setItem(LEARN_KEY, JSON.stringify(saved.slice(-500)));
+  } catch (e) {}
+  return true;
+}
+try { JSON.parse(localStorage.getItem(LEARN_KEY) || "[]").forEach((w) => { if (/^[가-힣]{2,6}$/.test(w)) addWord(w); }); } catch (e) {}
 const START_WORDS = ["기차", "사과", "나비", "오리", "바나나", "우유", "피아노", "자두", "하마"];
 const IY = [2, 6, 7, 12, 17, 20]; // ㅑ ㅕ ㅖ ㅛ ㅠ ㅣ
 // 두음법칙: '리'로 끝나면 '이'로도, '라'로 끝나면 '나'로도 시작할 수 있어요
@@ -357,8 +376,10 @@ function chainTurn(t) {
   const cands = WORDS.filter((w) => starts.includes(w[0]) && !game.used.has(w));
   if (!cands.length || (game.turns >= 5 && Math.random() < 0.25)) {
     game = null;
+    expect = { type: "teach", starts };
     act("jump");
-    return [`"${word}"! 우와… ${ro(starts[0])} 시작하는 말… 음… 생각이 안 나! 네가 이겼어! 🏆`];
+    return [`"${word}"! 우와… ${ro(starts[0])} 시작하는 말… 음… 생각이 안 나! 네가 이겼어! 🏆`,
+      `${ro(starts[0])} 시작하는 말 알면 원한테 알려 줄래? 원도 배우고 싶어!`];
   }
   // 아이가 이어 가기 쉬운 낱말(그 끝 글자로 시작하는 말이 많은 것)을 먼저 골라요
   const easy = cands.filter((c) => startsFor(c[c.length - 1]).reduce((n, st) => n + (FIRST_COUNT[st] || 0), 0) >= 5);
@@ -366,6 +387,22 @@ function chainTurn(t) {
   game.used.add(w);
   game.last = w;
   return [`"${word}" 좋아! 👍 그럼 원은… "${w}"! 이번엔 ${chainHint(w)} 시작하는 말!`];
+}
+
+// 원이 진 뒤 아이가 "충치!", "충돌이 있어"처럼 알려 주면 받아서 배워요. 낱말이 없으면 null
+function teachTurn(t, starts) {
+  for (const tok of t.split(/[^가-힣]+/)) {
+    let w = tok;
+    if (!WORDS.includes(w)) {
+      const cut = w.replace(/(이야|이에요|예요|이요|이|가|은|는|을|를|도|야|요)$/, "");
+      if (cut.length >= 2) w = cut;
+    }
+    if (w.length < 2 || w.length > 6 || !starts.includes(w[0])) continue;
+    act("jump");
+    if (learnWord(w)) return [`아하, "${w}"! 그런 말이 있었구나! 원이 새 낱말을 배웠어. 고마워! 다음 끝말잇기 때 원도 써 볼게! ☝️`, "끝말잇기 한 판 더 할래?"];
+    return [`맞아, "${w}"! 원도 아는 말인데 깜빡했어! 헤헤 😅 너 정말 잘한다!`, "끝말잇기 한 판 더 할래?"];
+  }
+  return null;
 }
 
 // ---------- 놀이: 가위바위보 ----------
@@ -510,6 +547,14 @@ function reply(t, cell = null) {
   if (game?.type === "find") return findTurn(t);
   if (game?.type === "chain") return chainTurn(t);
   if (game?.type === "rps") return rpsTurn(t);
+  // 끝말잇기에서 원이 진 뒤, 아이가 알려 주는 낱말 받기
+  if (expect?.type === "teach") {
+    const starts = expect.starts;
+    expect = null;
+    const taught = teachTurn(t, starts);
+    if (taught) return taught;
+    if (/모르겠|몰라|없어|글쎄/.test(n)) return ["괜찮아! 우리 둘 다 몰랐네. 다음에 같이 찾아보자! 끝말잇기 또 할래?"];
+  }
   // 3. 힘든 이야기는 무엇보다 먼저 들어 줘요
   const hard = hardOf(n);
   // 위로하는 중에 이어서 하는 힘든 이야기는 처음부터 다시 묻지 않고 계속 들어 줘요(위험한 이야기는 바로 받아요)
@@ -556,6 +601,7 @@ function chipsNow() {
   if (game?.type === "rps") return HANDS.map((h) => ({ label: h, big: true })).concat({ label: "그만할래" });
   if (game?.type === "chain") return plain(["모르겠어", "그만할래"]);
   if (game?.type === "hide") return plain(["그만할래"]);
+  if (expect?.type === "teach") return plain(["몰라", "끝말잇기 또 하자"]);
   if (expect?.type === "comfort") return plain(["고마워 원", "이제 괜찮아", "가위바위보 하자", "노래 불러 줘"]);
   if (expect) return plain(["좋았어!", "그냥 그랬어", "별로였어", "몰라"]).concat(plain(CHIPS));
   return plain(CHIPS);
