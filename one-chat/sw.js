@@ -2,7 +2,7 @@
 // 화면 파일만 맡아요. 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // index.html은 manifest.json?v=숫자 로 불러요. 앱 이름·아이콘을 바꾸면 그 숫자를 올려야 휴대폰이 옛 이름을 안 써요.
 // 원의 대답은 모두 brain.js 안에 들어 있어서, 한 번 열어 두면 인터넷 없이도 이야기할 수 있어요.
-const CACHE = "one-chat-v7";
+const CACHE = "one-chat-v8";
 const FILES = [
   "./",
   "./index.html",
