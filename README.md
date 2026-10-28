@@ -58,6 +58,7 @@
 - 🎤 말로 하기(지원하는 브라우저만), 🔊 대답 소리로 읽기, ↺ 처음부터. 대화는 기기에만 남아요.
 - 원의 말과 놀이는 모두 `one-chat/brain.js`에 있어요. `TOPICS`(정해 둔 대답), `HARD`(위로), `FRIENDS`(친구), `WORDS`(끝말잇기 낱말)를 고치면 돼요. 화면은 `one-chat/index.html`이에요.
 - 끝말잇기 낱말은 `tools/one-chat/words.txt`에 주제별로 있어요. 고친 뒤 `python3 tools/one-chat/build_words.py`를 실행하면 `one-chat/words.js`가 새로 만들어져요.
+- 끝말잇기에서 원이 지면 "그 글자로 시작하는 말 알려 줄래?" 하고 물어요. 아이가 알려 준 낱말은 그 기기에 저장돼서(`one-learned-words`) 다음 판부터 원도 써요.
 - `tools/one-chat/make_icons.py`: `tools/one-chat/one.jpg`(원 그림)로 `one-chat/icons/` 아이콘을 만들어요.
 
 ## 꼬마 발명가 마을 (따로 분리된 앱)
