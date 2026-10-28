@@ -244,11 +244,34 @@ function act(kind) {
 }
 function talk(on) { fig.classList.toggle("talking", on); }
 
+// 소리로 읽을 글 다듬기. 휴대폰 음성은 숫자를 늘 "일, 이, 삼"으로 읽어서,
+// 세는 말(번, 개, 문제…) 앞의 숫자는 "한, 두, 세"로 바꿔 줘요: "3번 이기면" → "세 번 이기면"
+// 순서를 말하는 "1번 문제"는 "일 번 문제"가 맞아서 그대로 둬요.
+const NATIVE_TENS = ["", "열", "스물", "서른", "마흔", "쉰", "예순", "일흔", "여든", "아흔"];
+const NATIVE_ONES = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉"];
+function nativeCount(n) {
+  if (n === 20) return "스무";
+  return NATIVE_TENS[Math.floor(n / 10)] + NATIVE_ONES[n % 10];
+}
+function speechText(text) {
+  return text
+    .split("\n").filter((line) => !line.startsWith("🟥")).join("\n") // 블록 그림 줄은 읽지 않아요
+    .replace(/[\u{1F300}-\u{1FAFF}☀-➿⬀-⯿\uFE0F]/gu, "")
+    .replace(/\+/g, " 더하기 ")
+    .replace(/\s:\s/g, " 대 ") // (너 1 : 원 2) → 너 1 대 원 2
+    .replace(/(\d+)\s*(번째|번(?!\s*문제)|개|문제|줄|명|마리|살|판|가지|칸|장|권|시간|시)/g, (m, d, unit) => {
+      const n = Number(d);
+      if (n < 1 || n > 99) return m;
+      if (unit === "번째") return (n === 1 ? "첫" : nativeCount(n)) + " 번째";
+      return nativeCount(n) + " " + unit;
+    });
+}
+
 function sayAloud(text) {
   if (!speak || !("speechSynthesis" in window)) return;
   try {
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1FAFF}☀-➿⭐\u{1F7E5}]/gu, "").replace(/\+/g, " 더하기 "));
+    const u = new SpeechSynthesisUtterance(speechText(text));
     u.lang = "ko-KR"; u.pitch = 1.6; u.rate = 1.05;
     u.onstart = () => talk(true);
     u.onend = u.onerror = () => talk(false);
