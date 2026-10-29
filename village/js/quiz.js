@@ -102,12 +102,9 @@ const Quiz = (() => {
     Activities.register(def.id, (kit) => run(kit, def));
   }
 
-  let backTo = null; // 배움 동산 입구에서 열었으면 "다른 방" 버튼으로 돌아가요
-  function openFrom(hubId, id) { backTo = hubId; Activities.open(id); }
 
   function run({ el, frame, wait, ctx }, def) {
     const root = frame(def.e + " " + def.title + " · " + def.grade);
-    const back = backTo; backTo = null;
     const getP = () => Object.assign({ done: [], best: {} }, ctx.getProgress(def.id) || {});
 
     function home() {
@@ -125,11 +122,6 @@ const Quiz = (() => {
       });
       root.append(grid);
       root.append(el("div", "ob-note", "통과한 미션 " + p.done.length + " / " + def.missions.length + (p.done.length === def.missions.length ? " · 🎉 도장을 받았어요!" : " · 모두 통과하면 도장을 받아요")));
-      if (back) {
-        const b = el("button", "btn btn-soft", "◀ 다른 방 고르기");
-        b.onclick = () => { ctx.sfx("tap"); Activities.open(back); };
-        root.append(b);
-      }
       ctx.speak(line);
     }
 
@@ -234,25 +226,6 @@ const Quiz = (() => {
 
   const strip = (h) => String(h).replace(/<span class='fr'><b>(\d+)<\/b><i>(\d+)<\/i><\/span>/g, " $2분의 $1").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-  return { add, rooms, openFrom, tools, peek: () => shown, npcBanner, NPCS };
+  return { add, rooms, tools, peek: () => shown, npcBanner, NPCS };
 })();
 
-// 📚 배움 동산 입구: 과목과 학년을 골라 문제 방으로 가요.
-// (배움 동산 그림이 오기 전까지는 마을 아래쪽 길 끝에서 이 창으로 바로 들어가요)
-Activities.register("learnhub", ({ el, frame, ctx }) => {
-  const root = frame("📚 배움 동산: 어느 방으로 갈까요?");
-  [["🔢 수학", "math", "숫자랑 도형이랑 놀아 볼까?"], ["📖 국어", "kor", "재미있는 우리말 세상으로 가자!"]].forEach(([title, prefix, line]) => {
-    root.append(el("div", "mg-q", title));
-    root.append(Quiz.npcBanner(el, Quiz.NPCS[prefix], line));
-    const row = el("div", "qz-missions");
-    Quiz.rooms.filter((r) => r.id.startsWith(prefix)).forEach((r) => {
-      const p = ctx.getProgress(r.id) || { done: [] };
-      const all = p.done.length === r.missions.length;
-      const b = el("button", "qz-mission" + (all ? " done" : ""), "<span>" + r.e + "</span><b>" + r.grade.replace(/^\S+ /, "") + "</b><small>" + r.title + " · " + (all ? "✅ 도장" : p.done.length + "/" + r.missions.length) + "</small>");
-      b.onclick = () => { ctx.sfx("door"); Quiz.openFrom("learnhub", r.id); };
-      row.append(b);
-    });
-    root.append(row);
-  });
-  ctx.speak("배움 동산이에요. 수학이나 국어 방을 골라요.");
-});

@@ -50,8 +50,8 @@ const Maps = (() => {
       { id: "observatory", x: 10, y: 21, w: 1, out: { x: 10, y: 22, dir: "down" } },
       { id: "workshop", x: 35, y: 20, w: 2, out: { x: 35, y: 21, dir: "down" } },
       { id: "garden", x: 22, y: 22, w: 3, out: { x: 23, y: 20, dir: "up" } },
-      // 아래쪽 길 끝: 배움 동산(수학·국어 방). 지금은 입구 창이 열려요.
-      { id: "learn", x: 34, y: 30, w: 3, out: { x: 35, y: 28, dir: "up" }, activity: "learnhub", name: "배움 동산", emoji: "📚" }
+      // 아래쪽 길 끝: 배움 동산(수학 탑·국어 도서관)으로 가는 길
+      { id: "hill", x: 34, y: 30, w: 3, out: { x: 35, y: 28, dir: "up" }, name: "배움 동산", emoji: "📚" }
     ],
     // 건물 그림을 누르면 그 건물 문으로 걸어가요
     areas: [
@@ -128,13 +128,65 @@ const Maps = (() => {
     }
   };
 
+  // ───────────────────────── 배움 동산 ─────────────────────────
+  // 그림 1312x1199를 40x36칸으로 나눠요. 위쪽 길과 아래쪽 문은 마을로 이어져요.
+  // 수학 탑·국어 도서관 문에 들어가면 학년(1-2, 3-4, 5-6)을 골라 그 방으로 가요.
+  const HILL = {
+    id: "hill", name: "배움 동산", w: 40, h: 36, img: "assets/hill.webp", backdrop: "#4e8a3a",
+    walk: [[3, 14, 37, 27], [19, 0, 21, 13], [19, 28, 21, 34]],
+    solid: [
+      [2, 14, 7, 15], [10, 14, 14, 14], [15, 14, 17, 14],          // 수학 탑 앞 꽃밭, 벤치
+      [26, 14, 29, 15], [32, 14, 38, 16], [22, 14, 24, 14],        // 국어 도서관 앞 꽃밭, 벤치
+      [18, 16, 23, 21], [13, 19, 13, 20], [26, 19, 26, 20],        // 분수, 가로등
+      [14, 22, 16, 23], [23, 22, 25, 23],                          // 광장 벤치
+      [3, 18, 5, 27], [6, 19, 7, 21], [2, 21, 6, 23], [4, 23, 7, 26], [8, 25, 11, 26], [6, 27, 9, 27], [15, 27, 18, 27], // 왼쪽 나무·게시판·울타리
+      [25, 26, 29, 27], [30, 27, 32, 27], [32, 22, 38, 28], [35, 17, 39, 21], [37, 14, 39, 17] // 오른쪽 표지판·쉼터·나무
+    ],
+    doors: [
+      { id: "tower", x: 8, y: 14, w: 2, out: { x: 8, y: 16, dir: "down" }, pick: ["math12", "math34", "math56"], name: "수학 탑", emoji: "🔢" },
+      { id: "library", x: 30, y: 14, w: 2, out: { x: 30, y: 16, dir: "down" }, pick: ["kor12", "kor34", "kor56"], name: "국어 도서관", emoji: "📖" },
+      { id: "top", x: 19, y: 0, w: 3, to: "village", out: { x: 20, y: 2, dir: "down" }, name: "마을로", emoji: "🏡" },
+      { id: "bottom", x: 19, y: 34, w: 3, to: "village", out: { x: 20, y: 31, dir: "up" }, name: "마을로", emoji: "🏡" }
+    ],
+    areas: [{ id: "tower", r: [3, 0, 14, 13] }, { id: "library", r: [26, 3, 38, 13] }],
+    spawn: { x: 20, y: 2, dir: "down" },
+    npcs: [
+      { id: "semsem", name: "셈셈 박사", x: 11, y: 17, dir: "down",
+        lines: ["반가워! 나는 셈셈 박사야. 저기 도형 모자를 쓴 건물이 수학 탑이야.", "수학 탑에 들어가면 1-2학년, 3-4학년, 5-6학년 방 중에서 고를 수 있어.", "방마다 미션이 5개! 모두 통과하면 도장을 받아."] },
+      { id: "mallang", name: "말랑 작가", x: 28, y: 18, dir: "down",
+        lines: ["안녕! 나는 이야기를 쓰는 말랑 작가야.", "책 지붕 건물이 국어 도서관이야. 들어가서 내 학년 방을 골라 봐.", "한글 놀이방, 이야기 도서관, 꼬마 방송국이 기다리고 있어!"] }
+    ]
+  };
+
+  // 수학·국어 방: 그림이 모두 같은 구조(아래 가운데 문, 가운데 큰 탁자)라 바닥은 같고 가구만 달라요.
+  const TABLE = [[7, 7, 12, 10], [6, 8, 6, 9], [13, 8, 13, 9]];
+  const QUIZ_ROOMS = {
+    math12: { name: "숫자 놀이방", emoji: "🧸", parent: "hill", npc: "semsem", solid: [[2, 5, 2, 10], [2, 11, 4, 13], [17, 5, 17, 9], [17, 13, 17, 14]] },
+    math34: { name: "측정 공방", emoji: "⚖️", parent: "hill", npc: "semsem", solid: [[2, 5, 4, 6], [2, 7, 2, 10], [2, 11, 3, 14], [17, 6, 17, 11], [17, 13, 17, 14], [13, 14, 16, 14]] },
+    math56: { name: "수학 탐정 사무소", emoji: "🕵️", parent: "hill", npc: "semsem", solid: [[2, 7, 2, 13], [3, 11, 3, 13], [16, 8, 17, 11], [17, 5, 17, 7], [17, 12, 17, 14]] },
+    kor12: { name: "한글 놀이방", emoji: "🧩", parent: "hill", npc: "mallang", solid: [[2, 5, 3, 8], [2, 9, 2, 13], [3, 13, 4, 13], [14, 5, 17, 6], [17, 7, 17, 9], [16, 10, 17, 12]] },
+    kor34: { name: "이야기 도서관", emoji: "📚", parent: "hill", npc: "mallang", solid: [[2, 5, 5, 6], [2, 7, 2, 9], [2, 10, 3, 11], [2, 12, 2, 14], [4, 14, 4, 14], [15, 7, 17, 9], [17, 5, 17, 6], [16, 12, 17, 14], [15, 13, 15, 14]] },
+    kor56: { name: "꼬마 방송국", emoji: "🎙️", parent: "hill", npc: "mallang", solid: [[2, 5, 4, 6], [3, 7, 3, 7], [2, 9, 2, 13], [3, 10, 3, 13], [4, 11, 4, 13], [16, 5, 17, 6], [16, 8, 17, 11], [16, 12, 17, 14]] }
+  };
+  const QUIZ_NPC = {
+    semsem: { name: "셈셈 박사", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 수학 미션을 풀 수 있어. 5문제 중 4문제를 맞히면 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] },
+    mallang: { name: "말랑 작가", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 국어 미션을 풀 수 있어. 5문제 중 4문제를 맞히면 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] }
+  };
+  Object.entries(QUIZ_ROOMS).forEach(([id, q]) => {
+    ROOMS[id] = {
+      name: q.name, emoji: q.emoji, parent: q.parent, floor: [2, 5, 17, 14], door: { x: 9, y: 15, w: 2 },
+      solid: q.solid.concat(TABLE, LAMPS),
+      stations: [{ x: 7, y: 7, w: 6, h: 4, activity: id, label: "📝 미션 탁자" }],
+      npcs: [{ id: q.npc, name: QUIZ_NPC[q.npc].name, x: 4, y: 8, dir: "right", activity: id, actionLabel: "📝 미션 시작", lines: QUIZ_NPC[q.npc].line(q) }]
+    };
+  });
+
   function finish(sc) {
     sc.npcs.forEach((n) => { sc.solid[n.y][n.x] = true; });
     return sc;
   }
 
-  function buildVillage() {
-    const v = VILLAGE;
+  function buildOutdoor(v) {
     const sc = { id: v.id, name: v.name, w: v.w, h: v.h, img: v.img, backdrop: v.backdrop, indoor: false,
       spawn: v.spawn, gather: v.gather, npcs: v.npcs.map((n) => Object.assign({}, n)), stations: [], labels: [], doors: [], areas: [] };
     sc.solid = grid(v.w, v.h, true);
@@ -143,9 +195,11 @@ const Maps = (() => {
     v.doors.forEach((d) => {
       const room = ROOMS[d.id] || d;
       paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
-      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.activity ? null : d.id, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
-      const above = d.id === "garden" || d.activity;
-      sc.labels.push({ text: room.emoji + " " + room.name + (d.activity ? " ▼" : ""), x: (d.x + d.w / 2) * T, y: above ? d.y * T - 4 : (d.y + 2) * T + 6, small: true });
+      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick ? null : d.to || d.id, pick: d.pick, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
+      const edge = d.y === 0 ? "top" : d.y === v.h - 2 || d.y === v.h - 1 || d.id === "hill" ? "bottom" : null;
+      const text = room.emoji + " " + room.name + (edge === "top" ? " ▲" : edge === "bottom" ? " ▼" : "");
+      const above = d.id === "garden" || edge === "bottom";
+      sc.labels.push({ text, x: (d.x + d.w / 2) * T, y: above ? d.y * T - 4 : (d.y + 2) * T + 6, small: true });
     });
     v.areas.forEach((a) => sc.areas.push({ id: a.id, r: a.r, door: sc.doors.find((d) => d.id === a.id) }));
     return finish(sc);
@@ -153,7 +207,7 @@ const Maps = (() => {
 
   function buildRoom(id) {
     const r = ROOMS[id];
-    const sc = { id, name: r.name, w: 20, h: 18, img: "assets/" + id + ".webp", backdrop: r.backdrop || "#2a1712", indoor: true,
+    const sc = { id, name: r.name, emoji: r.emoji, w: 20, h: 18, img: "assets/" + id + ".webp", backdrop: r.backdrop || "#2a1712", indoor: true,
       npcs: r.npcs.map((n) => Object.assign({}, n)), stations: r.stations.map((s) => Object.assign({}, s)), labels: [], doors: [], areas: [] };
     sc.solid = grid(20, 18, true);
     paint(sc.solid, r.floor, false);
@@ -162,7 +216,7 @@ const Maps = (() => {
     sc.stations.forEach((s) => { if (!s.walkable) paint(sc.solid, [s.x, s.y, s.x + s.w - 1, s.y + s.h - 1], true); });
     const d = r.door;
     paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
-    sc.doors.push({ x: d.x, y: d.y, w: d.w, to: "village", id: "exit", name: "나가기" });
+    sc.doors.push({ x: d.x, y: d.y, w: d.w, to: r.parent || "village", id: "exit", name: "나가기" });
     sc.labels.push({ text: "▼ 나가기", x: (d.x + d.w / 2) * T, y: (d.y + 3) * T - 2, exit: true });
     sc.stations.forEach((s) => { if (s.label) sc.labels.push({ text: s.label, x: (s.x + s.w / 2) * T, y: s.y * T - 2, small: true }); });
     sc.spawn = { x: d.x, y: d.y - 1, dir: "up" };
@@ -191,7 +245,7 @@ const Maps = (() => {
   }
 
   function buildAll() {
-    const all = { village: buildVillage() };
+    const all = { village: buildOutdoor(VILLAGE), hill: buildOutdoor(HILL) };
     Object.keys(ROOMS).forEach((id) => { all[id] = buildRoom(id); });
     return all;
   }
