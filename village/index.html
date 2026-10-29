@@ -157,7 +157,7 @@
   #board-sort button.on { border-color: var(--wood); background: #ffe9a8; }
   .board-help { color: #9a8270; font-size: 14px; margin: 6px 0; }
   #board-table { overflow: auto; flex: 1; border-top: 2px solid #efe4d2; }
-  .br-row { display: grid; grid-template-columns: minmax(150px, 1.6fr) minmax(90px, 1fr) repeat(6, minmax(52px, .6fr)) 60px 104px; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #efe4d2; min-width: 760px; }
+  .br-row { display: grid; grid-template-columns: minmax(150px, 1.6fr) minmax(90px, 1fr) repeat(12, minmax(46px, .5fr)) 60px 104px; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #efe4d2; min-width: 1080px; }
   .br-head { position: sticky; top: 0; background: var(--paper); z-index: 1; font-size: 15px; color: #7a6250; }
   .br-name { display: flex; align-items: center; gap: 6px; font-size: 17px; }
   .br-name canvas { width: 30px; height: 30px; image-rendering: pixelated; background: #cfe9f5; border-radius: 6px; flex: none; }
@@ -171,6 +171,41 @@
   .br-row.help { background: #fff1c2; }
   .br-help { border: 2px solid #f59e3b; background: #fff; border-radius: 50%; width: 32px; height: 32px; font-size: 18px; padding: 0; animation: bob 1s infinite; }
   .board-bottom { margin-top: 8px; text-align: right; }
+  /* 📚 배움 동산 문제 방 */
+  .qz-npc { display: flex; align-items: center; gap: 12px; background: #fff7d6; border: 3px solid #e8c98a; border-radius: 16px; padding: 6px 14px; margin: 4px auto 6px; max-width: 640px; text-align: left; }
+  .qz-npc img { height: 84px; flex: none; }
+  .qz-npc b { display: inline-block; background: #e8743b; color: #fff; padding: 1px 10px; border-radius: 6px; font-size: 15px; font-weight: normal; }
+  .qz-npc p { margin: 4px 0 0; font-size: 18px; }
+  .qz-missions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 8px 0 12px; }
+  .qz-mission { border: 3px solid var(--wood); border-radius: 14px; background: #fff; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; box-shadow: 0 4px 0 var(--wood); }
+  .qz-mission span { font-size: 36px; } .qz-mission b { font-size: 19px; } .qz-mission small { font-size: 14px; color: #7a6250; }
+  .qz-mission.done { background: #eefbe6; border-color: #3a7d2a; }
+  .qz-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .qz-dots { display: flex; gap: 6px; }
+  .qz-dots span { width: 18px; height: 18px; border-radius: 50%; background: #efe4d2; border: 2px solid #d9c3a3; }
+  .qz-dots span.now { border-color: var(--wood); background: #ffe9a8; } .qz-dots span.ok { background: #6cc56c; border-color: #3a7d2a; } .qz-dots span.no { background: #f4a3a3; border-color: #c0392b; }
+  .qz-listen { margin-left: auto; font-size: 16px; padding: 6px 10px; }
+  .qz-box { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .qz-text { font-size: 24px; }
+  .qz-visual { display: flex; justify-content: center; }
+  .qz-big { font-size: 34px; background: #fff7d6; border-radius: 14px; padding: 8px 20px; line-height: 1.5; }
+  .qz-svg { width: min(170px, 34vh); height: auto; } .qz-svg.wide { width: min(240px, 46vh); }
+  .qz-objs { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 360px; font-size: 32px; }
+  .qz-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; width: min(620px, 100%); }
+  .qz-choices.long { grid-template-columns: 1fr; }
+  .qz-choice { border: 3px solid var(--wood); border-radius: 14px; background: #fff; font-size: 24px; padding: 10px 12px; box-shadow: 0 4px 0 var(--wood); min-height: 64px; }
+  .qz-choices.long .qz-choice { font-size: 20px; text-align: left; }
+  .qz-choice.right { background: #d9f7c8; border-color: #3a7d2a; } .qz-choice.wrong { background: #ffd6d9; border-color: #c0392b; }
+  .qz-choice:disabled { opacity: 1; }
+  .qz-choice .fr { font-size: 1em; }
+  .fr { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 2px; font-size: .8em; }
+  .fr b { border-bottom: 2px solid currentColor; padding: 0 3px; font-weight: normal; } .fr i { font-style: normal; padding: 0 3px; }
+  .qz-pad { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .qz-display { min-width: 180px; font-size: 36px; background: #fff; border: 3px solid var(--wood); border-radius: 12px; padding: 4px 16px; }
+  .qz-display small { font-size: 20px; color: #7a6250; }
+  .qz-keys { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; }
+  .qz-keys button { height: 56px; font-size: 26px; border: 3px solid var(--wood); border-radius: 12px; background: #fff; box-shadow: 0 3px 0 var(--wood); }
+  .qz-keys button.ok { background: #8fd16a; font-size: 20px; }
   #local-note { position: fixed; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 12px; background: #fff3a8; padding: 2px 8px; border-radius: 8px; z-index: 99; }
   @media (max-width: 760px) { #teacher-panel { width: auto; left: 12px; top: auto; height: 46%; } }
 
@@ -468,6 +503,9 @@
 <script src="js/act-greenhouse.js"></script>
 <script src="js/act-observatory.js"></script>
 <script src="js/act-workshop.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/q-math.js"></script>
+<script src="js/q-korean.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

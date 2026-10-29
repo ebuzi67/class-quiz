@@ -1,6 +1,6 @@
 # NPC 그림(회색 배경)에서 배경·그림자·✦ 표시를 지우고 캐릭터만 잘라 village/assets/npc/에 저장해요.
 # 실행: python3 tools/village/cut_npcs.py 원본폴더
-#   원본폴더 안에 chief.png, bolt.png, sprout.png, snap.png, luna.png, tinker.png, farmer.png 가 있어야 해요.
+#   원본폴더 안에 NAMES의 이름으로 된 png(예: chief.png)를 넣어요. 없는 이름은 건너뛰어요.
 # 가장자리에서부터 바로 옆 칸과 색이 거의 같은 회색 칸만 따라가며 지워요(배경의 은은한 그러데이션도 따라가요).
 # 흰 머리·흰 가운처럼 배경과 색이 꽤 다른 칸에서는 멈춰요.
 # 그다음 발밑 그림자(푸르스름한 회색 타원)만 따로 지워요.
@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 OUT = Path(__file__).resolve().parents[2] / "village" / "assets" / "npc"
-NAMES = ["chief", "bolt", "sprout", "snap", "luna", "tinker", "farmer"]
+NAMES = ["chief", "bolt", "sprout", "snap", "luna", "tinker", "farmer", "semsem", "mallang"]
 HEIGHT = 180  # 저장할 그림 높이(px)
 STEP = 7      # 이웃 칸과 이만큼(채널마다) 넘게 다르면 배경이 아니에요
 
@@ -96,6 +96,8 @@ def main():
     src = Path(sys.argv[1])
     OUT.mkdir(parents=True, exist_ok=True)
     for name in NAMES:
+        if not (src / f"{name}.png").exists():
+            continue
         im = cut(src / f"{name}.png")
         im.save(OUT / f"{name}.webp", "WEBP", quality=90, method=6)
         print(name, im.size)

@@ -404,21 +404,47 @@
     if (!door) { doorArmed = true; return; }
     if (!doorArmed) return;
     doorArmed = false;
-    if (door.to === "village") {
-      const out = scenes.village.doors.find((x) => x.id === scene.id).out;
+    if (door.pick) {
       Sound.sfx("door");
-      setScene("village", out.x, out.y, out.dir);
+      const c = tileCenter(door.out.x, door.out.y);
+      me.x = c.x; me.y = c.y; me.dir = door.out.dir; me.path = []; me.onArrive = null;
+      openPicker(door);
     } else if (door.to) {
       Sound.sfx("door");
-      const target = scenes[door.to];
-      setScene(door.to, target.spawn.x, target.spawn.y, target.spawn.dir);
-    } else {
+      goTo(door.to);    } else {
       Sound.sfx("bump");
       const text = door.emoji + " " + door.name + "은(는) 곧 열려요! 조금만 기다려 줘요.";
       toast(text, 2600); speak(door.name + "은 곧 열려요! 조금만 기다려 줘요.");
       me.path = []; me.onArrive = null;
       if (door.out) walkTo(door.out.x, door.out.y);
     }
+  }
+
+  // 다른 곳으로 갈 때는, 그곳에서 지금 있던 곳으로 이어지는 문 앞에 나타나요(없으면 시작 자리)
+  function goTo(id) {
+    const from = scene.id, target = scenes[id];
+    const back = target.doors.find((d) => d.out && (d.id === from || (d.pick && d.pick.includes(from)))) ||
+      target.doors.find((d) => d.out && d.to === from);
+    const at = back ? back.out : target.spawn;
+    setScene(id, at.x, at.y, at.dir);
+  }
+
+  // 수학 탑·국어 도서관: 학년 방 고르기
+  function openPicker(door) {
+    Activities.register("picker", ({ el, frame }) => {
+      const root = frame(door.emoji + " " + door.name + ": 몇 학년 방으로 갈까요?");
+      const row = el("div", "qz-missions");
+      door.pick.forEach((id) => {
+        const r = scenes[id], st = STAMPS.find((x) => x[0] === id), p = progress[id] || { done: [] };
+        const b = el("button", "qz-mission" + (stamps[id] ? " done" : ""),
+          "<span>" + r.emoji + "</span><b>" + st[2].replace(/^\S+ /, "") + "학년</b><small>" + r.name + " · " + (stamps[id] ? "✅ 도장" : p.done.length + "/5") + "</small>");
+        b.onclick = () => { Activities.close(); goTo(id); };
+        row.append(b);
+      });
+      root.append(row);
+      speak(door.name + "이에요. 몇 학년 방으로 갈까요?");
+    });
+    Activities.open("picker");
   }
 
   // ── 대화 ──
@@ -475,8 +501,11 @@
   // ── 활동·도장 ──
   const STAMPS = [
     ["robot", "🤖", "로봇 공장", true], ["magnet", "🧲", "자석 실험실", true], ["greenhouse", "🌱", "관찰 온실", true],
-    ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true]
+    ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true],
+    ["math12", "🧸", "수학 1-2", true], ["math34", "⚖️", "수학 3-4", true], ["math56", "🕵️", "수학 5-6", true],
+    ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true]
   ];
+  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56"];
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
@@ -503,6 +532,7 @@
       if (id === "robot" && !stamps[id] && progress.robot) sub = (progress.robot.cleared || 0) + " / " + Activities.LEVELS.length + "단계";
       if (id === "garden" && !stamps[id] && progress.garden) sub = (progress.garden.cleared || 0) + " / 6단계";
       if (id === "workshop" && !stamps[id] && progress.workshop) sub = progress.workshop.done.length + " / 4 미션";
+      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = progress[id].done.length + " / 5 미션";
       d.innerHTML = "<div class='e'>" + e + "</div><b>" + name + "</b><small>" + sub + "</small>";
       list.append(d);
     });
@@ -642,6 +672,7 @@
     if (id === "robot" && p.robot) return p.robot.cleared + "/" + Activities.LEVELS.length;
     if (id === "garden" && p.garden) return p.garden.cleared + "/6";
     if (id === "workshop" && p.workshop) return p.workshop.done.length + "/4";
+    if (QUIZ_IDS.includes(id) && p[id]) return p[id].done.length + "/5";
     return "";
   }
 
@@ -951,14 +982,14 @@
   function roundRect(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
   function drawMini(v) {
-    const m = minis.village;
-    if (mini.width !== m.width) { mini.width = m.width; mini.height = m.height; }
+    const m = minis[scene.id];
+    if (mini.width !== m.width || mini.height !== m.height) { mini.width = m.width; mini.height = m.height; }
     mg.drawImage(m, 0, 0);
     const s = m.width / (scene.w * T);
     mg.strokeStyle = "rgba(255,255,255,.9)"; mg.lineWidth = 1.5;
     mg.strokeRect(v.x * s, v.y * s, v.vw * s, v.vh * s);
     scene.npcs.forEach((n) => { mg.fillStyle = "#ffcc33"; mg.fillRect((n.x + 0.5) * T * s - 2, (n.y + 0.5) * T * s - 2, 4, 4); });
-    others.forEach((o) => { if (o.scene === "village") { mg.fillStyle = o.profile.teacher ? "#ff9f1a" : "#ffffff"; mg.beginPath(); mg.arc(o.x * s, o.y * s, 2.6, 0, 7); mg.fill(); } });
+    others.forEach((o) => { if (o.scene === scene.id) { mg.fillStyle = o.profile.teacher ? "#ff9f1a" : "#ffffff"; mg.beginPath(); mg.arc(o.x * s, o.y * s, 2.6, 0, 7); mg.fill(); } });
     mg.fillStyle = "#e8505b"; mg.strokeStyle = "#fff"; mg.beginPath(); mg.arc(me.x * s, me.y * s, 4, 0, 7); mg.fill(); mg.stroke();
   }
 
