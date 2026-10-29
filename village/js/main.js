@@ -408,6 +408,11 @@
       const out = scenes.village.doors.find((x) => x.id === scene.id).out;
       Sound.sfx("door");
       setScene("village", out.x, out.y, out.dir);
+    } else if (door.activity) {
+      Sound.sfx("door");
+      const c = tileCenter(door.out.x, door.out.y);
+      me.x = c.x; me.y = c.y; me.dir = door.out.dir;
+      openActivity(door.activity);
     } else if (door.to) {
       Sound.sfx("door");
       const target = scenes[door.to];
@@ -475,8 +480,11 @@
   // ── 활동·도장 ──
   const STAMPS = [
     ["robot", "🤖", "로봇 공장", true], ["magnet", "🧲", "자석 실험실", true], ["greenhouse", "🌱", "관찰 온실", true],
-    ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true]
+    ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true],
+    ["math12", "🧸", "수학 1-2", true], ["math34", "⚖️", "수학 3-4", true], ["math56", "🕵️", "수학 5-6", true],
+    ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true]
   ];
+  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56"];
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
@@ -503,6 +511,7 @@
       if (id === "robot" && !stamps[id] && progress.robot) sub = (progress.robot.cleared || 0) + " / " + Activities.LEVELS.length + "단계";
       if (id === "garden" && !stamps[id] && progress.garden) sub = (progress.garden.cleared || 0) + " / 6단계";
       if (id === "workshop" && !stamps[id] && progress.workshop) sub = progress.workshop.done.length + " / 4 미션";
+      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = progress[id].done.length + " / 5 미션";
       d.innerHTML = "<div class='e'>" + e + "</div><b>" + name + "</b><small>" + sub + "</small>";
       list.append(d);
     });
@@ -642,6 +651,7 @@
     if (id === "robot" && p.robot) return p.robot.cleared + "/" + Activities.LEVELS.length;
     if (id === "garden" && p.garden) return p.garden.cleared + "/6";
     if (id === "workshop" && p.workshop) return p.workshop.done.length + "/4";
+    if (QUIZ_IDS.includes(id) && p[id]) return p[id].done.length + "/5";
     return "";
   }
 

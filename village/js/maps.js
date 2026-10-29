@@ -49,7 +49,9 @@ const Maps = (() => {
       { id: "greenhouse", x: 36, y: 11, w: 2, out: { x: 36, y: 13, dir: "down" } },
       { id: "observatory", x: 10, y: 21, w: 1, out: { x: 10, y: 22, dir: "down" } },
       { id: "workshop", x: 35, y: 20, w: 2, out: { x: 35, y: 21, dir: "down" } },
-      { id: "garden", x: 22, y: 22, w: 3, out: { x: 23, y: 20, dir: "up" } }
+      { id: "garden", x: 22, y: 22, w: 3, out: { x: 23, y: 20, dir: "up" } },
+      // 아래쪽 길 끝: 배움 동산(수학·국어 방). 지금은 입구 창이 열려요.
+      { id: "learn", x: 34, y: 30, w: 3, out: { x: 35, y: 28, dir: "up" }, activity: "learnhub", name: "배움 동산", emoji: "📚" }
     ],
     // 건물 그림을 누르면 그 건물 문으로 걸어가요
     areas: [
@@ -139,11 +141,11 @@ const Maps = (() => {
     v.walk.forEach((r) => paint(sc.solid, r, false));
     v.solid.forEach((r) => paint(sc.solid, r, true));
     v.doors.forEach((d) => {
-      const room = ROOMS[d.id];
+      const room = ROOMS[d.id] || d;
       paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
-      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.id, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
-      const above = d.id === "garden";
-      sc.labels.push({ text: room.emoji + " " + room.name, x: (d.x + d.w / 2) * T, y: above ? d.y * T - 4 : (d.y + 2) * T + 6, small: true });
+      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.activity ? null : d.id, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
+      const above = d.id === "garden" || d.activity;
+      sc.labels.push({ text: room.emoji + " " + room.name + (d.activity ? " ▼" : ""), x: (d.x + d.w / 2) * T, y: above ? d.y * T - 4 : (d.y + 2) * T + 6, small: true });
     });
     v.areas.forEach((a) => sc.areas.push({ id: a.id, r: a.r, door: sc.doors.find((d) => d.id === a.id) }));
     return finish(sc);
