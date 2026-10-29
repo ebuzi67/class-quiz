@@ -8,6 +8,15 @@
 
 const Quiz = (() => {
   const ROUND = 5, PASS = 4;
+  // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
+  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" } };
+  const npcOf = (roomId) => NPCS[roomId.replace(/\d+$/, "")];
+  function npcBanner(el, npc, line) {
+    const b = el("div", "qz-npc");
+    const img = el("img"); img.src = "assets/npc/" + npc.id + ".webp"; img.alt = npc.name;
+    b.append(img, el("div", "", "<b>" + npc.name + "</b><p>" + line + "</p>"));
+    return b;
+  }
   const rooms = [];
   let shown = null; // 지금 화면에 있는 문제(자동 시험용)
 
@@ -104,7 +113,9 @@ const Quiz = (() => {
     function home() {
       root.innerHTML = "";
       const p = getP();
-      root.append(el("div", "mg-q", "미션을 골라요! 5문제 중 " + PASS + "문제를 맞히면 통과예요."));
+      const npc = npcOf(def.id);
+      const line = "안녕! 나는 " + npc.name + "야. " + def.title + "에 온 걸 환영해! 미션을 골라 봐. 5문제 중 " + PASS + "문제를 맞히면 통과야.";
+      root.append(npcBanner(el, npc, line));
       const grid = el("div", "qz-missions");
       def.missions.forEach((m) => {
         const done = p.done.includes(m.id);
@@ -119,7 +130,7 @@ const Quiz = (() => {
         b.onclick = () => { ctx.sfx("tap"); Activities.open(back); };
         root.append(b);
       }
-      ctx.speak(def.title + ". 미션을 골라요!");
+      ctx.speak(line);
     }
 
     function play(m) {
@@ -223,15 +234,16 @@ const Quiz = (() => {
 
   const strip = (h) => String(h).replace(/<span class='fr'><b>(\d+)<\/b><i>(\d+)<\/i><\/span>/g, " $2분의 $1").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-  return { add, rooms, openFrom, tools, peek: () => shown };
+  return { add, rooms, openFrom, tools, peek: () => shown, npcBanner, NPCS };
 })();
 
 // 📚 배움 동산 입구: 과목과 학년을 골라 문제 방으로 가요.
 // (배움 동산 그림이 오기 전까지는 마을 아래쪽 길 끝에서 이 창으로 바로 들어가요)
 Activities.register("learnhub", ({ el, frame, ctx }) => {
   const root = frame("📚 배움 동산: 어느 방으로 갈까요?");
-  [["🔢 수학", "math"], ["📖 국어", "kor"]].forEach(([title, prefix]) => {
+  [["🔢 수학", "math", "숫자랑 도형이랑 놀아 볼까?"], ["📖 국어", "kor", "재미있는 우리말 세상으로 가자!"]].forEach(([title, prefix, line]) => {
     root.append(el("div", "mg-q", title));
+    root.append(Quiz.npcBanner(el, Quiz.NPCS[prefix], line));
     const row = el("div", "qz-missions");
     Quiz.rooms.filter((r) => r.id.startsWith(prefix)).forEach((r) => {
       const p = ctx.getProgress(r.id) || { done: [] };
