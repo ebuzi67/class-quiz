@@ -133,8 +133,20 @@
 
   /* 시작 화면 */
   #start { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 12px; padding-bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 10; }
-  #start .card { width: 100%; max-width: 520px; border-radius: 26px; padding: 18px; background: var(--glass2); max-height: 62vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(20,24,34,.3); }
-  #start h1 { margin: 0; font-size: 32px; text-align: center; }
+  #start .card { width: 100%; max-width: 520px; border-radius: 26px; padding: 0 18px 18px; background: var(--glass2); max-height: 86vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(20,24,34,.3); }
+  #start h1 { margin: 0; font-size: 30px; text-align: center; }
+  /* 캐릭터 미리보기: 카드를 내려도 위에 붙어 있어요 */
+  #preview { position: sticky; top: 0; z-index: 2; margin: 0 -18px 8px; padding: 10px 18px 6px; background: linear-gradient(#e3eef5, #f4f1ea); border-radius: 26px 26px 0 0;
+    display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); }
+  #pv { width: 130px; height: 150px; flex: none; }
+  #pv-side { flex: 1; min-width: 0; }
+  #pv-name { display: inline-block; background: var(--navy); color: #fff; border-radius: 999px; padding: 4px 14px; font-size: 18px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name-input { width: 100%; font: inherit; font-size: 17px; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--line); background: #fff; margin: -4px 0 10px; }
+  .name-input:focus { outline: none; border-color: var(--navy); }
+  /* 조이스틱 */
+  #stick { position: fixed; left: 16px; width: 124px; height: 124px; border-radius: 50%; z-index: 5; touch-action: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: var(--navy); box-shadow: 0 4px 12px rgba(0,0,0,.3); pointer-events: none; }
+  #stick small { position: absolute; left: 0; right: 0; text-align: center; font-size: 12px; color: var(--soft); pointer-events: none; }
   #start .en { text-align: center; color: var(--gold); margin: 2px 0 8px; letter-spacing: 1px; }
   #start .sub { text-align: center; color: var(--soft); font-size: 15px; line-height: 1.6; margin: 0 0 10px; }
   #start .foot { text-align: center; color: #9a93a3; font-size: 12px; margin-top: 10px; }
@@ -204,11 +216,11 @@
 
 <div id="start" hidden>
   <div class="card">
-    <h1>🇬🇧 런던 탐방</h1>
-    <div class="en">LONDON WALK</div>
+    <div id="preview"><canvas id="pv"></canvas><div id="pv-side"><h1 style="text-align:left">🇬🇧 런던 탐방</h1><div class="en" style="text-align:left">LONDON WALK</div><span id="pv-name">아이</span></div></div>
     <p class="sub">캐릭터가 런던 거리를 걸어요. 엄마와 아이가 각자 기기로 같이 걸을 수도 있어요.<br>명소 9곳에서 이야기를 듣고, 퀴즈를 풀고, 여권에 도장을 모아요!</p>
     <div class="label">이름 (같이 걸을 때 보여요)</div>
     <div class="opts" id="opt-name"></div>
+    <input class="name-input" id="name-input" maxlength="8" placeholder="✏️ 이름 직접 쓰기 (8글자까지)" autocomplete="off">
     <div class="label">모자</div>
     <div class="opts" id="opt-hat"></div>
     <div class="label">옷 색깔</div>
@@ -218,12 +230,16 @@
     <div class="label">✨ 여행 소원 (무엇을)</div>
     <div class="opts" id="opt-what"></div>
     <div id="wish-line"></div>
+    <div class="label">걷는 방법</div>
+    <div class="opts" id="opt-walk"></div>
     <button class="big red" id="btn-together">👨‍👩‍👧 같이 걷기<small class="sub2">각자 기기로 함께 걸어요</small></button>
     <button class="big" id="btn-go">혼자 걷기 🚶</button>
     <button class="big soft" id="btn-restart" hidden>처음부터 다시 걷기</button>
     <div class="foot">실제 런던의 길과 건물을 단순하게 만든 그림이에요</div>
   </div>
 </div>
+
+<div id="stick" class="glass" hidden><small style="top:6px">앞</small><small style="bottom:6px">뒤</small><div id="knob"></div></div>
 
 <div id="modal" hidden><div id="sheet"></div></div>
 

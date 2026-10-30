@@ -19,8 +19,9 @@
   ];
 
   // ---------- 저장 ----------
-  const fresh = () => ({ s: 6, stamps: {}, look: { hat: "straw", shirt: "#4a7fc1" }, wish: { who: 0, what: 0 }, done: false, name: 0, hostCode: "", lastCode: "",
-    opt: { sound: true, nature: true, bells: true, autoView: true } });
+  const WALK_MODES = [{ id: "auto", ko: "🚶 자동으로 걷기" }, { id: "stick", ko: "🕹️ 조이스틱으로 걷기" }];
+  const fresh = () => ({ s: 6, customName: "", stamps: {}, look: { hat: "straw", shirt: "#4a7fc1" }, wish: { who: 0, what: 0 }, done: false, name: 0, hostCode: "", lastCode: "",
+    opt: { sound: true, nature: true, bells: true, autoView: true, walkMode: "auto" } });
   let save = fresh();
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -66,22 +67,57 @@
   let elapsed = 0;
   let playerBubble = null, playerBubbleT = 0;
   let nextGreet = 30;
+  let lat = 0;                                   // 길 가운데에서 왼쪽(+)/오른쪽(-)으로 비켜선 정도 (조이스틱)
+  const stick = { x: 0, y: 0, on: false };       // 조이스틱 기울기 (-1~1), y가 -1이면 앞으로
 
+  function lookOptions() {
+    return { shirt: save.look.shirt, pants: "#3a4a6b", hat: save.look.hat, hatColor: "#e8c77a", hair: "#3a2416", bag: "#d0603e", bagMark: "#ffe08a",
+      belt: save.look.hat === "bearskin" ? "#ffffff" : null };
+  }
   function makePlayer() {
     if (player) scene.remove(player.group);
-    player = World.makeChibi({ shirt: save.look.shirt, pants: "#3a4a6b", hat: save.look.hat, hatColor: "#e8c77a", hair: "#3a2416", bag: "#d0603e", bagMark: "#ffe08a",
-      belt: save.look.hat === "bearskin" ? "#ffffff" : null });
+    player = World.makeChibi(lookOptions());
     player.group.scale.setScalar(1.15);
     scene.add(player.group);
     placePlayer();
+    makePreview();
+  }
+
+  // ---------- 시작 화면 캐릭터 미리보기 (따로 작은 화면에 그려요) ----------
+  let pv = null;
+  function makePreview() {
+    if (!pv) {
+      const r = new T.WebGLRenderer({ canvas: $("pv"), antialias: true, alpha: true });
+      r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      r.setSize(130, 150, false);
+      r.outputColorSpace = T.SRGBColorSpace;
+      const sc = new T.Scene();
+      sc.add(new T.HemisphereLight("#ffffff", "#b8ae98", 1.7));
+      const d = new T.DirectionalLight("#fff4e0", 1.4); d.position.set(3, 6, 5); sc.add(d);
+      const disc = new T.Mesh(new T.CircleGeometry(1.5, 32), new T.MeshLambertMaterial({ color: "#cfd9c0" }));
+      disc.rotation.x = -Math.PI / 2; sc.add(disc);
+      const cam = new T.PerspectiveCamera(30, 130 / 150, 0.1, 50);
+      cam.position.set(0, 2.2, 8.2); cam.lookAt(0, 1.55, 0);
+      pv = { r, sc, cam, fig: null, t: 0 };
+    }
+    if (pv.fig) pv.sc.remove(pv.fig.group);
+    pv.fig = World.makeChibi(lookOptions());
+    pv.sc.add(pv.fig.group);
+    pv.fig.waving = 1.2;
+  }
+  function renderPreview(dt) {
+    if (!pv || !pv.fig) return;
+    pv.t += dt;
+    pv.fig.group.rotation.y = Math.sin(pv.t * 0.8) * 0.6;
+    World.animateChibi(pv.fig, dt, false);
+    pv.r.render(pv.sc, pv.cam);
   }
 
   function placePlayer() {
-    const p = World.posAt(save.s), t = World.tanAt(save.s);
-    const y = World.onBridge(p.x, p.z) ? 0.3 : 0;
-    player.group.position.set(p.x, y + (player.bob || 0), p.z);
-    if (mode === "start") player.group.rotation.y = 0;
-    else player.group.rotation.y = Math.atan2(t.x, t.z);
+    const q = World.sideAt(save.s, lat);
+    const y = World.onBridge(q.x, q.z) ? 0.3 : 0;
+    player.group.position.set(q.x, y + (player.bob || 0), q.z);
+    player.group.rotation.y = Math.atan2(q.hx, q.hz);
   }
 
   // ---------- 소리 (모두 직접 만든 소리라서 따로 파일이 없어요) ----------
@@ -231,11 +267,12 @@
     $("stamp-count").textContent = Object.keys(save.stamps).length;
     const st = $("status");
     if (mode === "look" || mode === "bridge") { st.textContent = "구경 중"; st.className = "look"; }
-    else if (walking) { st.textContent = "걷는 중"; st.className = ""; }
+    else if (isMoving()) { st.textContent = "걷는 중"; st.className = ""; }
     else { st.textContent = "멈춤"; st.className = "stop"; }
     $("info-title").textContent = ns ? `다음: ${ns.ko}` : "런던 탐방";
     $("info-line").textContent = Net.role === "host" ? `👨‍👩‍👧 방 코드 ${roomCode}` : Net.role === "join" ? "👨‍👩‍👧 같이 걷는 중" : "화면을 끌면 둘러볼 수 있어요";
     updateFriendChips();
+    positionStick();
   }
 
   function setWalking(on) {
@@ -249,13 +286,26 @@
   }
 
   // ---------- 걷기와 명소 도착 ----------
+  function stickMoving() { return stick.on && Math.hypot(stick.x, stick.y) > 0.15; }
+  function isMoving() { return !busy && (save.opt.walkMode === "stick" ? stickMoving() : walking); }
+
   function stepWalk(dt) {
-    if (!walking || busy) return;
+    if (busy) return;
     const v = SPEEDS[speedMode];
     const before = save.s;
-    let after = Math.min(World.L - 5, before + v * dt);
-    // 지나가는 명소가 있으면 거기서 멈춰요
-    const st = STOPS.find((x) => x.s > before && x.s <= after);
+    let after;
+    if (save.opt.walkMode === "stick") {
+      // 위아래로 밀면 길을 따라 앞뒤로, 옆으로 밀면 길 안에서 옆으로 비켜서요
+      if (!stickMoving()) return;
+      after = Math.max(2, Math.min(World.L - 5, before - stick.y * v * dt));
+      lat = Math.max(-3.5, Math.min(3.5, lat - stick.x * v * 0.7 * dt));
+    } else {
+      if (!walking) return;
+      after = Math.min(World.L - 5, before + v * dt);
+      lat *= Math.pow(0.3, dt);
+    }
+    // 앞으로 가다가 지나가는 명소가 있으면 거기서 멈춰요
+    const st = after > before ? STOPS.find((x) => x.s > before && x.s <= after) : null;
     if (st) after = st.s;
     save.s = after;
     if (st) arrive(st);
@@ -369,7 +419,7 @@
     busy = false;
     mode = "follow";
     lookTarget = null;
-    setWalking(true);
+    if (save.opt.walkMode !== "stick") setWalking(true);
   }
 
   // 타워 브리지: 다리가 열리고 배가 지나간 다음, 다리를 건너 끝나요
@@ -386,7 +436,8 @@
       busy = false;
       mode = "follow";
       lookTarget = null;
-      setWalking(true);
+      if (save.opt.walkMode !== "stick") setWalking(true);
+      else toast("다리가 닫혔어요. 🕹️ 앞으로 밀어서 건너가요! 🌉");
     });
   }
 
@@ -433,9 +484,9 @@
   }
 
   function restart() {
-    const look = save.look, wish = save.wish, opt = save.opt;
-    save = fresh();
-    save.look = look; save.wish = wish; save.opt = opt;
+    // 도장과 걸은 거리만 지우고, 꾸민 모습·이름·소원·설정·방 코드는 남겨요
+    const keep = { look: save.look, wish: save.wish, opt: save.opt, name: save.name, customName: save.customName, hostCode: save.hostCode, lastCode: save.lastCode };
+    save = Object.assign(fresh(), keep);
     store();
     closeModal();
     busy = false; walking = false; lookTarget = null;
@@ -568,6 +619,8 @@
       ${sw("nature", "거리 소리", "새소리, 멀리서 들리는 도시 소리")}
       ${sw("bells", "종소리", "빅벤에 도착하면 종이 울려요")}
       ${sw("autoView", "자동 시점", "둘러본 뒤 카메라가 다시 캐릭터 뒤로 돌아와요")}
+      <div class="label">걷는 방법</div>
+      <div class="opts" id="mo-walk"></div>
       ${Net.role === "solo" ? `<button class="big soft" id="mo-together">👨‍👩‍👧 같이 걷기</button>`
         : `<div class="toggle"><div>👨‍👩‍👧 같이 걷는 중<small>${Net.role === "host" ? "방 코드 " + roomCode : "방에 들어와 있어요"} · ${friends.size}명과 함께</small></div></div>
            <button class="big soft" id="mo-leave">같이 걷기 끝내기</button>`}
@@ -587,6 +640,7 @@
       };
     });
     $("mo-look").onclick = () => { closeModal(); showStart(true); };
+    walkModeChips($("mo-walk"));
     if ($("mo-together")) $("mo-together").onclick = () => togetherMenu(true);
     if ($("mo-leave")) $("mo-leave").onclick = () => { leaveTogether(); closeModal(); toast("혼자 걷기로 바뀌었어요"); };
     $("mo-map").onclick = mapView;
@@ -611,8 +665,10 @@
     $("start").hidden = false;
     $("top").hidden = true;
     $("bottom").hidden = true;
+    $("stick").hidden = true;
     setWalking(false);
-    chips($("opt-name"), NAMES, save.name, (i) => { save.name = i; store(); Net.setProfile(profile()); });
+    nameField($("opt-name"), $("name-input"));
+    walkModeChips($("opt-walk"));
     chips($("opt-hat"), HATS, save.look.hat, (i) => { save.look.hat = HATS[i].id; makePlayer(); store(); Net.setProfile(profile()); });
     chips($("opt-shirt"), SHIRTS, save.look.shirt, (i) => { save.look.shirt = SHIRTS[i]; makePlayer(); store(); Net.setProfile(profile()); }, true);
     const wl = () => { $("wish-line").textContent = "“" + wishText() + "”"; };
@@ -635,11 +691,82 @@
     mode = "follow";
     placePlayer();
     updateHud();
+    applyWalkMode(false);
     if (save.done) { toast("완주했어요! ⋯ 더 보기에서 처음부터 다시 걸을 수 있어요"); return; }
     const first = !save.stamps.palace && save.s < 20;
-    toast(first ? "▶ 걷기를 누르면 출발해요. 화면을 끌면 둘러볼 수 있어요" : "다시 런던 거리로! ▶ 걷기를 눌러요", 4000);
-    if (first) speak("런던 탐방을 시작해요! 걷기를 눌러 보세요.");
+    const stickMode = save.opt.walkMode === "stick";
+    const how = stickMode ? "🕹️ 조이스틱을 위로 밀면 앞으로 걸어요" : "▶ 걷기를 누르면 출발해요";
+    toast(first ? how + ". 화면을 끌면 둘러볼 수 있어요" : "다시 런던 거리로! " + how, 4000);
+    if (first) speak(stickMode ? "런던 탐방을 시작해요! 조이스틱을 위로 밀어 보세요." : "런던 탐방을 시작해요! 걷기를 눌러 보세요.");
   }
+
+  // 이름: 고르거나 직접 써요. 직접 쓴 이름이 있으면 그걸 먼저 써요.
+  function nameField(chipsEl, inputEl, onChange) {
+    chips(chipsEl, NAMES, save.customName.trim() ? -1 : save.name, (i) => {
+      save.name = i; save.customName = ""; inputEl.value = "";
+      nameChanged(); onChange && onChange();
+    });
+    inputEl.value = save.customName;
+    inputEl.oninput = () => {
+      save.customName = inputEl.value.slice(0, 8);
+      chipsEl.querySelectorAll("button").forEach((b) => b.classList.toggle("on", !save.customName.trim() && +b.dataset.i === save.name));
+      nameChanged(); onChange && onChange();
+    };
+    $("pv-name").textContent = profile().name;
+  }
+  function nameChanged() {
+    store();
+    $("pv-name").textContent = profile().name;
+    Net.setProfile(profile());
+  }
+
+  // ---------- 걷는 방법: 자동 / 조이스틱 ----------
+  function walkModeChips(el) {
+    chips(el, WALK_MODES, save.opt.walkMode, (i) => { save.opt.walkMode = WALK_MODES[i].id; store(); applyWalkMode(true); });
+  }
+  function applyWalkMode(announce) {
+    const stickMode = save.opt.walkMode === "stick";
+    if (stickMode) setWalking(false);
+    $("walk").hidden = stickMode;
+    $("stick").hidden = !stickMode || mode === "start";
+    positionStick();
+    if (announce && mode !== "start") toast(stickMode ? "🕹️ 조이스틱을 위로 밀면 앞으로, 아래로 밀면 뒤로 가요" : "▶ 걷기를 누르면 자동으로 걸어요", 3500);
+  }
+  function positionStick() { $("stick").style.bottom = ($("bottom").offsetHeight + 14) + "px"; }
+
+  const stickEl = $("stick"), knob = $("knob");
+  let stickId = null;
+  function stickAt(e) {
+    const r = stickEl.getBoundingClientRect();
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const max = r.width / 2 - 16, len = Math.hypot(dx, dy);
+    if (len > max) { dx *= max / len; dy *= max / len; }
+    stick.x = dx / max; stick.y = dy / max;
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+  stickEl.addEventListener("pointerdown", (e) => { Snd.ensure(); stickId = e.pointerId; stickEl.setPointerCapture(e.pointerId); stick.on = true; stickAt(e); });
+  stickEl.addEventListener("pointermove", (e) => { if (e.pointerId === stickId) stickAt(e); });
+  const stickEnd = (e) => {
+    if (e.pointerId !== stickId) return;
+    stickId = null; stick.on = false; stick.x = stick.y = 0;
+    knob.style.transform = "";
+  };
+  stickEl.addEventListener("pointerup", stickEnd);
+  stickEl.addEventListener("pointercancel", stickEnd);
+  // 노트북에서는 방향키나 WASD로도 움직여요
+  const keys = new Set();
+  const KEYMAP = { ArrowUp: "u", KeyW: "u", ArrowDown: "d", KeyS: "d", ArrowLeft: "l", KeyA: "l", ArrowRight: "r", KeyD: "r" };
+  function keyStick() {
+    if (stickId !== null) return;
+    stick.x = (keys.has("r") ? 1 : 0) - (keys.has("l") ? 1 : 0);
+    stick.y = (keys.has("d") ? 1 : 0) - (keys.has("u") ? 1 : 0);
+    stick.on = keys.size > 0;
+  }
+  window.addEventListener("keydown", (e) => {
+    if (save.opt.walkMode !== "stick" || mode === "start" || !$("modal").hidden || !KEYMAP[e.code]) return;
+    keys.add(KEYMAP[e.code]); keyStick(); e.preventDefault();
+  });
+  window.addEventListener("keyup", (e) => { if (!KEYMAP[e.code]) return; keys.delete(KEYMAP[e.code]); keyStick(); });
   $("btn-restart").onclick = () => { if (confirm("처음부터 다시 걸을까요? 모은 도장도 지워져요.")) { restart(); showStart(false); } };
 
   // ---------- 같이 걷기 ----------
@@ -649,7 +776,7 @@
   let roomCode = "";
   const OFFSETS = [-1.8, 1.8, -3.4, 3.4, -5];
 
-  function profile() { return { name: NAMES[save.name] || "아이", hat: save.look.hat, shirt: save.look.shirt }; }
+  function profile() { return { name: (save.customName || "").trim() || NAMES[save.name] || "아이", hat: save.look.hat, shirt: save.look.shirt }; }
   function nameOf(id) { const f = friends.get(id); return f ? f.p.name : "친구"; }
 
   function buildFriendFig(f) {
@@ -820,14 +947,12 @@
       <p style="margin-top:0">엄마와 아이처럼 각자 기기로 같은 런던 거리를 함께 걸어요. 서로의 캐릭터가 보이고, 영어로 인사를 주고받을 수 있어요.</p>
       <div class="label">내 이름 (서로에게 보여요)</div>
       <div class="opts" id="tg-name"></div>
+      <input class="name-input" id="tg-name-input" maxlength="8" placeholder="✏️ 이름 직접 쓰기" autocomplete="off">
       <button class="big" id="tg-host">🏠 방 만들기<small class="sub2">먼저 시작하는 사람</small></button>
       <button class="big soft" id="tg-join">🔢 코드 넣고 들어가기<small class="sub2">방을 만든 사람이 알려 준 숫자 4개</small></button>
       <p style="color:#6f6878;font-size:13px">두 기기 모두 인터넷이 되어야 해요. 걸은 거리와 도장은 기기마다 따로 저장돼요.</p>
     `);
-    chips($("tg-name"), NAMES, save.name, (i) => {
-      save.name = i; store();
-      if (!$("start").hidden) chips($("opt-name"), NAMES, save.name, (k) => { save.name = k; store(); Net.setProfile(profile()); });
-    });
+    nameField($("tg-name"), $("tg-name-input"), () => nameField($("opt-name"), $("name-input")));
     $("tg-host").onclick = () => hostRoom(inGame);
     $("tg-join").onclick = () => joinView(inGame);
   }
@@ -989,15 +1114,17 @@
   let camInit = false;
   function updateCamera(dt) {
     const p = player.group.position;
-    const heading = player.group.rotation.y;
+    const t0 = World.tanAt(save.s);
+    const heading = save.opt.walkMode === "stick" ? Math.atan2(t0.x, t0.z) : player.group.rotation.y;
     if (save.opt.autoView && elapsed - lastDrag > 3 && !drag) {
       userYaw *= Math.pow(0.25, dt);
       userPitch *= Math.pow(0.25, dt);
     }
     if (mode === "start") {
-      // 캐릭터가 화면 위쪽(시작 카드 위)에 보이도록 아래를 내려다봐요
-      wantPos.set(p.x + 2.4, p.y + 3.4, p.z + 12);
-      wantLook.set(p.x + 0.6, p.y - 2.2, p.z + 3);
+      // 길 위 조금 앞에서 캐릭터를 돌아봐요. 길 위에 있어야 길가 집 속으로 들어가지 않아요.
+      const q = World.posAt(Math.min(World.L, save.s + 11));
+      wantPos.set(q.x, p.y + 3.4, q.z);
+      wantLook.set(p.x, p.y + 0.6, p.z);
     } else if (mode === "bridge") {
       wantPos.set(988, 15, 52);
       wantLook.set(1060, 14, 86);
@@ -1047,16 +1174,24 @@
     elapsed += dt;
     stepWalk(dt);
     const p = World.posAt(save.s), t = World.tanAt(save.s);
-    const y = World.onBridge(p.x, p.z) ? 0.3 : 0;
-    const moving = walking && !busy;
+    const q = World.sideAt(save.s, lat);
+    const y = World.onBridge(q.x, q.z) ? 0.3 : 0;
+    const moving = isMoving();
     World.animateChibi(player, dt, moving, speedMode === "fast" ? 1.7 : 1);
-    player.group.position.set(p.x, y + (player.bob || 0) * 1.15, p.z);
-    if (mode !== "start") {
-      const want = Math.atan2(t.x, t.z);
+    player.group.position.set(q.x, y + (player.bob || 0) * 1.15, q.z);
+    // 캐릭터는 가는 쪽을 바라봐요 (조이스틱으로 뒤로 가면 뒤를 봐요)
+    let want = null;
+    if (save.opt.walkMode !== "stick") want = Math.atan2(t.x, t.z);
+    else if (moving) {
+      const f = -stick.y, sx = -stick.x;
+      want = Math.atan2(t.x * f + t.z * sx, t.z * f - t.x * sx);
+    }
+    if (want !== null) {
       let d = want - player.group.rotation.y;
       d = Math.atan2(Math.sin(d), Math.cos(d));
       player.group.rotation.y += d * Math.min(1, dt * 8);
     }
+    if (mode === "start") renderPreview(dt);
     if (moving) {
       const prev = stepPhase;
       stepPhase = player.phase % Math.PI;
@@ -1086,7 +1221,7 @@
       if (birdTimer <= 0) { birdTimer = 3 + Math.random() * 6; Snd.bird(); }
     }
     updateFriends(dt);
-    if (Net.role !== "solo") Net.updateMe(save.s, walking && !busy, Object.keys(save.stamps).length);
+    if (Net.role !== "solo") Net.updateMe(save.s, moving, Object.keys(save.stamps).length);
     hudTimer -= dt;
     if (hudTimer <= 0 && mode !== "start") { hudTimer = 0.5; updateHud(); }
     updateCamera(dt);
