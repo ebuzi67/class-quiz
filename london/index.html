@@ -144,6 +144,28 @@
   #loading .em { font-size: 60px; animation: bob 1s infinite alternate; }
   @keyframes bob { to { transform: translateY(-10px); } }
 
+  /* 같이 걷기 */
+  #friends { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 560px; width: 100%; margin: 0 auto; }
+  #friends button { border-radius: 999px; padding: 6px 12px; font-size: 14px; }
+  #emotes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 560px; width: 100%; margin: 0 auto; border-radius: 20px; padding: 8px; }
+  #emotes button { background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 8px 12px; font-size: 15px; }
+  #emotes button:active { transform: translateY(2px); }
+  .sub2 { display: block; font-size: 14px; opacity: .75; margin-top: 2px; }
+  .code-big { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
+  .code-big span { width: 60px; height: 72px; border-radius: 16px; background: #fff; border: 3px solid var(--navy); font-size: 40px; display: flex; align-items: center; justify-content: center; }
+  .code-big span.on { border-color: #e2853a; box-shadow: 0 0 0 4px #fde3c4; }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 320px; margin: 0 auto; }
+  .pad button { font-size: 28px; padding: 10px 0; border-radius: 14px; background: #fff; border: 2px solid var(--line); }
+  .pad button.soft { font-size: 18px; background: rgba(0,0,0,.05); }
+  .pad button:active { transform: translateY(2px); }
+  .msg { min-height: 26px; text-align: center; font-size: 16px; margin: 8px 0; }
+  .msg.bad { color: #c0392b; } .msg.wait { color: #2a5aa8; }
+  .room-list { display: grid; gap: 6px; margin: 6px 0; }
+  .room-list div { display: flex; justify-content: space-between; background: rgba(255,255,255,.75); border-radius: 12px; padding: 10px 12px; font-size: 17px; }
+  .room-list div span { color: var(--go); font-size: 14px; }
+  .room-list div.wait { color: var(--soft); justify-content: center; }
+  .big:disabled { opacity: .45; }
+
   .confetti { position: fixed; top: -20px; width: 10px; height: 16px; z-index: 25; pointer-events: none; animation: fall linear forwards; }
   @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 </style>
@@ -164,6 +186,8 @@
 <div id="toast" class="off"></div>
 
 <div id="bottom" hidden>
+  <div id="friends" hidden></div>
+  <div id="emotes" class="glass" hidden></div>
   <div id="info" class="glass">
     <div class="row1"><span id="status" class="stop">멈춤</span><span id="info-title">런던 탐방</span><span id="dist">0.0 / 7.0km</span></div>
     <div id="bar-out"><div id="bar-in"></div></div>
@@ -182,7 +206,9 @@
   <div class="card">
     <h1>🇬🇧 런던 탐방</h1>
     <div class="en">LONDON WALK</div>
-    <p class="sub">켜 두면 캐릭터가 런던 거리를 걸어요.<br>명소 9곳에서 이야기를 듣고, 퀴즈를 풀고, 여권에 도장을 모아요!</p>
+    <p class="sub">캐릭터가 런던 거리를 걸어요. 엄마와 아이가 각자 기기로 같이 걸을 수도 있어요.<br>명소 9곳에서 이야기를 듣고, 퀴즈를 풀고, 여권에 도장을 모아요!</p>
+    <div class="label">이름 (같이 걸을 때 보여요)</div>
+    <div class="opts" id="opt-name"></div>
     <div class="label">모자</div>
     <div class="opts" id="opt-hat"></div>
     <div class="label">옷 색깔</div>
@@ -192,7 +218,8 @@
     <div class="label">✨ 여행 소원 (무엇을)</div>
     <div class="opts" id="opt-what"></div>
     <div id="wish-line"></div>
-    <button class="big" id="btn-go">출발! 🚶</button>
+    <button class="big red" id="btn-together">👨‍👩‍👧 같이 걷기<small class="sub2">각자 기기로 함께 걸어요</small></button>
+    <button class="big" id="btn-go">혼자 걷기 🚶</button>
     <button class="big soft" id="btn-restart" hidden>처음부터 다시 걷기</button>
     <div class="foot">실제 런던의 길과 건물을 단순하게 만든 그림이에요</div>
   </div>
@@ -203,6 +230,8 @@
 <script src="lib/three.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/world.js"></script>
+<script src="lib/peerjs.min.js"></script>
+<script src="js/net.js"></script>
 <script src="js/main.js"></script>
 <script>
   if ("serviceWorker" in navigator) {

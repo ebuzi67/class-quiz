@@ -181,8 +181,9 @@ const World = (() => {
     if (sub) { g.font = "30px Jua, sans-serif"; g.fillStyle = "#7a6f86"; g.fillText(sub, W / 2, 108); }
     const t = new T.CanvasTexture(c);
     t.colorSpace = T.SRGBColorSpace;
-    const s = new T.Sprite(new T.SpriteMaterial({ map: t, depthTest: opt.depthTest !== false, transparent: true }));
-    const scale = opt.scale || 10;
+    // fixed: 멀든 가깝든 화면에서 같은 크기 (말풍선용)
+    const s = new T.Sprite(new T.SpriteMaterial({ map: t, depthTest: opt.depthTest !== false, transparent: true, sizeAttenuation: !opt.fixed }));
+    const scale = opt.fixed ? opt.fixed : opt.scale || 10;
     s.scale.set(scale, scale * H / W, 1);
     if (opt.depthTest === false) s.renderOrder = 10;
     return s;
@@ -1055,7 +1056,7 @@ const World = (() => {
   }
   function sayBubble(scene, w, text) {
     if (w.bubble) w.bubble.parent.remove(w.bubble);
-    w.bubble = makeLabel(text, null, { scale: 7, depthTest: false, bg: "rgba(255,255,255,.95)" });
+    w.bubble = makeLabel(text, null, { fixed: 0.3, depthTest: false, bg: "rgba(255,255,255,.95)" });
     scene.add(w.bubble);
     w.bubbleT = 3.5;
     w.c.waving = 1.6;

@@ -10,9 +10,16 @@
   ];
   const SHIRTS = ["#4a7fc1", "#c8102e", "#2f8f5b", "#f2a541", "#8e5bb5", "#e86a92"];
   const SPEEDS = { slow: 4, fast: 11 };
+  // 같이 걷기: 화면에 보이는 이름과, 서로 주고받는 영어 한마디
+  const NAMES = ["아이", "엄마", "아빠", "언니", "누나", "오빠", "형", "동생", "할머니", "할아버지"];
+  const EMOTES = [
+    { e: "👋", en: "Hello!", ko: "안녕!" }, { e: "🚶", en: "Let's go!", ko: "가자!" },
+    { e: "✋", en: "Wait for me!", ko: "기다려 줘!" }, { e: "👀", en: "Look!", ko: "저기 봐!" },
+    { e: "👍", en: "Good job!", ko: "잘했어!" }, { e: "❤️", en: "I love you!", ko: "사랑해!" }
+  ];
 
   // ---------- 저장 ----------
-  const fresh = () => ({ s: 6, stamps: {}, look: { hat: "straw", shirt: "#4a7fc1" }, wish: { who: 0, what: 0 }, done: false,
+  const fresh = () => ({ s: 6, stamps: {}, look: { hat: "straw", shirt: "#4a7fc1" }, wish: { who: 0, what: 0 }, done: false, name: 0, hostCode: "", lastCode: "",
     opt: { sound: true, nature: true, bells: true, autoView: true } });
   let save = fresh();
   try {
@@ -227,6 +234,8 @@
     else if (walking) { st.textContent = "걷는 중"; st.className = ""; }
     else { st.textContent = "멈춤"; st.className = "stop"; }
     $("info-title").textContent = ns ? `다음: ${ns.ko}` : "런던 탐방";
+    $("info-line").textContent = Net.role === "host" ? `👨‍👩‍👧 방 코드 ${roomCode}` : Net.role === "join" ? "👨‍👩‍👧 같이 걷는 중" : "화면을 끌면 둘러볼 수 있어요";
+    updateFriendChips();
   }
 
   function setWalking(on) {
@@ -266,6 +275,7 @@
     mode = "look";
     lookTarget = landmarkOf(st);
     store();
+    Net.event("arrive", st.id);
     Snd.chime();
     toast(`${st.emoji} ${st.ko}에 도착했어요!`, 2600);
     if (st.id === "bigben") setTimeout(() => Snd.westminster(), 600);
@@ -333,6 +343,7 @@
           const d = new Date();
           save.stamps[st.id] = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
           store();
+          Net.event("stamp", st.id);
           updateHud();
           $("quiz-after").innerHTML = `
             <div class="why">⭕ 정답! ${esc(q.why)}</div>
@@ -382,6 +393,7 @@
   function finish() {
     save.done = true;
     store();
+    Net.event("finish");
     setWalking(false);
     mode = "finale";
     Snd.fanfare();
@@ -556,6 +568,9 @@
       ${sw("nature", "거리 소리", "새소리, 멀리서 들리는 도시 소리")}
       ${sw("bells", "종소리", "빅벤에 도착하면 종이 울려요")}
       ${sw("autoView", "자동 시점", "둘러본 뒤 카메라가 다시 캐릭터 뒤로 돌아와요")}
+      ${Net.role === "solo" ? `<button class="big soft" id="mo-together">👨‍👩‍👧 같이 걷기</button>`
+        : `<div class="toggle"><div>👨‍👩‍👧 같이 걷는 중<small>${Net.role === "host" ? "방 코드 " + roomCode : "방에 들어와 있어요"} · ${friends.size}명과 함께</small></div></div>
+           <button class="big soft" id="mo-leave">같이 걷기 끝내기</button>`}
       <button class="big soft" id="mo-look">🎩 캐릭터·소원 바꾸기</button>
       <button class="big soft" id="mo-map">🗺️ 지도 보기</button>
       <button class="big soft" id="mo-restart">처음부터 다시 걷기</button>
@@ -572,6 +587,8 @@
       };
     });
     $("mo-look").onclick = () => { closeModal(); showStart(true); };
+    if ($("mo-together")) $("mo-together").onclick = () => togetherMenu(true);
+    if ($("mo-leave")) $("mo-leave").onclick = () => { leaveTogether(); closeModal(); toast("혼자 걷기로 바뀌었어요"); };
     $("mo-map").onclick = mapView;
     $("mo-restart").onclick = () => { if (confirm("처음부터 다시 걸을까요? 모은 도장도 지워져요.")) restart(); };
   }
@@ -595,18 +612,22 @@
     $("top").hidden = true;
     $("bottom").hidden = true;
     setWalking(false);
-    chips($("opt-hat"), HATS, save.look.hat, (i) => { save.look.hat = HATS[i].id; makePlayer(); store(); });
-    chips($("opt-shirt"), SHIRTS, save.look.shirt, (i) => { save.look.shirt = SHIRTS[i]; makePlayer(); store(); }, true);
+    chips($("opt-name"), NAMES, save.name, (i) => { save.name = i; store(); Net.setProfile(profile()); });
+    chips($("opt-hat"), HATS, save.look.hat, (i) => { save.look.hat = HATS[i].id; makePlayer(); store(); Net.setProfile(profile()); });
+    chips($("opt-shirt"), SHIRTS, save.look.shirt, (i) => { save.look.shirt = SHIRTS[i]; makePlayer(); store(); Net.setProfile(profile()); }, true);
     const wl = () => { $("wish-line").textContent = "“" + wishText() + "”"; };
     chips($("opt-who"), WISH_WHO, save.wish.who, (i) => { save.wish.who = i; wl(); store(); });
     chips($("opt-what"), WISH_WHAT, save.wish.what, (i) => { save.wish.what = i; wl(); store(); });
     wl();
     const started = save.s > 10 || Object.keys(save.stamps).length > 0;
-    $("btn-go").textContent = editing ? "다시 걷기 🚶" : started ? "이어서 걷기 🚶" : "출발! 🚶";
+    $("btn-go").textContent = editing ? "다시 걷기 🚶" : started ? "혼자 이어서 걷기 🚶" : "혼자 걷기 🚶";
+    $("btn-together").hidden = editing;
     $("btn-restart").hidden = !started || editing;
     placePlayer();
   }
-  $("btn-go").onclick = () => {
+  $("btn-go").onclick = () => startGame();
+  $("btn-together").onclick = () => { Snd.ensure(); togetherMenu(false); };
+  function startGame() {
     Snd.ensure();
     $("start").hidden = true;
     $("top").hidden = false;
@@ -618,8 +639,283 @@
     const first = !save.stamps.palace && save.s < 20;
     toast(first ? "▶ 걷기를 누르면 출발해요. 화면을 끌면 둘러볼 수 있어요" : "다시 런던 거리로! ▶ 걷기를 눌러요", 4000);
     if (first) speak("런던 탐방을 시작해요! 걷기를 눌러 보세요.");
-  };
+  }
   $("btn-restart").onclick = () => { if (confirm("처음부터 다시 걸을까요? 모은 도장도 지워져요.")) { restart(); showStart(false); } };
+
+  // ---------- 같이 걷기 ----------
+  // 한 기기가 방을 만들고(방장), 다른 기기가 입장 코드로 들어와요. 길 위에서 서로의 캐릭터가 보여요.
+  // 걷기는 각자 해요. 걸은 거리와 도장도 기기마다 따로 저장돼요.
+  const friends = new Map(); // id → { p, s, shownS, w, n, off, fig, label, bubble, bubbleT }
+  let roomCode = "";
+  const OFFSETS = [-1.8, 1.8, -3.4, 3.4, -5];
+
+  function profile() { return { name: NAMES[save.name] || "아이", hat: save.look.hat, shirt: save.look.shirt }; }
+  function nameOf(id) { const f = friends.get(id); return f ? f.p.name : "친구"; }
+
+  function buildFriendFig(f) {
+    if (f.fig) scene.remove(f.fig.group);
+    if (f.label) scene.remove(f.label);
+    f.fig = World.makeChibi({ shirt: f.p.shirt, pants: "#3a4a6b", hat: f.p.hat, hatColor: "#e8c77a", hair: "#3a2416", bag: "#5a8fd0", bagMark: "#ffffff",
+      belt: f.p.hat === "bearskin" ? "#ffffff" : null });
+    f.fig.group.scale.setScalar(1.15);
+    scene.add(f.fig.group);
+    f.label = World.makeLabel(f.p.name, null, { scale: 4.2, bg: "rgba(31,45,74,.88)", color: "#ffffff" });
+    scene.add(f.label);
+  }
+  function removeFriend(f) {
+    scene.remove(f.fig.group); scene.remove(f.label);
+    if (f.bubble) scene.remove(f.bubble);
+  }
+
+  Net.on("roster", (list) => {
+    const ids = new Set(list.map((e) => e.id));
+    for (const [id, f] of friends) {
+      if (ids.has(id)) continue;
+      removeFriend(f);
+      friends.delete(id);
+      toast(`${f.p.name} 나갔어요`);
+    }
+    list.forEach((e, i) => {
+      const p = Object.assign({ name: "친구", hat: "straw", shirt: "#c8102e" }, e.p || {});
+      let f = friends.get(e.id);
+      if (!f) {
+        f = { p, s: save.s, shownS: null, w: 0, n: 0 };
+        friends.set(e.id, f);
+        buildFriendFig(f);
+        if (mode !== "start") toast(`👋 ${p.name} 들어왔어요!`);
+      } else if (JSON.stringify(f.p) !== JSON.stringify(p)) {
+        f.p = p;
+        buildFriendFig(f);
+      }
+      f.off = OFFSETS[i % OFFSETS.length];
+    });
+    refreshRoomList();
+    updateHud();
+  });
+  Net.on("snap", (list) => {
+    for (const [id, s, w, n] of list) {
+      const f = friends.get(id);
+      if (!f) continue;
+      f.s = s; f.w = w; f.n = n;
+      if (f.shownS === null) f.shownS = s;
+    }
+  });
+  Net.on("emote", (id, i) => {
+    const em = EMOTES[i], f = friends.get(id);
+    if (!em || !f) return;
+    f.fig.waving = 1.6;
+    if (f.bubble) scene.remove(f.bubble);
+    f.bubble = World.makeLabel(`${em.e} ${em.en}`, null, { fixed: 0.3, depthTest: false, bg: "rgba(255,255,255,.96)" });
+    scene.add(f.bubble);
+    f.bubbleT = 3.5;
+    toast(`${f.p.name}: “${em.en}” (${em.ko})`, 3600);
+    Snd.chime();
+    speak(em.en, "en-GB", 0.9);
+  });
+  Net.on("event", (id, k, a) => {
+    const name = nameOf(id);
+    const st = STOPS.find((x) => x.id === a);
+    if (k === "arrive" && st) toast(`${name} · ${st.emoji} ${st.ko} 도착!`);
+    else if (k === "stamp" && st) toast(`🛂 ${name} 도장 받았어요! ${st.emoji}`);
+    else if (k === "finish") { toast(`🎉 ${name} 완주!`, 4000); confetti(); }
+  });
+  let wasLost = false;
+  Net.on("status", (st) => {
+    if (st === "lost") { wasLost = true; toast("연결이 끊겼어요. 다시 연결하는 중…", 4000); }
+    else if (st === "ok" && wasLost) { wasLost = false; toast("다시 연결됐어요! 👨‍👩‍👧"); }
+    else if (st === "full") { toast("방이 꽉 찼어요 (6명까지)"); leaveTogether(); }
+  });
+
+  function leaveTogether() {
+    Net.leave();
+    for (const f of friends.values()) removeFriend(f);
+    friends.clear();
+    roomCode = "";
+    $("emotes").hidden = true;
+    updateHud();
+  }
+
+  function updateFriends(dt) {
+    for (const f of friends.values()) {
+      if (f.shownS === null) { f.fig.group.visible = f.label.visible = false; continue; }
+      const gap = f.s - f.shownS;
+      // 멀리 옮겨 가면(옆으로 가기) 바로 따라가고, 아니면 부드럽게 따라가요
+      f.shownS = Math.abs(gap) > 40 ? f.s : f.shownS + gap * Math.min(1, dt * 5);
+      const near = Math.abs(f.shownS - save.s) < 260;
+      f.fig.group.visible = f.label.visible = near;
+      if (!near) continue;
+      const q = World.sideAt(f.shownS, f.off || -1.8);
+      const y = World.onBridge(q.x, q.z) ? 0.3 : 0;
+      World.animateChibi(f.fig, dt, f.w || Math.abs(gap) > 0.3, 1);
+      f.fig.group.position.set(q.x, y + (f.fig.bob || 0) * 1.15, q.z);
+      f.fig.group.rotation.y = Math.atan2(q.hx, q.hz);
+      f.label.position.set(q.x, y + 3.9, q.z);
+      if (f.bubble) {
+        f.bubbleT -= dt;
+        f.bubble.position.set(q.x, y + 5.4, q.z);
+        if (f.bubbleT <= 0) { scene.remove(f.bubble); f.bubble = null; }
+      }
+    }
+  }
+
+  // 함께 걷는 사람 칩: 버튼은 사람이 바뀔 때만 새로 만들고 글자만 바꿔요(누르는 중에 사라지지 않게)
+  function updateFriendChips() {
+    const box = $("friends");
+    box.hidden = !friends.size;
+    const ids = [...friends.keys()].join();
+    if (box.dataset.ids !== ids) {
+      box.dataset.ids = ids;
+      box.innerHTML = [...friends.keys()].map((id) => `<button class="glass" data-id="${esc(id)}"></button>`).join("");
+      box.querySelectorAll("button").forEach((b) => { b.onclick = () => goToFriend(b.dataset.id); });
+    }
+    box.querySelectorAll("button").forEach((b) => {
+      const f = friends.get(b.dataset.id);
+      if (!f) return;
+      const d = realM(f.s - save.s);
+      const where = Math.abs(d) < 30 ? "바로 옆" : d > 0 ? `${fmtDist(d)} 앞` : `${fmtDist(-d)} 뒤`;
+      b.textContent = `🧑 ${f.p.name} · ${where} · 🛂${f.n}`;
+    });
+  }
+
+  // 앞서간 사람 옆으로 가요. 아직 도장을 안 받은 명소가 사이에 있으면 거기서 먼저 멈춰요.
+  function goToFriend(id) {
+    const f = friends.get(id);
+    if (!f) return;
+    const name = f.p.name;
+    const d = f.s - save.s;
+    if (Math.abs(d) < 6) { toast(`${name} 바로 옆에 있어요!`); return; }
+    if (d < 0) { toast(`${name} ${fmtDist(realM(-d))} 뒤에 있어요. 멈춰서 기다려 줘요 ✋`); return; }
+    if (busy || save.done) return;
+    if (!confirm(`${name} 옆으로 갈까요?`)) return;
+    setWalking(false);
+    const st = STOPS.find((x) => x.s > save.s + 0.5 && x.s < f.s && !save.stamps[x.id]);
+    if (st) { save.s = st.s; arrive(st); }
+    else { save.s = Math.min(f.s, World.L - 5.5); toast(`🧲 ${name} 옆으로 왔어요!`); }
+    store();
+    updateHud();
+  }
+
+  function sendEmote(i) {
+    const em = EMOTES[i];
+    $("emotes").hidden = true;
+    player.waving = 1.6;
+    showPlayerBubble(`${em.e} ${em.en}`);
+    speak(em.en, "en-GB", 0.9);
+    Net.emote(i);
+    toast(`“${em.en}” = ${em.ko}`);
+  }
+  $("emotes").innerHTML = EMOTES.map((em, i) => `<button data-i="${i}">${em.e} ${esc(em.en)}</button>`).join("") +
+    `<button data-i="w">🙋 지나가는 사람에게 인사</button>`;
+  $("emotes").querySelectorAll("button").forEach((b) => {
+    b.onclick = () => {
+      if (b.dataset.i === "w") { $("emotes").hidden = true; greetWalker(); }
+      else sendEmote(+b.dataset.i);
+    };
+  });
+
+  function togetherMenu(inGame) {
+    if (Net.role !== "solo") { roomView(inGame); return; }
+    openModal(`
+      <h2>👨‍👩‍👧 같이 걷기</h2>
+      <p style="margin-top:0">엄마와 아이처럼 각자 기기로 같은 런던 거리를 함께 걸어요. 서로의 캐릭터가 보이고, 영어로 인사를 주고받을 수 있어요.</p>
+      <div class="label">내 이름 (서로에게 보여요)</div>
+      <div class="opts" id="tg-name"></div>
+      <button class="big" id="tg-host">🏠 방 만들기<small class="sub2">먼저 시작하는 사람</small></button>
+      <button class="big soft" id="tg-join">🔢 코드 넣고 들어가기<small class="sub2">방을 만든 사람이 알려 준 숫자 4개</small></button>
+      <p style="color:#6f6878;font-size:13px">두 기기 모두 인터넷이 되어야 해요. 걸은 거리와 도장은 기기마다 따로 저장돼요.</p>
+    `);
+    chips($("tg-name"), NAMES, save.name, (i) => {
+      save.name = i; store();
+      if (!$("start").hidden) chips($("opt-name"), NAMES, save.name, (k) => { save.name = k; store(); Net.setProfile(profile()); });
+    });
+    $("tg-host").onclick = () => hostRoom(inGame);
+    $("tg-join").onclick = () => joinView(inGame);
+  }
+
+  function hostRoom(inGame) {
+    openModal(`<h2>🏠 방 만들기</h2><div class="msg wait" id="rm-msg">방을 만드는 중… ⏳</div>`);
+    const code = /^\d{4}$/.test(save.hostCode) ? save.hostCode : Net.newCode();
+    let opened = false;
+    Net.updateMe(save.s, false, Object.keys(save.stamps).length);
+    Net.host(code, profile(), (err, real) => {
+      if (err && opened) { toast("연결 서버와 잠깐 끊겼어요. 인터넷을 확인해요."); return; }
+      if (err) {
+        Net.leave();
+        const msg = err === "nolib" ? "연결 도구를 불러오지 못했어요." : "연결 서버(PeerJS)에 닿지 않아요. 인터넷이 되는지 확인해요.";
+        if ($("rm-msg")) $("rm-msg").outerHTML = `<div class="msg bad">😢 ${msg} (${esc(err)})</div><button class="big soft" id="rm-back">돌아가기</button>`;
+        if ($("rm-back")) $("rm-back").onclick = () => togetherMenu(inGame);
+        return;
+      }
+      opened = true;
+      roomCode = real; save.hostCode = real; store();
+      roomView(inGame);
+    });
+  }
+
+  function roomView(inGame) {
+    const host = Net.role === "host";
+    openModal(`
+      <h2>👨‍👩‍👧 같이 걷기</h2>
+      ${host ? `<p style="margin:0">다른 기기에서 <b>런던 탐방 → 👨‍👩‍👧 같이 걷기 → 코드 넣고 들어가기</b>를 누르고 이 숫자를 넣어요.</p>
+        <div class="code-big">${roomCode.split("").map((c) => `<span>${c}</span>`).join("")}</div>` : `<p style="margin:0 0 8px">방에 들어왔어요! 🎉</p>`}
+      <div class="label">함께 걷는 사람</div>
+      <div id="room-list" class="room-list"></div>
+      <button class="big" id="rm-go">${inGame ? "닫기" : "출발! 🚶"}</button>
+    `);
+    refreshRoomList();
+    $("rm-go").onclick = () => { closeModal(); if (!inGame) startGame(); };
+  }
+  function refreshRoomList() {
+    const el = $("room-list");
+    if (!el) return;
+    const others = [...friends.values()].map((f) => `<div>🧑 ${esc(f.p.name)} <span>들어왔어요 ✓</span></div>`).join("");
+    el.innerHTML = `<div>🧑 ${esc(profile().name)} <span>나</span></div>` + (others || `<div class="wait">다른 사람을 기다리는 중… ⏳</div>`);
+  }
+
+  function joinView(inGame) {
+    let code = (save.lastCode || "").slice(0, 4);
+    openModal(`
+      <h2>🔢 코드 넣기</h2>
+      <p style="margin:0 0 6px">방을 만든 사람 화면에 나온 숫자 4개를 넣어요.</p>
+      <div class="code-big" id="jn-boxes"></div>
+      <div class="pad" id="jn-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button data-k="${n}">${n}</button>`).join("")}<button data-k="c" class="soft">지우기</button><button data-k="0">0</button><button data-k="b" class="soft">⌫</button></div>
+      <div class="msg" id="jn-msg"></div>
+      <button class="big" id="jn-go">들어가기</button>
+    `);
+    const draw = () => {
+      $("jn-boxes").innerHTML = [0, 1, 2, 3].map((i) => `<span class="${i === code.length ? "on" : ""}">${code[i] || ""}</span>`).join("");
+      $("jn-go").disabled = code.length !== 4;
+    };
+    draw();
+    $("jn-pad").querySelectorAll("button").forEach((b) => {
+      b.onclick = () => {
+        const k = b.dataset.k;
+        if (k === "c") code = "";
+        else if (k === "b") code = code.slice(0, -1);
+        else if (code.length < 4) code += k;
+        draw();
+      };
+    });
+    $("jn-go").onclick = () => {
+      if (code.length !== 4) return;
+      $("jn-go").disabled = true;
+      $("jn-msg").className = "msg wait"; $("jn-msg").textContent = "연결하는 중… ⏳";
+      Net.updateMe(save.s, false, Object.keys(save.stamps).length);
+      Net.join(code, profile(), (err) => {
+        if (err) {
+          if ($("jn-go")) $("jn-go").disabled = false;
+          if ($("jn-msg")) {
+            $("jn-msg").className = "msg bad";
+            $("jn-msg").textContent = err === "peer-unavailable" ? "😢 그런 방이 없어요. 숫자를 다시 확인해요." :
+              err === "nolib" ? "😢 연결 도구를 불러오지 못했어요." : "😢 연결이 안 돼요. 인터넷을 확인하고 다시 해 봐요.";
+          }
+          return;
+        }
+        save.lastCode = code; roomCode = code; store();
+        roomView(inGame);
+      });
+    };
+  }
 
   // ---------- 버튼 ----------
   $("walk").onclick = () => { Snd.ensure(); setWalking(!walking); };
@@ -647,13 +943,17 @@
 
   function showPlayerBubble(text) {
     if (playerBubble) scene.remove(playerBubble);
-    playerBubble = World.makeLabel(text, null, { scale: 6, depthTest: false, bg: "rgba(255,240,200,.96)" });
+    playerBubble = World.makeLabel(text, null, { fixed: 0.3, depthTest: false, bg: "rgba(255,240,200,.96)" });
     scene.add(playerBubble);
     playerBubbleT = 2.8;
   }
 
   $("btn-hello").onclick = () => {
     Snd.ensure();
+    if (friends.size) { $("emotes").hidden = !$("emotes").hidden; return; }
+    greetWalker();
+  };
+  function greetWalker() {
     player.waving = 1.6;
     showPlayerBubble("Hello! 👋");
     speak("Hello!", "en-GB", 0.9);
@@ -666,7 +966,7 @@
       speak(gr.en, "en-GB", 0.9);
       toast(`“${gr.en}” = ${gr.ko}`, 3200);
     }, 1100);
-  };
+  }
 
   // ---------- 화면 끌어서 둘러보기 ----------
   let drag = null;
@@ -785,6 +1085,8 @@
       birdTimer -= dt;
       if (birdTimer <= 0) { birdTimer = 3 + Math.random() * 6; Snd.bird(); }
     }
+    updateFriends(dt);
+    if (Net.role !== "solo") Net.updateMe(save.s, walking && !busy, Object.keys(save.stamps).length);
     hudTimer -= dt;
     if (hudTimer <= 0 && mode !== "start") { hudTimer = 0.5; updateHud(); }
     updateCamera(dt);
