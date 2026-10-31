@@ -363,6 +363,7 @@
       <ul class="facts">${st.facts.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
       <div class="eng"><div class="t"><small>오늘의 영어 한마디</small><b>${esc(st.phrase.en)}</b><span class="k">${esc(st.phrase.ko)}</span></div><button id="say-en" aria-label="영어 듣기">🔊</button></div>
       ${got ? `<div class="stamp"><span class="em">${st.emoji}</span>${esc(st.en)}<br>${esc(save.stamps[st.id])}</div>
+        <button class="big soft" id="card-quiz">✏️ 퀴즈 또 풀기</button>
         <button class="big" id="card-next">${fromArrival ? "계속 걷기 ▶" : "닫기"}</button>`
         : `<button class="big red" id="card-quiz">✏️ 퀴즈 풀고 도장 받기</button><button class="big soft" id="card-later">나중에 할게요</button>`}
     `, () => afterCard(st, fromArrival));
@@ -374,33 +375,55 @@
     if (fromArrival) setTimeout(() => speak(st.phrase.en, "en-GB", 0.85), 500);
   }
 
+  // 명소마다 5문제 중 하나를 무작위로 내요. 바로 전에 나온 문제는 피하고, 보기 순서도 섞어요.
+  const lastQuiz = {};
+  function pickQuiz(st) {
+    const all = st.quizzes.map((q, i) => i);
+    const pool = all.length > 1 ? all.filter((i) => i !== lastQuiz[st.id]) : all;
+    const qi = pool[Math.floor(Math.random() * pool.length)];
+    lastQuiz[st.id] = qi;
+    const q = st.quizzes[qi];
+    const order = q.choices.map((c, i) => i).sort(() => Math.random() - 0.5);
+    return { q: q.q, why: q.why, choices: order.map((i) => q.choices[i]), answer: order.indexOf(q.answer), no: qi + 1 };
+  }
+
   function showQuiz(st, fromArrival) {
-    const q = st.quiz;
+    const q = pickQuiz(st);
+    const practice = !!save.stamps[st.id]; // 도장을 이미 받았으면 연습 문제예요
+    const doneLabel = fromArrival ? (st.id === "bridge" ? "다리가 열리는 걸 보러 가요 🌉" : "계속 걷기 ▶") : "닫기";
     openModal(`
-      <div class="lm-head"><span class="em">✏️</span><div><h2>${esc(st.ko)} 퀴즈</h2><small>맞히면 여권에 도장을 찍어요</small></div></div>
+      <div class="lm-head"><span class="em">✏️</span><div><h2>${esc(st.ko)} 퀴즈</h2><small>${practice ? "연습 문제" : "맞히면 여권에 도장을 찍어요"} · 5문제 중 ${q.no}번</small></div></div>
       <div class="q">${esc(q.q)}</div>
       <div class="choices">${q.choices.map((c, i) => `<button class="choice" data-i="${i}">${["①", "②", "③"][i]} ${esc(c)}</button>`).join("")}</div>
       <div id="quiz-after"></div>
     `, () => afterCard(st, fromArrival));
     speak(q.q);
+    let solved = false;
     $("sheet").querySelectorAll(".choice").forEach((b) => {
       b.onclick = () => {
-        if (save.stamps[st.id]) return;
+        if (solved) return;
         const i = +b.dataset.i;
         if (i === q.answer) {
+          solved = true;
           b.classList.add("good");
           Snd.good();
-          const d = new Date();
-          save.stamps[st.id] = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
-          store();
-          Net.event("stamp", st.id);
-          updateHud();
+          let stampHtml = "";
+          if (!practice) {
+            const d = new Date();
+            save.stamps[st.id] = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+            store();
+            Net.event("stamp", st.id);
+            updateHud();
+            stampHtml = `<div class="stamp pop"><span class="em">${st.emoji}</span>${esc(st.en)}<br>${esc(save.stamps[st.id])}</div>`;
+            setTimeout(() => Snd.stamp(), 120);
+          }
           $("quiz-after").innerHTML = `
             <div class="why">⭕ 정답! ${esc(q.why)}</div>
-            <div class="stamp pop"><span class="em">${st.emoji}</span>${esc(st.en)}<br>${esc(save.stamps[st.id])}</div>
-            <button class="big" id="quiz-next">${fromArrival ? (st.id === "bridge" ? "다리가 열리는 걸 보러 가요 🌉" : "계속 걷기 ▶") : "닫기"}</button>`;
-          setTimeout(() => Snd.stamp(), 120);
+            ${stampHtml}
+            <button class="big soft" id="quiz-more">✏️ 다른 문제 풀기</button>
+            <button class="big" id="quiz-next">${doneLabel}</button>`;
           speak("정답! " + q.why);
+          $("quiz-more").onclick = () => showQuiz(st, fromArrival);
           $("quiz-next").onclick = closeModal;
           setTimeout(() => $("quiz-next") && $("quiz-next").scrollIntoView({ behavior: "smooth", block: "end" }), 200);
         } else {
