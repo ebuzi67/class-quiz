@@ -3,7 +3,7 @@
   "short_name": "풍선",
   "description": "손과 발로 풍선을 터뜨리는 몸놀이 (1~2명)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/pe/balloon/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -3,7 +3,7 @@
   "short_name": "장애물",
   "description": "통나무는 점프, 막대는 숙여서 피하는 몸놀이 (1~2명)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/pe/dodge/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -3,7 +3,7 @@
   "short_name": "수학 모험",
   "description": "초등 1학년 1학기 1~5단원 수학 모험 게임 (개념·기본·응용·유형·준심화)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/math1/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

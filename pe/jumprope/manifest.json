@@ -3,7 +3,7 @@
   "short_name": "줄넘기",
   "description": "카메라가 몸 움직임을 알아보는 줄넘기 놀이: 가상 줄넘기, 진짜 줄 30초 기록 (1~2명)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/pe/jumprope/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

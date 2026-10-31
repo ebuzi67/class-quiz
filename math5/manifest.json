@@ -3,7 +3,7 @@
   "short_name": "수학 방탈출",
   "description": "초등 5학년 1학기 1~6단원 방탈출 수학 게임 (개념·기본·응용·유형·준심화)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/math5/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

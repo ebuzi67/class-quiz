@@ -3,7 +3,7 @@
   "short_name": "벽 통과",
   "description": "다가오는 벽의 구멍 모양대로 자세를 잡는 몸놀이 (1~2명)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/pe/wall/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
