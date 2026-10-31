@@ -177,6 +177,8 @@
   .room-list div span { color: var(--go); font-size: 14px; }
   .room-list div.wait { color: var(--soft); justify-content: center; }
   .big:disabled { opacity: .45; }
+  .install-steps { padding-left: 22px; margin: 8px 0; }
+  .install-steps li { margin: 8px 0; font-size: 17px; line-height: 1.5; }
 
   .confetti { position: fixed; top: -20px; width: 10px; height: 16px; z-index: 25; pointer-events: none; animation: fall linear forwards; }
   @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
@@ -235,6 +237,7 @@
     <button class="big red" id="btn-together">👨‍👩‍👧 같이 걷기<small class="sub2">각자 기기로 함께 걸어요</small></button>
     <button class="big" id="btn-go">혼자 걷기 🚶</button>
     <button class="big soft" id="btn-restart" hidden>처음부터 다시 걷기</button>
+    <button class="big soft" id="btn-install" hidden>📲 앱으로 설치하기</button>
     <div class="foot">실제 런던의 길과 건물을 단순하게 만든 그림이에요</div>
   </div>
 </div>
