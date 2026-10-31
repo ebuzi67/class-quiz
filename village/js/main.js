@@ -1089,5 +1089,27 @@
   if (Net.local) $("#local-note").hidden = false;
   startScreens();
 
+  // 앱으로 설치하기: 안드로이드·크롬은 설치 창을 띄우고, 아이패드·아이폰은 "공유 → 홈 화면에 추가"를 안내해요.
+  (() => {
+    const btn = $("#btn-install");
+    let ev = null;
+    const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+    addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+    addEventListener("appinstalled", () => { ev = null; upd(); toast("📲 앱으로 설치했어요! 홈 화면에서 열어요."); });
+    btn.onclick = async () => {
+      if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+      const g = document.createElement("div");
+      g.className = "install-guide";
+      g.innerHTML = "<div role='dialog' aria-label='설치 안내'><h2>아이패드·아이폰에 설치하기</h2><ol>" +
+        "<li><b>사파리</b>에서 이 페이지를 열어요.</li><li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>" +
+        "<li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol><button class='btn'>알겠어요</button></div>";
+      g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
+      document.body.append(g);
+    };
+    upd();
+  })();
+
   if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 })();
