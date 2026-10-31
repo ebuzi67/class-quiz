@@ -649,6 +649,7 @@
            <button class="big soft" id="mo-leave">같이 걷기 끝내기</button>`}
       <button class="big soft" id="mo-look">🎩 캐릭터·소원 바꾸기</button>
       <button class="big soft" id="mo-map">🗺️ 지도 보기</button>
+      ${installVisible() ? `<button class="big soft" id="mo-install">📲 앱으로 설치하기</button>` : ""}
       <button class="big soft" id="mo-restart">처음부터 다시 걷기</button>
       <p style="color:#6f6878;font-size:13px;text-align:center">실제 길과 건물을 단순하게 만든 그림이에요.<br>진짜 여행 정보(입장료, 시간)는 꼭 다시 확인해요.</p>
     `);
@@ -667,6 +668,7 @@
     if ($("mo-together")) $("mo-together").onclick = () => togetherMenu(true);
     if ($("mo-leave")) $("mo-leave").onclick = () => { leaveTogether(); closeModal(); toast("혼자 걷기로 바뀌었어요"); };
     $("mo-map").onclick = mapView;
+    if ($("mo-install")) $("mo-install").onclick = installApp;
     $("mo-restart").onclick = () => { if (confirm("처음부터 다시 걸을까요? 모은 도장도 지워져요.")) restart(); };
   }
 
@@ -1251,6 +1253,44 @@
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
+
+  // ---------- 앱으로 설치하기 ----------
+  // 안드로이드 Chrome이 설치 창을 줄 수 있으면 바로 띄우고, 아니면(아이폰·아이패드, 또는 Chrome이
+  // "이미 설치됨"으로 잘못 알고 있을 때) 홈 화면에 추가하는 방법을 안내해요. 앱으로 열려 있으면 버튼을 숨겨요.
+  let installEvent = null;
+  const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function installVisible() { return !isStandalone(); }
+  function updateInstallButton() { $("btn-install").hidden = !installVisible(); }
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; updateInstallButton(); });
+  window.addEventListener("appinstalled", () => { installEvent = null; updateInstallButton(); toast(`📲 앱으로 설치했어요! 홈 화면의 "런던 탐방"을 눌러 열어요.`, 4500); });
+  async function installApp() {
+    if (installEvent) {
+      const e = installEvent;
+      installEvent = null;
+      e.prompt();
+      try { await e.userChoice; } catch (err) {}
+      updateInstallButton();
+      return;
+    }
+    const steps = isIOS
+      ? `<li><b>사파리</b>에서 이 페이지를 열어요.</li>
+         <li>화면의 <b>공유 버튼</b>(□↑)을 눌러요. 아이폰은 아래쪽, 아이패드는 위쪽에 있어요.</li>
+         <li><b>홈 화면에 추가</b>를 누르고, 오른쪽 위 <b>추가</b>를 눌러요.</li>`
+      : `<li><b>Chrome</b> 오른쪽 위의 <b>⋮</b>(점 세 개)를 눌러요.</li>
+         <li><b>홈 화면에 추가</b>(또는 <b>앱 설치</b>)를 눌러요.</li>
+         <li>"이미 설치된 앱"이라고 나오면 아래 줄의 <b>바로가기 만들기</b>(Create shortcut)를 누르고 <b>추가</b>를 눌러요.</li>`;
+    openModal(`
+      <h2>📲 홈 화면에 추가하기</h2>
+      <p style="margin-top:0">${isIOS ? "아이폰·아이패드는 사파리에서 이렇게 추가해요." : "지금은 Chrome이 바로 설치 창을 열어 주지 않아요. 이렇게 추가해요."}</p>
+      <ol class="install-steps">${steps}</ol>
+      <p style="color:#6f6878;font-size:14px">홈 화면에 생긴 "런던 탐방" 아이콘을 누르면 바로 열려요. 걸은 거리와 도장도 그대로 이어져요.</p>
+      <button class="big" id="inst-ok">알겠어요</button>
+    `);
+    $("inst-ok").onclick = closeModal;
+  }
+  $("btn-install").onclick = installApp;
+  updateInstallButton();
 
   // 30초마다, 그리고 화면을 떠날 때 저장해요
   setInterval(store, 30000);
