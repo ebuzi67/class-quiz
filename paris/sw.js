@@ -1,6 +1,6 @@
 // 파리 탐방 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-const CACHE = "paris-v1";
+const CACHE = "paris-v2";
 const FILES = [
   "./",
   "./index.html",
