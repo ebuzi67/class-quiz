@@ -3,7 +3,7 @@
   "short_name": "런던 탐방",
   "description": "런던 거리를 걸으며 명소 9곳에서 이야기를 듣고 퀴즈를 풀어 여권 도장을 모아요",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/london/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

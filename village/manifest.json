@@ -3,7 +3,7 @@
   "short_name": "발명가 마을",
   "description": "친구들과 함께 걸어 다니며 코딩과 과학 실험을 하는 우리 반 메타버스 마을",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/village/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

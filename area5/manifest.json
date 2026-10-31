@@ -3,7 +3,7 @@
   "short_name": "넓이 퀴즈",
   "description": "초등 5학년 1학기 6단원 다각형의 넓이 문제풀이",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/area5/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

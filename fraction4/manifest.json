@@ -3,7 +3,7 @@
   "short_name": "분수 퀴즈",
   "description": "초등 4학년 분수 퀴즈 (쉬움·보통·어려움)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/fraction4/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

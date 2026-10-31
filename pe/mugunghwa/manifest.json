@@ -3,7 +3,7 @@
   "short_name": "무궁화 꽃",
   "description": "카메라가 몸 움직임을 알아보는 무궁화 꽃이 피었습니다 놀이 (1~2명)",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/pe/mugunghwa/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

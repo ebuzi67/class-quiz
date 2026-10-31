@@ -3,7 +3,7 @@
   "short_name": "로블록스 퀴즈",
   "description": "로블록스 스튜디오 타워 디펜스·점프맵(Obby) 퀴즈",
   "lang": "ko",
-  "id": "./",
+  "id": "/class-quiz/roblox/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
