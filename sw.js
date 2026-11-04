@@ -1,12 +1,56 @@
-// 예전에는 분수 퀴즈가 이 주소(/class-quiz/)에 있었어요. 지금은 fraction4/로 옮겼어요.
-// 예전 버전이 남긴 서비스 워커와 저장분을 지워서, 넓이 퀴즈(area5/)와 분수 퀴즈(fraction4/)가
-// 각자 따로 동작하게 해요.
-self.addEventListener("install", () => self.skipWaiting());
+// 수학 퀴즈 모음 페이지 오프라인 지원
+// 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
+// 이 주소(/class-quiz/) 아래에는 다른 앱들도 있어서, 모음 페이지 자체의 파일만 맡아요.
+// 각 퀴즈(math5/, fraction4/ 등)는 자기 서비스 워커가 따로 맡아요.
+const CACHE = "math-home-v1";
+const FILES = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-180.png",
+  "./math5/icons/icon-192.png",
+  "./math1/icons/icon-192.png",
+  "./area5/icons/icon-192.png",
+  "./fraction4/icons/icon-192.png"
+];
+const SCOPE = self.registration.scope;
+const MINE = new Set(FILES.map((file) => new URL(file, SCOPE).href));
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)));
+  self.skipWaiting();
+});
+
+// 이 앱의 옛 버전과, 예전에 이 주소에 있던 분수 퀴즈 저장분만 지워요.
 self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    await caches.delete("fraction-quiz-v1");
-    await self.registration.unregister();
-    const clients = await self.clients.matchAll({ type: "window" });
-    clients.forEach((client) => client.navigate(client.url));
-  })());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys
+        .filter((key) => (key.startsWith("math-home-") && key !== CACHE) || key === "fraction-quiz-v1")
+        .map((key) => caches.delete(key)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  url.search = "";
+  if (event.request.method !== "GET" || !MINE.has(url.href)) return;
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(event.request, { ignoreSearch: true })
+          .then((cached) => cached || (event.request.mode === "navigate" ? caches.match("./index.html") : Response.error()))
+      )
+  );
 });

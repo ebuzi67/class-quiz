@@ -1,0 +1,17 @@
+{
+  "name": "수학 퀴즈",
+  "short_name": "수학 퀴즈",
+  "description": "방탈출·모험·넓이·분수 수학 퀴즈를 한곳에 모았어요",
+  "lang": "ko",
+  "id": "/class-quiz/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f7f2",
+  "theme_color": "#2b3a67",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

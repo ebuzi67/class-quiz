@@ -4,7 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>수학 퀴즈</title>
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#2b3a67">
+  <link rel="manifest" href="manifest.json?v=1">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="수학 퀴즈">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -44,16 +50,11 @@
       <img src="fraction4/icons/icon-192.png" alt="">
       <span><b>분수 퀴즈 · 4학년</b><small>분수의 뜻, 크기 비교, 덧셈과 뺄셈</small></span>
     </a>
-    <p class="note">각 퀴즈를 연 다음, 브라우저 메뉴의 "앱 설치" 또는 "홈 화면에 추가"로 따로 설치할 수 있어요.</p>
+    <p class="note">이 페이지도, 각 퀴즈도 브라우저 메뉴의 "앱 설치" 또는 "홈 화면에 추가"로 설치할 수 있어요.</p>
   </div>
   <script>
-    // 예전 분수 퀴즈가 이 주소에 남긴 서비스 워커를 정리해요.
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        const here = new URL("./", location.href).href;
-        regs.filter((r) => r.scope === here).forEach((r) => r.unregister());
-      }).catch(() => {});
-    }
+    // 이 모음 페이지도 앱처럼 설치하고 인터넷 없이 열 수 있게 해요
+    if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   </script>
 </body>
 </html>
