@@ -1,0 +1,17 @@
+{
+  "name": "유럽 탐방",
+  "short_name": "유럽 탐방",
+  "description": "런던·파리·로마 등 유럽 10개 나라 탐방 앱을 한곳에 모았어요",
+  "lang": "ko",
+  "id": "/class-quiz/europe/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f7f2",
+  "theme_color": "#1f3d7a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
