@@ -16,6 +16,8 @@
 - `tools/math5/castle.original.html`: Claude 대화에서 만든 수학 방탈출 게임 원본 (아티팩트 「계산 순서의 성」 그대로)
 - `tools/math5/build.py`: 원본에 앱 설정(아이콘, 오프라인, 설치 버튼)만 붙여서 `math5/`에 저장해요. 원본을 고친 뒤 `python3 tools/math5/build.py`를 다시 실행하면 돼요.
 - `tools/area5/`: 학습지와 넓이 퀴즈 앱을 만드는 스크립트
+- `worksheets/개념노트/`: 단원별 개념노트와 개념 백지테스트 PDF (3-1 평면도형, 4-1 평면도형의 이동, 4-2 삼각형·사각형·다각형, 5-1 다각형의 둘레와 넓이, 5-2 합동과 대칭·직육면체)
+- `tools/concept-notes/`: 개념노트·백지테스트 PDF를 만드는 스크립트 (`node tools/concept-notes/build.js`)
 
 ## 로블록스 퀴즈 (따로 분리된 앱)
 
