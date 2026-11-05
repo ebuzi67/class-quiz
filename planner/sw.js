@@ -1,7 +1,7 @@
 // 학습 플래너 오프라인 지원
 // 화면 파일만 맡아요. 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // 체크한 기록은 서비스 워커가 아니라 기기 안(localStorage)에 저장돼요.
-const CACHE = "planner-v1";
+const CACHE = "planner-v2";
 const FILES = [
   "./",
   "./index.html",

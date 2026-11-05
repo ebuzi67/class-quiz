@@ -307,7 +307,7 @@ const POSTER = [
 
 function defaults() {
   return {
-    v: 1, name: "", pin: "", start: "",  // start: 앱을 처음 쓴 날 (그 전 날짜는 통계에서 빼요)
+    v: 1, name: "", pin: "", phone: "", start: "",  // start: 앱을 처음 쓴 날 (그 전 날짜는 통계에서 빼요)
     routine: POSTER.map(([day, subj, text], i) => ({ id: "r" + (i + 1), day, subj, text })),
     checks: {},   // "2026-11-02|r1": 체크한 시각  (주말은 토요일 날짜로 저장)
     memos: {},    // "2026-11-02|r1": "p.24~30"
@@ -357,6 +357,12 @@ const view = $("view");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const isParent = () => !S.pin || ui.unlocked;
+const fmtPhone = (n) => (n || "").replace(/^(01\d)(\d{3,4})(\d{4})$/, "$1-$2-$3");
+// 문자 앱을 받는 사람·내용이 채워진 상태로 열어요. (웹 앱은 문자를 혼자 보낼 수 없어서, 마지막 '보내기'는 아이가 눌러요)
+function sendSms(num, text) {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  location.href = `sms:${num}${ios ? "&" : "?"}body=${encodeURIComponent(text)}`;
+}
 
 // ================= 할 일 계산 =================
 function itemsFor(d) {
@@ -459,7 +465,7 @@ function renderToday() {
     <div class="stamp-row">
       ${conf ? `<button class="stamp" data-act="unconfirm" type="button">⭐ 부모님 확인 완료</button>`
              : `<button class="pill-btn" data-act="confirm" type="button">⭐ 부모님 확인 도장</button>`}
-      <button class="pill-btn" data-act="share" type="button">📤 오늘 보고 보내기</button>
+      <button class="pill-btn" data-act="share" type="button">${S.phone ? "📩 엄마에게 문자 보내기" : "📤 오늘 보고 보내기"}</button>
     </div>
   </section>
 
@@ -663,6 +669,8 @@ function renderLog() {
   </section>
   <section class="card">
     <div class="card-head"><h3>설정</h3><small>${S.pin ? (ui.unlocked ? "🔓 부모님 모드" : "🔒 잠겨 있어요") : ""}</small></div>
+    <div class="set-row"><div class="t"><b>엄마 휴대폰 번호</b><small>${S.phone ? esc(fmtPhone(S.phone)) + " · 보고 버튼을 누르면 이 번호로 문자가 열려요" : "적어 두면 '오늘 보고'를 바로 문자로 보내요"}</small></div>
+      <button class="pill-btn" data-act="set-phone" type="button">${S.phone ? "바꾸기" : "적기"}</button></div>
     <div class="set-row"><div class="t"><b>아이 이름</b><small>${S.name ? esc(S.name) : "맨 위 제목에 이름이 나와요"}</small></div>
       <button class="pill-btn" data-act="set-name" type="button">바꾸기</button></div>
     <div class="set-row"><div class="t"><b>부모님 잠금</b><small>${S.pin ? "루틴 편집·숙제 삭제·확인 도장에 비밀번호가 필요해요" : "비밀번호를 정하면 아이가 루틴을 지우지 못해요"}</small></div>
@@ -926,7 +934,16 @@ view.addEventListener("click", (e) => {
     case "edit-rt": return editRoutine(S.routine.find((x) => x.id === id));
     case "confirm": return needPin(() => { S.confirms[ymd(ui.date)] = Date.now(); save(); render(); celebrate("⭐ 확인 도장 쾅!"); });
     case "unconfirm": return needPin(() => { if (confirm("확인 도장을 취소할까요?")) { delete S.confirms[ymd(ui.date)]; save(); render(); } });
-    case "share": return share(report(), "오늘 공부 보고");
+    case "share": return S.phone ? sendSms(S.phone, report()) : share(report(), "오늘 공부 보고");
+    case "set-phone":
+      return needPin(() => modal(`<h2>엄마 휴대폰 번호</h2><label>번호 (비워 두면 지워요)</label>
+        <input name="phone" type="tel" inputmode="tel" value="${esc(fmtPhone(S.phone))}" placeholder="010-1234-5678" maxlength="16">
+        <div class="hint">'오늘 보고' 버튼을 누르면 이 번호로 보낼 문자가 내용까지 채워져서 열려요. 아이는 <b>보내기</b>만 누르면 돼요.</div>`,
+        (f) => {
+          const n = f.phone.replace(/[^0-9+]/g, "");
+          if (n && n.length < 9) { toast("번호를 다시 확인해 주세요"); return false; }
+          S.phone = n; save(); render(); toast(n ? "번호를 저장했어요" : "번호를 지웠어요");
+        }));
     case "set-name":
       return modal(`<h2>아이 이름</h2><label>이름 (맨 위 제목에 나와요)</label><input name="name" value="${esc(S.name)}" maxlength="12" placeholder="예: 서윤">`,
         (f) => { S.name = f.name.trim(); save(); render(); });
