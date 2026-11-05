@@ -31,9 +31,9 @@
     a.card b { display: block; font-size: 1.1em; color: var(--c); }
     a.card small { color: #666; }
     button { font-family: inherit; cursor: pointer; border-radius: 14px; }
-    .install { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; margin-top: 6px;
-      background: #fff; color: #1f6feb; border: 2px dashed #1f6feb; font-weight: 800; font-size: 1em; }
-    .guide { background: #fff; border: 2px solid #1f6feb; border-radius: 18px; padding: 16px 18px; margin-top: 6px; font-size: .9em; }
+    .install { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px; margin: 0 0 18px;
+      background: #1f6feb; color: #fff; border: none; border-radius: 16px; font-weight: 800; font-size: 1em; }
+    .guide { background: #fff; border: 2px solid #1f6feb; border-radius: 18px; padding: 16px 18px; margin: 0 0 18px; font-size: .9em; }
     .guide ol { margin: 8px 0 4px; padding-left: 1.3em; }
     .guide li { margin: 6px 0; }
     .guide .close { float: right; background: none; border: none; color: #666; font-size: 1.2em; padding: 0 4px; }
@@ -45,6 +45,7 @@
   <div class="app">
     <h1>로블록스 스튜디오 퀴즈</h1>
     <p class="sub">유튜버 옐롯과 함께하는 게임 제작 핵심 개념 다지기</p>
+    <div id="install"></div>
     <a class="card" href="tower-defense/" style="--c:#0070f3">
       <span class="emoji">🏰</span>
       <span><b>타워 디펜스</b><small>웨이포인트, 영웅 소환, 코인 상점까지 10문제</small></span>
@@ -53,13 +54,12 @@
       <span class="emoji">🦘</span>
       <span><b>점프맵 (Obby)</b><small>킬브릭, 체크포인트, 움직이는 발판까지 10문제</small></span>
     </a>
-    <div id="install"></div>
   </div>
   <script>
     // ---------- 홈 화면에 설치하기 ----------
-    // 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
-    // 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
-    // 이미 앱으로 열었거나 설치된 기기에서는 버튼을 숨겨요.
+    // 앱으로 연 게 아니면 버튼을 항상 보여 줘요. 크롬이 설치 창을 줄 수 있으면 바로 띄우고,
+    // 아니면 설치 순서를 안내해요(아이폰·아이패드는 "공유 → 홈 화면에 추가", 그 밖에는 크롬 ⋮ 메뉴).
+    // 이미 앱으로 열었으면 버튼을 숨겨요.
     let installEvent = null, showGuide = false;
     const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
     const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -67,17 +67,19 @@
     function render() {
       const box = document.getElementById("install");
       if (isStandalone()) { box.innerHTML = ""; return; }
-      if (showGuide) {
+      if (showGuide && !isIOS()) {
+        box.innerHTML = `<div class="guide"><button class="close" onclick="closeGuide()" aria-label="닫기">✕</button>
+          <b>📲 앱으로 설치하기</b>
+          <ol><li>크롬 오른쪽 위 <b>⋮</b> 메뉴를 눌러요.</li><li><b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.</li><li>메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요. 다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어요.</li></ol></div>`;
+      } else if (showGuide) {
         box.innerHTML = `<div class="guide"><button class="close" onclick="closeGuide()" aria-label="닫기">✕</button>
           <b>📲 아이폰·아이패드에 설치하기</b>
           <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
             <li>화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span style="white-space:nowrap">(□↑)</span>을 눌러요.</li>
             <li>목록을 내려 <b>홈 화면에 추가</b>를 누르고, 오른쪽 위 <b>추가</b>를 눌러요.</li></ol>
           <small style="color:#666">홈 화면에 생긴 로블록스 퀴즈 아이콘으로 열면 앱처럼 전체 화면으로 열려요.</small></div>`;
-      } else if (installEvent || isIOS()) {
-        box.innerHTML = `<button class="install" onclick="installApp()">📲 홈 화면에 설치하기</button>`;
       } else {
-        box.innerHTML = "";
+        box.innerHTML = `<button class="install" onclick="installApp()">📲 로블록스 퀴즈를 앱으로 설치하기</button>`;
       }
     }
     async function installApp() {
@@ -86,7 +88,7 @@
         installEvent = null;
         ev.prompt();
         try { await ev.userChoice; } catch (e) {}
-      } else if (isIOS()) {
+      } else {
         showGuide = true;
       }
       render();

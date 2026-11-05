@@ -1089,22 +1089,25 @@
   if (Net.local) $("#local-note").hidden = false;
   startScreens();
 
-  // 앱으로 설치하기: 안드로이드·크롬은 설치 창을 띄우고, 아이패드·아이폰은 "공유 → 홈 화면에 추가"를 안내해요.
+  // 앱으로 설치하기: 앱으로 연 게 아니면 버튼을 항상 보여 줘요. 크롬이 설치 창을 줄 수 있으면 바로 띄우고,
+  // 아니면 설치 순서를 안내해요(아이폰·아이패드는 "공유 → 홈 화면에 추가", 그 밖에는 크롬 ⋮ 메뉴).
   (() => {
     const btn = $("#btn-install");
     let ev = null;
     const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+    const upd = () => { btn.hidden = standalone(); };
     addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
     addEventListener("appinstalled", () => { ev = null; upd(); toast("📲 앱으로 설치했어요! 홈 화면에서 열어요."); });
     btn.onclick = async () => {
       if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
       const g = document.createElement("div");
       g.className = "install-guide";
-      g.innerHTML = "<div role='dialog' aria-label='설치 안내'><h2>아이패드·아이폰에 설치하기</h2><ol>" +
-        "<li><b>사파리</b>에서 이 페이지를 열어요.</li><li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>" +
-        "<li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol><button class='btn'>알겠어요</button></div>";
+      g.innerHTML = ios
+        ? "<div role='dialog' aria-label='설치 안내'><h2>아이패드·아이폰에 설치하기</h2><ol>" +
+          "<li><b>사파리</b>에서 이 페이지를 열어요.</li><li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>" +
+          "<li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol><button class='btn'>알겠어요</button></div>"
+        : "<div role='dialog' aria-label='설치 안내'><h2>앱으로 설치하기</h2><ol><li>크롬 오른쪽 위 <b>⋮</b> 메뉴를 눌러요.</li><li><b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.</li><li>메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요. 다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어요.</li></ol><button class='btn'>알겠어요</button></div>";
       g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
       document.body.append(g);
     };

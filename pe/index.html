@@ -34,6 +34,7 @@
   .row { text-align: center; margin-top: 6px; }
   [hidden] { display: none !important; }
   a.home { display: inline-block; margin-bottom: 4px; color: #6b7a8c; font-size: .85em; text-decoration: none; }
+  .install-btn { display: block; width: 100%; margin: 0 0 18px; padding: 16px; border: 0; border-radius: 16px; background: #2f8f63; color: #fff; font-size: 1rem; }
   .install-guide { position: fixed; inset: 0; background: rgba(20,30,40,.5); display: grid; place-items: center; padding: 16px; z-index: 10; }
   .install-guide > div { background: #fff; border-radius: 18px; padding: 22px 24px; max-width: 420px; width: 100%; }
   .install-guide h2 { font-size: 1.3rem; margin: 0 0 8px; }
@@ -45,6 +46,7 @@
     <a class="home" href="../">← 전체 메뉴</a>
     <h1>🤸 체육시간</h1>
     <p class="sub">카메라가 몸 움직임을 알아봐요. 집에서 아이와 함께 해 보세요!</p>
+    <button class="install-btn" id="installBtn" hidden>📲 체육시간을 앱으로 설치하기</button>
     <a class="card" href="mugunghwa/">
       <span class="em" style="background:#FFE3EC">🌸</span>
       <span><b>무궁화 꽃이 피었습니다</b><small>노래하는 동안 달리고, "얼음!" 때는 꼼짝 마!</small></span>
@@ -65,28 +67,31 @@
       <span class="em" style="background:#DDF5E6">🏃</span>
       <span><b>장애물 피하기</b><small>통나무는 점프, 막대는 쪼그려 앉아서 피해요</small></span>
     </a>
-    <div class="row"><button id="installBtn" hidden>📲 체육시간 앱 설치</button></div>
     <p class="note">체육시간 앱 하나로 모든 게임을 할 수 있어요. 게임 하나만 따로 두고 싶으면, 그 게임을 연 다음 "📲 홈 화면에 설치"를 눌러요.</p>
     <p class="note">노트북·태블릿을 세워 두고 2~3걸음 뒤에서, 머리부터 발끝까지 보이게 서서 해요.<br>카메라 영상은 기기 안에서만 쓰고 어디에도 보내지 않아요.</p>
   </div>
 <script>
 // ---------- 홈 화면에 설치하기 ----------
-// 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
-// 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+// 앱으로 연 게 아니면 버튼을 항상 보여 줘요. 크롬이 설치 창을 줄 수 있으면 바로 띄우고,
+// 아니면 설치 순서를 안내해요(아이폰·아이패드는 "공유 → 홈 화면에 추가", 그 밖에는 크롬 ⋮ 메뉴).
 (() => {
   const btn = document.getElementById("installBtn"); let ev = null;
   const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+  const upd = () => { btn.hidden = standalone(); };
   addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
   addEventListener("appinstalled", () => { ev = null; upd(); });
   btn.addEventListener("click", async () => {
     if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
     const g = document.createElement("div"); g.className = "install-guide";
-    g.innerHTML = `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+    g.innerHTML = ios
+      ? `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
       <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
       <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
       <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <button>알겠어요</button></div>`
+      : `<div role="dialog" aria-label="설치 안내"><h2>앱으로 설치하기</h2>
+      <ol><li>크롬 오른쪽 위 <b>⋮</b> 메뉴를 눌러요.</li><li><b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.</li><li>메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요. 다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어요.</li></ol>
       <button>알겠어요</button></div>`;
     g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
     document.body.appendChild(g);
