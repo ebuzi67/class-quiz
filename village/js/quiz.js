@@ -1,5 +1,6 @@
 // 배움 동산 문제 방(수학·국어) 공통 틀
 // 방마다 미션이 5개 있어요. 미션 하나는 5문제이고, 4문제 이상 맞히면 통과예요.
+// 방에 round·pass를 적으면 그 방만 문제 수가 달라져요(1-2학년 방: 10문제 중 8문제).
 // 미션을 모두 통과하면 그 방 도장을 받아요.
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
@@ -8,6 +9,7 @@
 
 const Quiz = (() => {
   const ROUND = 5, PASS = 4;
+  const sizeOf = (def) => ({ round: def.round || ROUND, pass: def.pass || PASS });
   // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
   const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" } };
   const npcOf = (roomId) => NPCS[roomId.replace(/\d+$/, "")];
@@ -107,16 +109,18 @@ const Quiz = (() => {
     const root = frame(def.e + " " + def.title + " · " + def.grade);
     const getP = () => Object.assign({ done: [], best: {} }, ctx.getProgress(def.id) || {});
 
+    const { round: ROUND, pass: PASS } = sizeOf(def);
+
     function home() {
       root.innerHTML = "";
       const p = getP();
       const npc = npcOf(def.id);
-      const line = "안녕! 나는 " + npc.name + "야. " + def.title + "에 온 걸 환영해! 미션을 골라 봐. 5문제 중 " + PASS + "문제를 맞히면 통과야.";
+      const line = "안녕! 나는 " + npc.name + "야. " + def.title + "에 온 걸 환영해! 미션을 골라 봐. " + ROUND + "문제 중 " + PASS + "문제를 맞히면 통과야.";
       root.append(npcBanner(el, npc, line));
       const grid = el("div", "qz-missions");
       def.missions.forEach((m) => {
         const done = p.done.includes(m.id);
-        const b = el("button", "qz-mission" + (done ? " done" : ""), "<span>" + m.e + "</span><b>" + m.name + "</b><small>" + (done ? "✅ 통과" : p.best[m.id] != null ? "최고 " + p.best[m.id] + "/5" : m.desc) + "</small>");
+        const b = el("button", "qz-mission" + (done ? " done" : ""), "<span>" + m.e + "</span><b>" + m.name + "</b><small>" + (done ? "✅ 통과" : p.best[m.id] != null ? "최고 " + p.best[m.id] + "/" + ROUND : m.desc) + "</small>");
         b.onclick = () => { ctx.sfx("tap"); play(m); };
         grid.append(b);
       });
@@ -209,8 +213,8 @@ const Quiz = (() => {
         ctx.sfx(pass ? "win" : "thud");
         box.innerHTML = "";
         drawDots(results);
-        box.append(el("div", "mg-q", pass ? "🎉 미션 통과! " + right + " / 5" : "😊 " + right + " / 5 · 조금만 더! " + PASS + "문제를 맞히면 통과예요."));
-        ctx.speak(pass ? "미션 통과! 5문제 중 " + right + "문제를 맞혔어요." : "5문제 중 " + right + "문제를 맞혔어요. 다시 도전해 봐요!");
+        box.append(el("div", "mg-q", pass ? "🎉 미션 통과! " + right + " / " + ROUND : "😊 " + right + " / " + ROUND + " · 조금만 더! " + PASS + "문제를 맞히면 통과예요."));
+        ctx.speak(pass ? "미션 통과! " + ROUND + "문제 중 " + right + "문제를 맞혔어요." : ROUND + "문제 중 " + right + "문제를 맞혔어요. 다시 도전해 봐요!");
         const row = el("div", "rb-controls");
         const again = el("button", "btn btn-go", "🔁 다시 하기"), list = el("button", "btn btn-soft", "📋 미션 고르기");
         again.onclick = () => { ctx.sfx("tap"); play(m); };
@@ -226,6 +230,6 @@ const Quiz = (() => {
 
   const strip = (h) => String(h).replace(/<span class='fr'><b>(\d+)<\/b><i>(\d+)<\/i><\/span>/g, " $2분의 $1").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-  return { add, rooms, tools, peek: () => shown, npcBanner, NPCS };
+  return { add, rooms, tools, sizeOf, peek: () => shown, npcBanner, NPCS };
 })();
 
