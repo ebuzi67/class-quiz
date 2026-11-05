@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 OUT = Path(__file__).resolve().parents[2] / "village" / "assets" / "npc"
-NAMES = ["chief", "bolt", "sprout", "snap", "luna", "tinker", "farmer", "semsem", "mallang"]
+NAMES = ["chief", "bolt", "sprout", "snap", "luna", "tinker", "farmer", "semsem", "mallang", "jenny"]
 HEIGHT = 180  # 저장할 그림 높이(px)
 STEP = 7      # 이웃 칸과 이만큼(채널마다) 넘게 다르면 배경이 아니에요
 

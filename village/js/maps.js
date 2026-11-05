@@ -146,8 +146,8 @@ const Maps = (() => {
       { id: "tower", x: 8, y: 14, w: 2, out: { x: 8, y: 16, dir: "down" }, pick: ["math12", "math34", "math56"], name: "수학 탑", emoji: "🔢" },
       { id: "library", x: 30, y: 14, w: 2, out: { x: 30, y: 16, dir: "down" }, pick: ["kor12", "kor34", "kor56"], name: "국어 도서관", emoji: "📖" },
       { id: "top", x: 19, y: 0, w: 3, to: "village", out: { x: 20, y: 2, dir: "down" }, name: "마을로", emoji: "🏡" },
-      // 아래쪽 아치 문: 영어 학교. 교과 언덕 그림이 오기 전까지는 영어 방 고르기 창이 열려요.
-      { id: "english", x: 19, y: 34, w: 3, activity: "enghub", out: { x: 20, y: 31, dir: "up" }, name: "영어 학교", emoji: "🔤" }
+      // 아래쪽 아치 문: 교과 언덕(영어 학교, 나중에 다른 교과)으로 가는 길
+      { id: "subjects", x: 19, y: 34, w: 3, to: "subjects", out: { x: 20, y: 31, dir: "up" }, name: "교과 언덕", emoji: "🌍" }
     ],
     areas: [{ id: "tower", r: [3, 0, 14, 13] }, { id: "library", r: [26, 3, 38, 13] }],
     spawn: { x: 20, y: 2, dir: "down" },
@@ -158,6 +158,50 @@ const Maps = (() => {
         lines: ["안녕! 나는 이야기를 쓰는 말랑 작가야.", "책 지붕 건물이 국어 도서관이야. 들어가서 내 학년 방을 골라 봐.", "한글 놀이방, 이야기 도서관, 꼬마 방송국이 기다리고 있어!"] }
     ]
   };
+
+  // ───────────────────────── 교과 언덕 ─────────────────────────
+  // 그림 1536x1024를 48x32칸으로 나눠요. 위쪽 아치 문은 배움 동산으로 이어져요.
+  // 영어 학교 문에 들어가면 학년(1-2, 3-4, 5-6)을 골라요. 울타리 친 빈 땅 두 곳은 나중에 다른 교과 건물 자리예요.
+  const SUBJECTS = {
+    id: "subjects", name: "교과 언덕", w: 48, h: 32, img: "assets/subjects.webp", backdrop: "#4e8a3a",
+    walk: [[3, 12, 31, 19], [22, 2, 27, 11], [32, 17, 43, 19], [23, 20, 26, 21], [4, 20, 9, 26], [11, 11, 12, 11]],
+    solid: [
+      [3, 12, 4, 12],                                               // 우체통
+      [18, 6, 19, 10], [21, 7, 21, 10], [28, 7, 28, 10],            // 공중전화, 위 가로등
+      [20, 11, 21, 12], [28, 11, 29, 12],                           // 위 벤치
+      [23, 13, 26, 15], [18, 14, 18, 17], [31, 14, 31, 17],          // 꽃밭, 아래 가로등
+      [19, 16, 22, 17], [27, 16, 29, 17],                           // 아래 벤치
+      [31, 12, 31, 13]                                              // 오른쪽 울타리 끝
+    ],
+    doors: [
+      { id: "engschool", x: 11, y: 11, w: 2, out: { x: 11, y: 13, dir: "down" }, pick: ["eng12", "eng34", "eng56"], name: "영어 학교", emoji: "🔤" },
+      { id: "hill", x: 23, y: 2, w: 3, to: "hill", out: { x: 24, y: 4, dir: "down" }, name: "배움 동산", emoji: "📚" }
+    ],
+    areas: [{ id: "engschool", r: [5, 0, 19, 10] }],
+    spawn: { x: 24, y: 4, dir: "down" },
+    npcs: [
+      { id: "jenny", name: "제니 선생님", x: 15, y: 14, dir: "down",
+        lines: ["Hello! 나는 제니 선생님이야. 여기는 교과 언덕이야.", "빨간 벽돌 건물이 영어 학교야. 들어가면 1-2학년, 3-4학년, 5-6학년 방을 고를 수 있어.", "울타리 친 빈 땅에는 곧 다른 교과 건물이 생길 거야. See you!"] }
+    ]
+  };
+
+  // 영어 방: 그림 1536x1024를 24x16칸으로 나눠요. 아래 가운데 문, 가운데 긴 탁자 구조는 같아요.
+  const ENG_TABLE = [[8, 7, 15, 9], [7, 8, 7, 9], [16, 8, 16, 9], [9, 10, 14, 10]];
+  const ENG_LAMPS = [[9, 12, 9, 13], [14, 12, 14, 13]];
+  const ENG_ROOMS = {
+    eng12: { name: "알파벳 놀이방", emoji: "🎈", solid: [[1, 4, 4, 6], [0, 7, 4, 10], [0, 11, 3, 12], [18, 4, 22, 6], [19, 7, 23, 9], [19, 12, 23, 13], [22, 10, 23, 11]] },
+    eng34: { name: "알파벳 교실", emoji: "🔤", solid: [[1, 6, 4, 8], [0, 9, 4, 9], [0, 10, 5, 12], [18, 6, 23, 7], [22, 9, 23, 10], [19, 11, 23, 12]] },
+    eng56: { name: "영어 카페", emoji: "☕", solid: [[1, 4, 6, 7], [0, 8, 1, 9], [1, 9, 4, 11], [20, 5, 22, 6], [21, 8, 23, 11]] }
+  };
+  Object.entries(ENG_ROOMS).forEach(([id, q]) => {
+    ROOMS[id] = {
+      name: q.name, emoji: q.emoji, parent: "subjects", w: 24, h: 16, floor: [1, 6, 22, 13], door: { x: 11, y: 14, w: 2 },
+      solid: q.solid.concat(ENG_TABLE, ENG_LAMPS),
+      stations: [{ x: 8, y: 7, w: 8, h: 3, activity: id, label: "📝 미션 탁자" }],
+      npcs: [{ id: "jenny", name: "제니 선생님", x: 5, y: 9, dir: "right", activity: id, actionLabel: "📝 미션 시작",
+        lines: ["Hello! 여기는 " + q.name + "이야.", "가운데 탁자에서 영어 미션을 풀 수 있어. 10문제 중 8문제를 맞히면 통과!", "영어 낱말은 🔊 소리로 들려줄게. Let's go!"] }]
+    };
+  });
 
   // 수학·국어 방: 그림이 모두 같은 구조(아래 가운데 문, 가운데 큰 탁자)라 바닥은 같고 가구만 달라요.
   const TABLE = [[7, 7, 12, 10], [6, 8, 6, 9], [13, 8, 13, 9]];
@@ -209,9 +253,10 @@ const Maps = (() => {
 
   function buildRoom(id) {
     const r = ROOMS[id];
-    const sc = { id, name: r.name, emoji: r.emoji, w: 20, h: 18, img: "assets/" + id + ".webp", backdrop: r.backdrop || "#2a1712", indoor: true,
+    const W = r.w || 20, H = r.h || 18;
+    const sc = { id, name: r.name, emoji: r.emoji, w: W, h: H, img: "assets/" + id + ".webp", backdrop: r.backdrop || "#2a1712", indoor: true,
       npcs: r.npcs.map((n) => Object.assign({}, n)), stations: r.stations.map((s) => Object.assign({}, s)), labels: [], doors: [], areas: [] };
-    sc.solid = grid(20, 18, true);
+    sc.solid = grid(W, H, true);
     paint(sc.solid, r.floor, false);
     (r.extra || []).forEach((x) => paint(sc.solid, x, false));
     r.solid.forEach((x) => paint(sc.solid, x, true));
@@ -219,7 +264,7 @@ const Maps = (() => {
     const d = r.door;
     paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
     sc.doors.push({ x: d.x, y: d.y, w: d.w, to: r.parent || "village", id: "exit", name: "나가기" });
-    sc.labels.push({ text: "▼ 나가기", x: (d.x + d.w / 2) * T, y: (d.y + 3) * T - 2, exit: true });
+    sc.labels.push({ text: "▼ 나가기", x: (d.x + d.w / 2) * T, y: Math.min(d.y + 3, H) * T - 2, exit: true });
     sc.stations.forEach((s) => { if (s.label) sc.labels.push({ text: s.label, x: (s.x + s.w / 2) * T, y: s.y * T - 2, small: true }); });
     sc.spawn = { x: d.x, y: d.y - 1, dir: "up" };
     return finish(sc);
@@ -247,7 +292,7 @@ const Maps = (() => {
   }
 
   function buildAll() {
-    const all = { village: buildOutdoor(VILLAGE), hill: buildOutdoor(HILL) };
+    const all = { village: buildOutdoor(VILLAGE), hill: buildOutdoor(HILL), subjects: buildOutdoor(SUBJECTS) };
     Object.keys(ROOMS).forEach((id) => { all[id] = buildRoom(id); });
     return all;
   }

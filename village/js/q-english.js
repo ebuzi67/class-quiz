@@ -185,20 +185,4 @@
     ]
   });
 
-  // 🔤 영어 학교 입구: 학년을 골라 영어 방으로 가요.
-  // (교과 언덕 그림이 오기 전까지는 배움 동산 아래쪽 아치 문에서 이 창이 열려요)
-  Activities.register("enghub", ({ el, frame, ctx }) => {
-    const root = frame("🔤 영어 학교: 몇 학년 방으로 갈까요?");
-    root.append(Quiz.npcBanner(el, Quiz.NPCS.eng, "Hello! 나는 제니 선생님이야. 영어로 재미있게 놀아 보자!"));
-    const row = el("div", "qz-missions");
-    Quiz.rooms.filter((r) => r.id.startsWith("eng")).forEach((r) => {
-      const p = ctx.getProgress(r.id) || { done: [] };
-      const all = p.done.length === r.missions.length;
-      const b = el("button", "qz-mission" + (all ? " done" : ""), "<span>" + r.e + "</span><b>" + r.grade.replace(/^\S+ /, "") + "</b><small>" + r.title + " · " + (all ? "✅ 도장" : "미션 " + p.done.length + "/" + r.missions.length) + "</small>");
-      b.onclick = () => { ctx.sfx("door"); Activities.open(r.id); };
-      row.append(b);
-    });
-    root.append(row);
-    ctx.speak("영어 학교예요. 몇 학년 방으로 갈까요?");
-  });
 })();
