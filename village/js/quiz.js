@@ -1,6 +1,6 @@
 // 배움 동산 문제 방(수학·국어) 공통 틀
-// 방마다 미션이 5개 있어요. 미션 하나는 5문제이고, 4문제 이상 맞히면 통과예요.
-// 방에 round·pass를 적으면 그 방만 문제 수가 달라져요(1-2학년 방: 10문제 중 8문제).
+// 방마다 미션이 5개 있어요. 미션 하나는 10문제이고, 8문제 이상 맞히면 통과예요.
+// 방에 round·pass를 적으면 그 방만 문제 수와 통과 기준이 달라져요.
 // 미션을 모두 통과하면 그 방 도장을 받아요.
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
@@ -8,7 +8,7 @@
 "use strict";
 
 const Quiz = (() => {
-  const ROUND = 5, PASS = 4;
+  const ROUND = 10, PASS = 8;
   const sizeOf = (def) => ({ round: def.round || ROUND, pass: def.pass || PASS });
   // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
   const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" } };

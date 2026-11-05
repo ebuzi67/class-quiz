@@ -9,7 +9,7 @@
 
   // ───────────── 1-2학년: 숫자 놀이방 ─────────────
   Quiz.add({
-    id: "math12", e: "🧸", title: "숫자 놀이방", grade: "수학 1-2학년", round: 10, pass: 8,
+    id: "math12", e: "🧸", title: "숫자 놀이방", grade: "수학 1-2학년",
     missions: [
       { id: "count", e: "🔢", name: "수 세기", desc: "100까지, 세 자리 수", gen() {
         const t = rnd(0, 3);

@@ -178,7 +178,7 @@ const Maps = (() => {
       solid: q.solid.concat(TABLE, LAMPS),
       stations: [{ x: 7, y: 7, w: 6, h: 4, activity: id, label: "📝 미션 탁자" }],
       npcs: [{ id: q.npc, name: QUIZ_NPC[q.npc].name, x: 4, y: 8, dir: "right", activity: id, actionLabel: "📝 미션 시작",
-        lines: QUIZ_NPC[q.npc].line(Object.assign({ size: /12$/.test(id) ? "10문제 중 8문제를 맞히면" : "5문제 중 4문제를 맞히면" }, q)) }]
+        lines: QUIZ_NPC[q.npc].line(Object.assign({ size: "10문제 중 8문제를 맞히면" }, q)) }]
     };
   });
 
