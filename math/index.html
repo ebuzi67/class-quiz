@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>수학 퀴즈</title>
+  <meta name="theme-color" content="#2b3a67">
+  <link rel="manifest" href="manifest.json?v=3">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="수학 퀴즈">
+  <style>
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0; min-height: 100vh; background: #f7f7f2; color: #222;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 20px; line-height: 1.5; display: flex; justify-content: center; padding: 24px 16px;
+    }
+    .app { width: 100%; max-width: 560px; }
+    h1 { text-align: center; font-size: 1.6em; margin: 8px 0 20px; }
+    a.card {
+      display: flex; gap: 16px; align-items: center; text-decoration: none; color: inherit;
+      background: #fff; border: 2px solid #e2ddd0; border-radius: 18px; padding: 18px; margin-bottom: 14px;
+    }
+    a.card:hover, a.card:focus { border-color: #888; }
+    a.card img { width: 64px; height: 64px; border-radius: 14px; flex: none; }
+    a.card b { display: block; font-size: 1.1em; }
+    a.card small { color: #666; }
+    p.note { text-align: center; color: #777; font-size: .8em; margin-top: 20px; }
+    a.home { display: inline-block; margin-bottom: 4px; color: #555; font-size: .85em; text-decoration: none; }
+    .install { margin-bottom: 20px; }
+    .install button {
+      display: block; width: 100%; padding: 16px;
+      font: inherit; font-size: 1em; color: #fff;
+      background: #2b3a67; border: none; border-radius: 16px; cursor: pointer;
+    }
+    .install button:active { transform: scale(.98); }
+    .install .help {
+      margin-top: 10px; padding: 14px 18px; border-radius: 14px;
+      background: #e9edf7; color: #2b3a67; font-size: .9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <a class="home" href="../">← 전체 메뉴</a>
+    <h1>수학 퀴즈</h1>
+    <div class="install" id="install" hidden>
+      <button id="install-btn">📲 수학 퀴즈를 앱으로 설치하기</button>
+      <div class="help" id="install-help" hidden></div>
+    </div>
+    <a class="card" href="math5/">
+      <img src="math5/icons/icon-192.png" alt="">
+      <span><b>수학 방탈출 · 5학년</b><small>5-1 1~6단원, 단원마다 5개 방</small></span>
+    </a>
+    <a class="card" href="math1/">
+      <img src="math1/icons/icon-192.png" alt="">
+      <span><b>수학 모험 · 1학년</b><small>1-1 1~5단원, 단원마다 5단계</small></span>
+    </a>
+    <a class="card" href="area5/">
+      <img src="area5/icons/icon-192.png" alt="">
+      <span><b>넓이 퀴즈 · 5학년</b><small>5-1 6단원 다각형의 넓이</small></span>
+    </a>
+    <a class="card" href="fraction4/">
+      <img src="fraction4/icons/icon-192.png" alt="">
+      <span><b>분수 퀴즈 · 4학년</b><small>분수의 뜻, 크기 비교, 덧셈과 뺄셈</small></span>
+    </a>
+    <p class="note">이 페이지는 "수학 퀴즈" 앱 하나로 설치할 수 있어요. 각 퀴즈도 열어서 브라우저 메뉴의 "앱 설치"로 따로 설치할 수 있어요.</p>
+  </div>
+  <script>
+    // 이 모음 페이지도 앱처럼 설치하고 인터넷 없이 열 수 있게 해요
+    if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+
+    // "앱으로 설치하기" 버튼
+    // 크롬처럼 설치 창을 띄울 수 있으면 바로 띄우고, 안 되면 직접 설치하는 방법을 보여 줘요.
+    const installBox = document.getElementById("install");
+    const installBtn = document.getElementById("install-btn");
+    const installHelp = document.getElementById("install-help");
+    const isApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    let installPrompt = null;
+
+    function showHelp(html) {
+      installHelp.innerHTML = html;
+      installHelp.hidden = false;
+    }
+
+    if (!isApp) installBox.hidden = false;  // 이미 앱으로 열었으면 버튼을 숨겨요
+
+    addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      installPrompt = event;
+      installHelp.hidden = true;
+    });
+
+    addEventListener("appinstalled", () => {
+      installPrompt = null;
+      installBtn.hidden = true;
+      showHelp("🎉 설치됐어요! 홈 화면의 <b>수학 퀴즈</b> 아이콘으로 열 수 있어요.");
+    });
+
+    installBtn.addEventListener("click", async () => {
+      if (installPrompt) {
+        installPrompt.prompt();
+        await installPrompt.userChoice;
+        installPrompt = null;
+        return;
+      }
+      if (isIOS) {
+        showHelp("사파리 아래쪽(아이패드는 위쪽)의 <b>공유 버튼(□↑)</b>을 누르고 <b>\"홈 화면에 추가\"</b>를 눌러 주세요.");
+      } else {
+        showHelp("크롬 오른쪽 위 <b>⋮</b> 메뉴에서 <b>\"앱 설치\"</b> 또는 <b>\"홈 화면에 추가\"</b>를 눌러 주세요.<br>" +
+          "메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 <b>수학 퀴즈</b> 아이콘을 찾아보세요.<br>" +
+          "다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어 주세요.");
+      }
+    });
+  </script>
+</body>
+</html>

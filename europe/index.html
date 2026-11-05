@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>유럽 탐방</title>
   <meta name="theme-color" content="#1f3d7a">
-  <link rel="manifest" href="manifest.json?v=1">
+  <link rel="manifest" href="manifest.json?v=2">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <style>
@@ -38,52 +38,54 @@
     .grid a.card { flex-direction: column; text-align: center; gap: 8px; padding: 14px 8px; margin: 0; }
     .grid a.card img { width: 56px; height: 56px; }
     .grid a.card b { font-size: 1em; }
+    a.home { display: inline-block; margin-bottom: 4px; color: #555; font-size: .85em; text-decoration: none; }
     h1 small { display: block; font-size: .5em; color: #777; font-weight: normal; margin-top: 4px; }
   </style>
 </head>
 <body>
   <div class="app">
+    <a class="home" href="../">← 전체 메뉴</a>
     <h1>🌍 유럽 탐방<small>10개 나라 · 캐릭터와 함께 명소 9곳을 걸으며 이야기·그 나라 말·퀴즈로 여권 도장을 모아요</small></h1>
     <button id="btn-install" hidden>📲 유럽 탐방을 앱으로 설치하기</button>
     <div class="grid">
-      <a class="card" href="../london/">
-        <img src="../london/icons/icon-192.png" alt="">
+      <a class="card" href="london/">
+        <img src="london/icons/icon-192.png" alt="">
         <span><b>🇬🇧 런던 탐방</b><small>빅벤·타워 브리지 · 영어</small></span>
       </a>
-      <a class="card" href="../paris/">
-        <img src="../paris/icons/icon-192.png" alt="">
+      <a class="card" href="paris/">
+        <img src="paris/icons/icon-192.png" alt="">
         <span><b>🇫🇷 파리 탐방</b><small>에펠탑·루브르 · 프랑스어</small></span>
       </a>
-      <a class="card" href="../rome/">
-        <img src="../rome/icons/icon-192.png" alt="">
+      <a class="card" href="rome/">
+        <img src="rome/icons/icon-192.png" alt="">
         <span><b>🇮🇹 로마 탐방</b><small>콜로세움·트레비 분수 · 이탈리아어</small></span>
       </a>
-      <a class="card" href="../italy/">
-        <img src="../italy/icons/icon-192.png" alt="">
+      <a class="card" href="italy/">
+        <img src="italy/icons/icon-192.png" alt="">
         <span><b>🇮🇹 이탈리아 탐방</b><small>베네치아·피사·폼페이 · 이탈리아어</small></span>
       </a>
-      <a class="card" href="../spain/">
-        <img src="../spain/icons/icon-192.png" alt="">
+      <a class="card" href="spain/">
+        <img src="spain/icons/icon-192.png" alt="">
         <span><b>🇪🇸 스페인 탐방</b><small>사그라다 파밀리아·알람브라 · 스페인어</small></span>
       </a>
-      <a class="card" href="../portugal/">
-        <img src="../portugal/icons/icon-192.png" alt="">
+      <a class="card" href="portugal/">
+        <img src="portugal/icons/icon-192.png" alt="">
         <span><b>🇵🇹 포르투갈 탐방</b><small>리스본 벨렝 탑·트램 · 포르투갈어</small></span>
       </a>
-      <a class="card" href="../germany/">
-        <img src="../germany/icons/icon-192.png" alt="">
+      <a class="card" href="germany/">
+        <img src="germany/icons/icon-192.png" alt="">
         <span><b>🇩🇪 독일 탐방</b><small>노이슈반슈타인 성·베를린 · 독일어</small></span>
       </a>
-      <a class="card" href="../austria/">
-        <img src="../austria/icons/icon-192.png" alt="">
+      <a class="card" href="austria/">
+        <img src="austria/icons/icon-192.png" alt="">
         <span><b>🇦🇹 오스트리아 탐방</b><small>빈·모차르트 생가 · 독일어</small></span>
       </a>
-      <a class="card" href="../czech/">
-        <img src="../czech/icons/icon-192.png" alt="">
+      <a class="card" href="czech/">
+        <img src="czech/icons/icon-192.png" alt="">
         <span><b>🇨🇿 체코 탐방</b><small>프라하 성·카렐교 · 체코어</small></span>
       </a>
-      <a class="card" href="../hungary/">
-        <img src="../hungary/icons/icon-192.png" alt="">
+      <a class="card" href="hungary/">
+        <img src="hungary/icons/icon-192.png" alt="">
         <span><b>🇭🇺 헝가리 탐방</b><small>부다페스트 도나우강 · 헝가리어</small></span>
       </a>
     </div>

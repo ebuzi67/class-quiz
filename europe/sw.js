@@ -1,15 +1,26 @@
 // 유럽 탐방 모음 페이지 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-const CACHE = "europe-v1";
+const CACHE = "europe-v2";
 const FILES = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./icons/icon-180.png"
+  "./icons/icon-180.png",
+  "./london/icons/icon-192.png",
+  "./paris/icons/icon-192.png",
+  "./rome/icons/icon-192.png",
+  "./italy/icons/icon-192.png",
+  "./spain/icons/icon-192.png",
+  "./portugal/icons/icon-192.png",
+  "./germany/icons/icon-192.png",
+  "./austria/icons/icon-192.png",
+  "./czech/icons/icon-192.png",
+  "./hungary/icons/icon-192.png"
 ];
 const SCOPE = self.registration.scope;
+const MINE = new Set(FILES.map((file) => new URL(file, SCOPE).href));
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)));
@@ -26,10 +37,11 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// 이 앱 폴더 안의 파일만 맡아요.
+// 모음 페이지 자체의 파일만 맡아요. 나라 앱(london/ 등)은 자기 서비스 워커가 따로 맡아요.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || !url.href.startsWith(SCOPE)) return;
+  url.search = "";
+  if (event.request.method !== "GET" || !MINE.has(url.href)) return;
   event.respondWith(
     fetch(event.request)
       .then((response) => {

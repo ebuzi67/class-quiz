@@ -1,0 +1,17 @@
+{
+  "name": "이탈리아 탐방",
+  "short_name": "이탈리아 탐방",
+  "description": "이탈리아 곳곳을 걸으며 명소 9곳에서 이야기를 듣고 이탈리아어 한마디와 퀴즈로 여권 도장을 모아요",
+  "lang": "ko",
+  "id": "/class-quiz/europe/italy/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#cfe3ee",
+  "theme_color": "#2e6b3f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

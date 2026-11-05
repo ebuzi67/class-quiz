@@ -1,4 +1,4 @@
-"""5학년 6단원 넓이 문제풀이 앱(area5/index.html)을 만들어요.
+"""5학년 6단원 넓이 문제풀이 앱(math/area5/index.html)을 만들어요.
 학습지 스크립트(build.py, build2.py, build3.py)의 그림을 그대로 가져와요."""
 import json, os, re, sys
 
@@ -6,7 +6,7 @@ import build as W1   # 삼각형 밑변과 높이
 import build2 as W2  # 사각형의 넓이
 import build3 as W3  # 밑변 2배, 넓이 2배
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else "area5/index.html"
+OUT = sys.argv[1] if len(sys.argv) > 1 else "math/area5/index.html"
 
 
 def svg(s):

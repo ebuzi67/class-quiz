@@ -1,7 +1,7 @@
 """1학년 수학 모험 앱 만들기
 
 Claude 대화에서 만든 게임(adventure.original.html, 아티팩트로 올린 그대로)에
-앱으로 쓰는 데 필요한 것만 끼워 넣어서 math1/ 아래에 저장해요.
+앱으로 쓰는 데 필요한 것만 끼워 넣어서 math/math1/ 아래에 저장해요.
 문제와 화면 디자인은 바꾸지 않아요.
 
   python3 tools/math1/build.py
@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).parent
-OUT = HERE.parent.parent / "math1"
+OUT = HERE.parent.parent / "math" / "math1"
 COLOR = "#D0703A"
 
 HEAD = """<!DOCTYPE html>

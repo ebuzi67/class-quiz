@@ -1,6 +1,6 @@
 # 유럽 탐방 앱(체코·이탈리아·독일·포르투갈·오스트리아·헝가리·스페인)을 만들어요.
 # 공통 파일(tools/walk/shared/)과 나라별 파일(tools/walk/cities/<나라>/data.js, landmarks.js)을 합쳐서
-# 저장소 맨 위에 나라 이름 폴더(예: czech/)를 만들어요. 폴더마다 따로 설치되는 앱이에요.
+# europe/ 아래에 나라 이름 폴더(예: europe/czech/)를 만들어요. 폴더마다 따로 설치되는 앱이에요.
 # 실행: python3 tools/walk/build.py            (모든 나라)
 #       python3 tools/walk/build.py czech      (한 나라만)
 import shutil
@@ -11,7 +11,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 SHARED = HERE / "shared"
-LIB = ROOT / "rome" / "lib"   # three.js, PeerJS (런던·파리·로마와 같은 파일)
+LIB = ROOT / "europe" / "rome" / "lib"   # three.js, PeerJS (런던·파리·로마와 같은 파일)
 
 # 화면 글자와 아이콘. icon: 하늘 위 건물 모양(아래 SHAPES), flag: 아래 띠 색(왼쪽부터 또는 위부터)
 CITIES = {
@@ -83,7 +83,7 @@ def josa_ro(word):
 def build(cid):
     c = CITIES[cid]
     src = HERE / "cities" / cid
-    out = ROOT / cid
+    out = ROOT / "europe" / cid
     (out / "js").mkdir(parents=True, exist_ok=True)
     (out / "lib").mkdir(parents=True, exist_ok=True)
     for f in ("three.min.js", "three.LICENSE", "peerjs.min.js", "peerjs.LICENSE"):
@@ -104,7 +104,7 @@ def build(cid):
   "short_name": "{title}",
   "description": "{c['name']} 곳곳을 걸으며 명소 9곳에서 이야기를 듣고 {c['lang']} 한마디와 퀴즈로 여권 도장을 모아요",
   "lang": "ko",
-  "id": "/class-quiz/{cid}/",
+  "id": "/class-quiz/europe/{cid}/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -117,7 +117,7 @@ def build(cid):
   ]
 }}
 """)
-    sw = (ROOT / "rome" / "sw.js").read_text()
+    sw = (ROOT / "europe" / "rome" / "sw.js").read_text()
     sw = sw.replace("// 로마 탐방 오프라인 지원", f"// {title} 오프라인 지원")
     sw = sw.replace('const CACHE = "rome-v1";', f'const CACHE = "{cid}-v1";')
     sw = sw.replace('key.startsWith("rome-")', f'key.startsWith("{cid}-")')
