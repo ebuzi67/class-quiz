@@ -245,6 +245,12 @@ dialog .acts .primary { background: var(--navy); border-color: var(--navy); colo
 dialog .acts .danger { color: #b91c1c; border-color: #fecaca; background: #fff5f5; flex: 0 0 auto; padding: 0 16px; }
 .pin { letter-spacing: .5em; text-align: center; font-size: 24px !important; font-weight: 900; }
 
+.sendbar { display: flex; align-items: center; gap: 10px; background: var(--gold-bg); border: 1px solid var(--gold-line); color: #7c4a03;
+  border-radius: 18px; padding: 10px 10px 10px 14px; margin-bottom: 14px; font-weight: 700; font-size: 14px; }
+.sendbar span { flex: 1; }
+.sendbar .pill-btn { background: var(--navy); color: #fff; border-color: var(--navy); }
+.sendbar.ok { background: var(--green-bg); border-color: var(--green-line); color: var(--green); }
+.sendbar.ok .pill-btn { background: var(--card); color: var(--green); border-color: var(--green-line); }
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); opacity: 0;
   background: var(--navy); color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 700; font-size: 14px; transition: .25s; pointer-events: none; z-index: 50; max-width: calc(100vw - 32px); text-align: center; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -307,7 +313,9 @@ const POSTER = [
 
 function defaults() {
   return {
-    v: 1, name: "", pin: "", phone: "", start: "",  // start: 앱을 처음 쓴 날 (그 전 날짜는 통계에서 빼요)
+    v: 1, name: "", pin: "", phone: "", start: "",
+    role: "kid",     // 이 휴대폰이 아이 폰(kid)인지 엄마 폰(mom)인지
+    kidPhone: "", sentSig: "", planT: 0,  // start: 앱을 처음 쓴 날 (그 전 날짜는 통계에서 빼요)
     routine: POSTER.map(([day, subj, text], i) => ({ id: "r" + (i + 1), day, subj, text })),
     checks: {},   // "2026-11-02|r1": 체크한 시각  (주말은 토요일 날짜로 저장)
     memos: {},    // "2026-11-02|r1": "p.24~30"
@@ -357,6 +365,7 @@ const view = $("view");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const isParent = () => !S.pin || ui.unlocked;
+const isMom = () => S.role === "mom";
 const fmtPhone = (n) => (n || "").replace(/^(01\d)(\d{3,4})(\d{4})$/, "$1-$2-$3");
 // 문자 앱을 받는 사람·내용이 채워진 상태로 열어요. (웹 앱은 문자를 혼자 보낼 수 없어서, 마지막 '보내기'는 아이가 눌러요)
 function sendSms(num, text) {
@@ -407,8 +416,14 @@ function render() {
   $("title").textContent = (S.name ? S.name + "의 " : "이번 ") + "한 주, 한눈에.";
   const badge = $("modeBadge");
   badge.className = "badge " + (S.pin && ui.unlocked ? "parent" : "kid");
-  badge.querySelector("span").textContent = S.pin ? (ui.unlocked ? "부모님 모드" : "아이 모드") : "함께 쓰기";
+  badge.querySelector("span").textContent = (isMom() ? "엄마 폰" : "아이 폰") + (S.pin ? (ui.unlocked ? " · 🔓" : " · 🔒") : "");
   ({ today: renderToday, week: renderWeek, routine: renderRoutine, hw: renderHw, log: renderLog })[ui.tab]();
+  if (isMom() && ui.tab !== "log") {
+    const changed = planSig() !== S.sentSig;
+    view.insertAdjacentHTML("afterbegin", changed
+      ? `<div class="sendbar"><span>📩 바뀐 학습 내용이 있어요. 아이 폰으로 보내야 반영돼요.</span><button class="pill-btn" data-act="send-plan" type="button">아이에게 보내기</button></div>`
+      : `<div class="sendbar ok"><span>✓ 아이 폰에 보낸 내용과 같아요.</span><button class="pill-btn" data-act="send-plan" type="button">다시 보내기</button></div>`);
+  }
 }
 
 function taskHTML(x) {
@@ -465,7 +480,7 @@ function renderToday() {
     <div class="stamp-row">
       ${conf ? `<button class="stamp" data-act="unconfirm" type="button">⭐ 부모님 확인 완료</button>`
              : `<button class="pill-btn" data-act="confirm" type="button">⭐ 부모님 확인 도장</button>`}
-      <button class="pill-btn" data-act="share" type="button">${S.phone ? "📩 엄마에게 문자 보내기" : "📤 오늘 보고 보내기"}</button>
+      ${isMom() ? "" : `<button class="pill-btn" data-act="share" type="button">${S.phone ? "📩 엄마에게 문자 보내기" : "📤 오늘 보고 보내기"}</button>`}
     </div>
   </section>
 
@@ -669,6 +684,10 @@ function renderLog() {
   </section>
   <section class="card">
     <div class="card-head"><h3>설정</h3><small>${S.pin ? (ui.unlocked ? "🔓 부모님 모드" : "🔒 잠겨 있어요") : ""}</small></div>
+    <div class="set-row"><div class="t"><b>이 휴대폰은</b><small>${isMom() ? "엄마 폰 · 학습 내용을 넣고 아이 폰으로 보내요" : "아이 폰 · 공부를 체크하고 엄마에게 보고해요"}</small></div>
+      <button class="pill-btn" data-act="set-role" type="button">${isMom() ? "아이 폰으로 바꾸기" : "엄마 폰으로 바꾸기"}</button></div>
+    ${isMom() ? `<div class="set-row"><div class="t"><b>아이 휴대폰 번호</b><small>${S.kidPhone ? esc(fmtPhone(S.kidPhone)) + " · '아이에게 보내기'를 누르면 이 번호로 문자가 열려요" : "적어 두면 '아이에게 보내기'가 바로 아이 번호로 열려요"}</small></div>
+      <button class="pill-btn" data-act="set-kidphone" type="button">${S.kidPhone ? "바꾸기" : "적기"}</button></div>` : ""}
     <div class="set-row"><div class="t"><b>엄마 휴대폰 번호</b><small>${S.phone ? esc(fmtPhone(S.phone)) + " · 보고 버튼을 누르면 이 번호로 문자가 열려요" : "적어 두면 '오늘 보고'를 바로 문자로 보내요"}</small></div>
       <button class="pill-btn" data-act="set-phone" type="button">${S.phone ? "바꾸기" : "적기"}</button></div>
     <div class="set-row"><div class="t"><b>아이 이름</b><small>${S.name ? esc(S.name) : "맨 위 제목에 이름이 나와요"}</small></div>
@@ -824,6 +843,84 @@ function backup() {
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
 }
+// ================= 엄마 폰 → 아이 폰 보내기 =================
+// 엄마 폰의 루틴·숙제·할 일을 링크 하나에 담아 문자로 보내요. 아이가 링크를 누르면 아이 폰 앱에 들어가요.
+// 학습 내용은 엄마 것을 따르고, 아이가 체크한 기록(체크·메모·도장)은 그대로 둬요.
+const CUT_DAYS = 14; // 마감·날짜가 2주 넘게 지난 숙제·할 일은 보내지 않아요 (아이 폰에서도 그대로 둬요)
+function planData() {
+  const cut = ymd(addDays(today(), -CUT_DAYS));
+  return {
+    name: S.name, phone: S.phone,
+    r: S.routine.map((x) => [x.id, x.day, x.subj, x.text]),
+    h: S.homework.filter((x) => x.due >= cut).map((x) => [x.id, x.title, x.subj, x.due, x.note || "", x.items.map((i) => [i.id, i.text])]),
+    t: S.todos.filter((x) => x.date >= cut).map((x) => [x.id, x.date, x.subj, x.text])
+  };
+}
+const planSig = () => JSON.stringify(planData());
+const b64u = (bytes) => { let s = ""; bytes.forEach((b) => (s += String.fromCharCode(b))); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const unb64u = (str) => Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+async function packPlan() {
+  const json = JSON.stringify({ ...planData(), cut: ymd(addDays(today(), -CUT_DAYS)), at: Date.now() });
+  const raw = new TextEncoder().encode(json);
+  if (typeof CompressionStream === "function") {
+    const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer());
+    return "z" + b64u(z);
+  }
+  return "j" + b64u(raw);
+}
+async function unpackPlan(code) {
+  const bytes = unb64u(code.slice(1));
+  const raw = code[0] === "z"
+    ? new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer())
+    : bytes;
+  const p = JSON.parse(new TextDecoder().decode(raw));
+  if (!Array.isArray(p.r)) throw new Error("bad");
+  return p;
+}
+async function sendPlan() {
+  const url = new URL("./", location.href).href + "#plan=" + (await packPlan());
+  const text = `📚 ${S.name || "우리 아이"} 학습 내용이 새로 왔어요!\n아래 링크를 누르면 플래너 앱에 들어가요.\n${url}`;
+  S.sentSig = planSig(); save(); render();
+  sendSms(S.kidPhone || "", text);
+}
+function applyPlan(p) {
+  const oldHw = new Map(S.homework.map((h) => [h.id, h]));
+  const oldTodo = new Map(S.todos.map((t) => [t.id, t]));
+  if (p.name) S.name = p.name;
+  if (p.phone) S.phone = p.phone;
+  S.routine = p.r.map(([id, day, subj, text]) => ({ id, day, subj, text }));
+  const hw = p.h.map(([id, title, subj, due, note, items]) => {
+    const o = oldHw.get(id);
+    const doneById = new Map((o ? o.items : []).map((i) => [i.id, i.done]));
+    const doneByText = new Map((o ? o.items : []).map((i) => [i.text, i.done]));
+    return { id, title, subj, due, note, done: o ? o.done : 0,
+      items: items.map(([iid, text]) => ({ id: iid, text, done: doneById.get(iid) || doneByText.get(text) || 0 })) };
+  });
+  // 보내는 범위보다 오래된 숙제·할 일은 아이 폰 것을 그대로 둬요
+  S.homework = S.homework.filter((h) => h.due < p.cut).concat(hw);
+  S.todos = S.todos.filter((t) => t.date < p.cut).concat(p.t.map(([id, date, subj, text]) => ({ id, date, subj, text, done: oldTodo.get(id) ? oldTodo.get(id).done : 0 })));
+  S.planT = p.at;
+  save();
+}
+async function checkIncoming() {
+  const m = location.hash.match(/^#plan=([zj][A-Za-z0-9_-]+)/);
+  if (!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  let p;
+  try { p = await unpackPlan(m[1]); }
+  catch (e) { toast("링크를 읽지 못했어요. 엄마에게 다시 보내 달라고 해요."); return; }
+  const at = new Date(p.at);
+  const old = p.at <= (S.planT || 0);
+  modal(`<h2>📩 엄마가 보낸 학습 내용</h2>
+    <p style="margin:0 0 6px">${at.getMonth() + 1}월 ${at.getDate()}일 ${pad(at.getHours())}:${pad(at.getMinutes())}에 보냈어요.</p>
+    <p style="margin:0 0 6px;font-weight:700">루틴 ${p.r.length}개 · 숙제 ${p.h.length}개 · 할 일 ${p.t.length}개</p>
+    ${old ? '<p class="hint" style="color:var(--red);font-size:14px">이미 넣었거나 더 예전에 보낸 내용이에요. 그래도 넣을 수 있어요.</p>' : ""}
+    <div class="hint" style="font-size:14px">넣어도 지금까지 체크한 공부와 숙제는 그대로 남아요.</div>`,
+    () => { applyPlan(p); ui.tab = "today"; ui.date = today(); render(); celebrate("새 학습 내용 도착!"); },
+    { ok: "넣기", noFocus: true });
+}
+addEventListener("hashchange", checkIncoming);
+
 function readBackup(text) {
   text = text.trim();
   if (text.startsWith("PLANNER1:")) text = decodeURIComponent(escape(atob(text.slice(9))));
@@ -935,6 +1032,17 @@ view.addEventListener("click", (e) => {
     case "confirm": return needPin(() => { S.confirms[ymd(ui.date)] = Date.now(); save(); render(); celebrate("⭐ 확인 도장 쾅!"); });
     case "unconfirm": return needPin(() => { if (confirm("확인 도장을 취소할까요?")) { delete S.confirms[ymd(ui.date)]; save(); render(); } });
     case "share": return S.phone ? sendSms(S.phone, report()) : share(report(), "오늘 공부 보고");
+    case "send-plan": return sendPlan();
+    case "set-role":
+      return needPin(() => { S.role = isMom() ? "kid" : "mom"; save(); render(); toast(isMom() ? "엄마 폰으로 바꿨어요" : "아이 폰으로 바꿨어요"); });
+    case "set-kidphone":
+      return modal(`<h2>아이 휴대폰 번호</h2><label>번호 (비워 두면 지워요)</label>
+        <input name="phone" type="tel" inputmode="tel" value="${esc(fmtPhone(S.kidPhone))}" placeholder="010-1234-5678" maxlength="16">`,
+        (f) => {
+          const n = f.phone.replace(/[^0-9+]/g, "");
+          if (n && n.length < 9) { toast("번호를 다시 확인해 주세요"); return false; }
+          S.kidPhone = n; save(); render();
+        });
     case "set-phone":
       return needPin(() => modal(`<h2>엄마 휴대폰 번호</h2><label>번호 (비워 두면 지워요)</label>
         <input name="phone" type="tel" inputmode="tel" value="${esc(fmtPhone(S.phone))}" placeholder="010-1234-5678" maxlength="16">
@@ -980,6 +1088,7 @@ document.addEventListener("visibilitychange", () => {
 addEventListener("storage", (e) => { if (e.key === KEY) { S = load(); render(); } });
 
 render();
+checkIncoming();
 
 // ---------- 홈 화면에 설치하기 ----------
 (() => {
