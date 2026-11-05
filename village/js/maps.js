@@ -146,7 +146,8 @@ const Maps = (() => {
       { id: "tower", x: 8, y: 14, w: 2, out: { x: 8, y: 16, dir: "down" }, pick: ["math12", "math34", "math56"], name: "수학 탑", emoji: "🔢" },
       { id: "library", x: 30, y: 14, w: 2, out: { x: 30, y: 16, dir: "down" }, pick: ["kor12", "kor34", "kor56"], name: "국어 도서관", emoji: "📖" },
       { id: "top", x: 19, y: 0, w: 3, to: "village", out: { x: 20, y: 2, dir: "down" }, name: "마을로", emoji: "🏡" },
-      { id: "bottom", x: 19, y: 34, w: 3, to: "village", out: { x: 20, y: 31, dir: "up" }, name: "마을로", emoji: "🏡" }
+      // 아래쪽 아치 문: 영어 학교. 교과 언덕 그림이 오기 전까지는 영어 방 고르기 창이 열려요.
+      { id: "english", x: 19, y: 34, w: 3, activity: "enghub", out: { x: 20, y: 31, dir: "up" }, name: "영어 학교", emoji: "🔤" }
     ],
     areas: [{ id: "tower", r: [3, 0, 14, 13] }, { id: "library", r: [26, 3, 38, 13] }],
     spawn: { x: 20, y: 2, dir: "down" },
@@ -196,7 +197,7 @@ const Maps = (() => {
     v.doors.forEach((d) => {
       const room = ROOMS[d.id] || d;
       paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
-      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick ? null : d.to || d.id, pick: d.pick, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
+      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick || d.activity ? null : d.to || d.id, pick: d.pick, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
       const edge = d.y === 0 ? "top" : d.y === v.h - 2 || d.y === v.h - 1 || d.id === "hill" ? "bottom" : null;
       const text = room.emoji + " " + room.name + (edge === "top" ? " ▲" : edge === "bottom" ? " ▼" : "");
       const above = d.id === "garden" || edge === "bottom";
