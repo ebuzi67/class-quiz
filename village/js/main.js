@@ -437,7 +437,7 @@
       door.pick.forEach((id) => {
         const r = scenes[id], st = STAMPS.find((x) => x[0] === id), p = progress[id] || { done: [] };
         const b = el("button", "qz-mission" + (stamps[id] ? " done" : ""),
-          "<span>" + r.emoji + "</span><b>" + st[2].replace(/^\S+ /, "") + "학년</b><small>" + r.name + " · " + (stamps[id] ? "✅ 도장" : p.done.length + "/5") + "</small>");
+          "<span>" + r.emoji + "</span><b>" + st[2].replace(/^\S+ /, "") + "학년</b><small>" + r.name + " · " + (stamps[id] ? "✅ 도장" : "미션 " + p.done.length + "/5") + "</small>");
         b.onclick = () => { Activities.close(); goTo(id); };
         row.append(b);
       });
@@ -532,7 +532,7 @@
       if (id === "robot" && !stamps[id] && progress.robot) sub = (progress.robot.cleared || 0) + " / " + Activities.LEVELS.length + "단계";
       if (id === "garden" && !stamps[id] && progress.garden) sub = (progress.garden.cleared || 0) + " / 6단계";
       if (id === "workshop" && !stamps[id] && progress.workshop) sub = progress.workshop.done.length + " / 4 미션";
-      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = progress[id].done.length + " / 5 미션";
+      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = "미션 " + progress[id].done.length + " / 5";
       d.innerHTML = "<div class='e'>" + e + "</div><b>" + name + "</b><small>" + sub + "</small>";
       list.append(d);
     });
