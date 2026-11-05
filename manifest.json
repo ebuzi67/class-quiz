@@ -1,7 +1,7 @@
 {
-  "name": "수학 퀴즈",
-  "short_name": "수학 퀴즈",
-  "description": "방탈출·모험·넓이·분수 수학 퀴즈를 한곳에 모았어요",
+  "name": "학습 앱 모음",
+  "short_name": "앱 모음",
+  "description": "수학 퀴즈, 유럽 탐방, 체육시간 등 우리 반 학습 앱을 한곳에 모았어요",
   "lang": "ko",
   "id": "/class-quiz/",
   "start_url": "./index.html",

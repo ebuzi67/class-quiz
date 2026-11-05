@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>수학 퀴즈</title>
+  <title>학습 앱 모음</title>
   <meta name="theme-color" content="#2b3a67">
-  <link rel="manifest" href="manifest.json?v=2">
+  <link rel="manifest" href="manifest.json?v=3">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="수학 퀴즈">
+  <meta name="apple-mobile-web-app-title" content="앱 모음">
   <style>
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
@@ -45,31 +45,39 @@
 </head>
 <body>
   <div class="app">
-    <h1>수학 퀴즈</h1>
+    <h1>🏠 학습 앱 모음</h1>
     <div class="install" id="install" hidden>
-      <button id="install-btn">📲 수학 퀴즈를 앱으로 설치하기</button>
+      <button id="install-btn">📲 앱 모음을 앱으로 설치하기</button>
       <div class="help" id="install-help" hidden></div>
     </div>
-    <a class="card" href="math5/">
-      <img src="math5/icons/icon-192.png" alt="">
-      <span><b>수학 방탈출 · 5학년</b><small>5-1 1~6단원, 단원마다 5개 방</small></span>
+    <a class="card" href="math/">
+      <img src="math/icons/icon-192.png" alt="">
+      <span><b>수학 퀴즈</b><small>분수·넓이·방탈출·모험 (1·4·5학년)</small></span>
     </a>
-    <a class="card" href="math1/">
-      <img src="math1/icons/icon-192.png" alt="">
-      <span><b>수학 모험 · 1학년</b><small>1-1 1~5단원, 단원마다 5단계</small></span>
+    <a class="card" href="europe/">
+      <img src="europe/icons/icon-192.png" alt="">
+      <span><b>유럽 탐방</b><small>10개 나라 명소를 걸으며 여권 도장 모으기</small></span>
     </a>
-    <a class="card" href="area5/">
-      <img src="area5/icons/icon-192.png" alt="">
-      <span><b>넓이 퀴즈 · 5학년</b><small>5-1 6단원 다각형의 넓이</small></span>
+    <a class="card" href="pe/">
+      <img src="pe/icons/icon-192.png" alt="">
+      <span><b>체육시간</b><small>카메라가 몸 움직임을 알아보는 몸놀이 5가지</small></span>
     </a>
-    <a class="card" href="fraction4/">
-      <img src="fraction4/icons/icon-192.png" alt="">
-      <span><b>분수 퀴즈 · 4학년</b><small>분수의 뜻, 크기 비교, 덧셈과 뺄셈</small></span>
+    <a class="card" href="roblox/">
+      <img src="roblox/icons/icon-192.png" alt="">
+      <span><b>로블록스 스튜디오 퀴즈</b><small>타워 디펜스 · 점프맵</small></span>
     </a>
-    <p class="note">이 페이지는 "수학 퀴즈" 앱 하나로 설치할 수 있어요. 각 퀴즈도 열어서 브라우저 메뉴의 "앱 설치"로 따로 설치할 수 있어요.</p>
+    <a class="card" href="village/">
+      <img src="village/icons/icon-192.png" alt="">
+      <span><b>꼬마 발명가 마을</b><small>친구들과 함께 걷는 코딩·창의과학 마을</small></span>
+    </a>
+    <a class="card" href="one-chat/">
+      <img src="one-chat/icons/icon-192.png" alt="">
+      <span><b>원이랑 대화하기</b><small>넘버블럭스 원과 이야기 나누기</small></span>
+    </a>
+    <p class="note">이 페이지는 "앱 모음" 앱 하나로 설치할 수 있어요. 각 모음(수학 퀴즈, 유럽 탐방 등)과 그 안의 앱도 열어서 따로 설치할 수 있어요.</p>
   </div>
   <script>
-    // 이 모음 페이지도 앱처럼 설치하고 인터넷 없이 열 수 있게 해요
+    // 전체 메뉴도 앱처럼 설치하고 인터넷 없이 열 수 있게 해요
     if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 
     // "앱으로 설치하기" 버튼
@@ -98,7 +106,7 @@
     addEventListener("appinstalled", () => {
       installPrompt = null;
       installBtn.hidden = true;
-      showHelp("🎉 설치됐어요! 홈 화면의 <b>수학 퀴즈</b> 아이콘으로 열 수 있어요.");
+      showHelp("🎉 설치됐어요! 홈 화면의 <b>앱 모음</b> 아이콘으로 열 수 있어요.");
     });
 
     installBtn.addEventListener("click", async () => {
@@ -112,7 +120,7 @@
         showHelp("사파리 아래쪽(아이패드는 위쪽)의 <b>공유 버튼(□↑)</b>을 누르고 <b>\"홈 화면에 추가\"</b>를 눌러 주세요.");
       } else {
         showHelp("크롬 오른쪽 위 <b>⋮</b> 메뉴에서 <b>\"앱 설치\"</b> 또는 <b>\"홈 화면에 추가\"</b>를 눌러 주세요.<br>" +
-          "메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 <b>수학 퀴즈</b> 아이콘을 찾아보세요.<br>" +
+          "메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 <b>앱 모음</b> 아이콘을 찾아보세요.<br>" +
           "다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어 주세요.");
       }
     });
