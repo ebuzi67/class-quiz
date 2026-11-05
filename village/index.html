@@ -206,6 +206,7 @@
   .qz-keys { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; }
   .qz-keys button { height: 56px; font-size: 26px; border: 3px solid var(--wood); border-radius: 12px; background: #fff; box-shadow: 0 3px 0 var(--wood); }
   .qz-keys button.ok { background: #8fd16a; font-size: 20px; }
+  .install-btn { display: block; width: 100%; margin: 0 0 14px; text-align: center; justify-content: center; background: var(--wood); color: #fff; }
   .install-guide { position: fixed; inset: 0; z-index: 100; background: rgba(42,23,18,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
   .install-guide > div { background: var(--paper); border: 4px solid var(--wood); border-radius: 18px; padding: 18px 22px; max-width: 460px; text-align: left; }
   .install-guide h2 { margin: 0 0 8px; color: var(--wood); }
@@ -371,13 +372,13 @@
     <div class="logo">🏡🤖🧲</div>
     <h1>꼬마 발명가 마을</h1>
     <p class="sub">친구들과 함께 코딩하고 실험하는 마을이에요</p>
+    <button class="btn install-btn" id="btn-install" hidden>📲 발명가 마을을 앱으로 설치하기</button>
     <div class="menu">
       <button class="btn quick" id="btn-quick" hidden><span class="i">⚡</span><span>지난번처럼 들어가기<small></small></span></button>
       <button class="btn" id="btn-student"><span class="i">🎒</span><span>학생으로 들어가기<small>선생님이 알려 준 숫자로 들어가요</small></span></button>
       <button class="btn" id="btn-solo"><span class="i">🙂</span><span>혼자 둘러보기<small>연결 없이 혼자 놀아요</small></span></button>
       <button class="btn" id="btn-teacher"><span class="i">🧑‍🏫</span><span>선생님: 방 만들기<small>이 기기가 방장이 되어 학생들을 받아요</small></span></button>
     </div>
-    <button class="btn btn-soft" id="btn-install" hidden style="margin-top:14px">📲 앱으로 설치하기</button>
   </div>
 </section>
 
