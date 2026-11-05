@@ -4,18 +4,20 @@
 // 미션을 모두 통과하면 그 방 도장을 받아요.
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
-//     input?: true(숫자 패드로 답하기), unit?: "단위", explain?: "풀이", say?: "읽어 줄 말" }
+//     input?: true(숫자 패드로 답하기), unit?: "단위", explain?: "풀이", say?: "읽어 줄 말", sayEn?: "영어로 읽어 줄 말" }
 "use strict";
 
 const Quiz = (() => {
   const ROUND = 10, PASS = 8;
   const sizeOf = (def) => ({ round: def.round || ROUND, pass: def.pass || PASS });
   // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
-  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" } };
+  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" } };
   const npcOf = (roomId) => NPCS[roomId.replace(/\d+$/, "")];
   function npcBanner(el, npc, line) {
     const b = el("div", "qz-npc");
-    const img = el("img"); img.src = "assets/npc/" + npc.id + ".webp"; img.alt = npc.name;
+    const img = el("img"); img.alt = "";
+    img.onerror = () => img.remove(); // 그림이 아직 없으면 글만 보여요
+    img.src = "assets/npc/" + npc.id + ".webp";
     b.append(img, el("div", "", "<b>" + npc.name + "</b><p>" + line + "</p>"));
     return b;
   }
@@ -115,7 +117,7 @@ const Quiz = (() => {
       root.innerHTML = "";
       const p = getP();
       const npc = npcOf(def.id);
-      const line = "안녕! 나는 " + npc.name + "야. " + def.title + "에 온 걸 환영해! 미션을 골라 봐. " + ROUND + "문제 중 " + PASS + "문제를 맞히면 통과야.";
+      const line = "안녕! 나는 " + npc.name + (ieyo(npc.name) === "예요" ? "야. " : "이야. ") + def.title + "에 온 걸 환영해! 미션을 골라 봐. " + ROUND + "문제 중 " + PASS + "문제를 맞히면 통과야.";
       root.append(npcBanner(el, npc, line));
       const grid = el("div", "qz-missions");
       def.missions.forEach((m) => {
@@ -141,7 +143,9 @@ const Quiz = (() => {
       const box = el("div", "qz-box");
       root.append(top, box);
       let current = null;
-      listen.onclick = () => current && ctx.speak(current.say || strip(current.text));
+      // sayEn: 영어 낱말·문장은 한국어 질문 뒤에 영어 목소리로 이어서 읽어요
+      const read = (q) => { ctx.speak(q.say || strip(q.text)); if (q.sayEn && ctx.speakEn) ctx.speakEn(q.sayEn); };
+      listen.onclick = () => current && read(current);
 
       function newQuestion() {
         for (let k = 0; k < 20; k++) { const q = m.gen(tools); const key = q.text + "|" + (q.visual || "") + "|" + q.answer; if (!seen.has(key) || k === 19) { seen.add(key); return q; } }
@@ -168,7 +172,12 @@ const Quiz = (() => {
           const ans = q.input ? q.answer + (q.unit || "") : q.answer;
           fb.append(el("div", "mg-verdict " + (ok ? "good" : "soso"), ok ? "⭕ 정답이에요!" : "🤔 정답은 " + ans + " 이에요"));
           if (q.explain) fb.append(el("div", "mg-why", q.explain));
-          ctx.speak((ok ? "정답이에요! " : "정답은 " + strip(String(ans)) + " 이에요. ") + strip(q.explain || ""));
+          // 영어 문제는 풀이를 한국어 목소리로 읽지 않고, 영어 정답만 영어 목소리로 읽어요
+          if (q.sayEn) {
+            const latin = /^[\x00-\x7F]+$/.test(strip(String(ans)));
+            ctx.speak(ok ? "정답이에요!" : "정답은 " + (latin ? "" : strip(String(ans)) + " 이에요."));
+            if (latin && ctx.speakEn) ctx.speakEn(strip(String(ans)));
+          } else ctx.speak((ok ? "정답이에요! " : "정답은 " + strip(String(ans)) + " 이에요. ") + strip(q.explain || ""));
           const next = el("button", "btn btn-go", i + 1 < ROUND ? "다음 문제 ▶" : "결과 보기 ▶");
           next.onclick = () => { ctx.sfx("tap"); i++; if (i < ROUND) show(); else finish(); };
           fb.append(next);
@@ -180,7 +189,7 @@ const Quiz = (() => {
           box.append(list);
         }
         box.append(fb);
-        ctx.speak(q.say || strip(q.text));
+        read(q);
       }
 
       function pad(answer, unit) {

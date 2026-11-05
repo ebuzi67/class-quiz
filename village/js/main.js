@@ -68,18 +68,26 @@
     return { ensure, music, sfx };
   })();
 
-  let koVoice = null;
-  function pickVoice() { try { koVoice = speechSynthesis.getVoices().find((v) => v.lang && v.lang.startsWith("ko")) || null; } catch (e) {} }
+  let koVoice = null, enVoice = null;
+  function pickVoice() {
+    try {
+      const vs = speechSynthesis.getVoices();
+      koVoice = vs.find((v) => v.lang && v.lang.startsWith("ko")) || null;
+      enVoice = vs.find((v) => v.lang === "en-US") || vs.find((v) => v.lang && v.lang.startsWith("en")) || null;
+    } catch (e) {}
+  }
   if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-  function speak(text) {
+  // en: 영어 낱말·문장을 영어 목소리로 읽어요. 앞에 읽던 한국어 말 뒤에 이어서 읽어요.
+  function speak(text, en) {
     if (!settings.voice || !("speechSynthesis" in window)) return;
     try {
-      speechSynthesis.cancel();
+      if (!en) speechSynthesis.cancel();
       const clean = text.replace(/\p{Extended_Pictographic}|️|[▶▼⭕]/gu, "").trim();
       if (!clean) return;
       const u = new SpeechSynthesisUtterance(clean);
-      u.lang = "ko-KR"; u.rate = 0.95; u.pitch = 1.1;
-      if (koVoice) u.voice = koVoice;
+      u.lang = en ? "en-US" : "ko-KR"; u.rate = en ? 0.8 : 0.95; u.pitch = 1.1;
+      const v = en ? enVoice : koVoice;
+      if (v) u.voice = v;
       speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -411,7 +419,13 @@
       openPicker(door);
     } else if (door.to) {
       Sound.sfx("door");
-      goTo(door.to);    } else {
+      goTo(door.to);
+    } else if (door.activity) {
+      Sound.sfx("door");
+      const c = tileCenter(door.out.x, door.out.y);
+      me.x = c.x; me.y = c.y; me.dir = door.out.dir; me.path = []; me.onArrive = null;
+      openActivity(door.activity);
+    } else {
       Sound.sfx("bump");
       const text = door.emoji + " " + door.name + "은(는) 곧 열려요! 조금만 기다려 줘요.";
       toast(text, 2600); speak(door.name + "은 곧 열려요! 조금만 기다려 줘요.");
@@ -503,9 +517,10 @@
     ["robot", "🤖", "로봇 공장", true], ["magnet", "🧲", "자석 실험실", true], ["greenhouse", "🌱", "관찰 온실", true],
     ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true],
     ["math12", "🧸", "수학 1-2", true], ["math34", "⚖️", "수학 3-4", true], ["math56", "🕵️", "수학 5-6", true],
-    ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true]
+    ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true],
+    ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true]
   ];
-  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56"];
+  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56"];
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
@@ -1071,7 +1086,7 @@
   };
 
   Activities.init($("#activity"), {
-    speak, sfx: Sound.sfx, award,
+    speak, speakEn: (t) => speak(t, true), sfx: Sound.sfx, award,
     close: () => {},
     getProgress: (id) => progress[id],
     setProgress: (id, v) => { progress[id] = v; store.set("progress", progress); Net.sendRecord({ stamps, progress }); }

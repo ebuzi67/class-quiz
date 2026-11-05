@@ -1,7 +1,7 @@
 // 꼬마 발명가 마을 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // (친구들과 함께 놀기는 인터넷이 있어야 해요. 혼자 둘러보기는 저장분으로도 돼요.)
-const CACHE = "village-v11";
+const CACHE = "village-v13";
 const FILES = [
   "./",
   "./index.html",
@@ -17,6 +17,7 @@ const FILES = [
   "./js/quiz.js",
   "./js/q-math.js",
   "./js/q-korean.js",
+  "./js/q-english.js",
   "./js/main.js",
   "./lib/peerjs.min.js",
   "./assets/village.webp",
@@ -33,6 +34,10 @@ const FILES = [
   "./assets/kor12.webp",
   "./assets/kor34.webp",
   "./assets/kor56.webp",
+  "./assets/subjects.webp",
+  "./assets/eng12.webp",
+  "./assets/eng34.webp",
+  "./assets/eng56.webp",
   "./assets/npc/chief.webp",
   "./assets/npc/bolt.webp",
   "./assets/npc/snap.webp",
@@ -42,6 +47,7 @@ const FILES = [
   "./assets/npc/farmer.webp",
   "./assets/npc/semsem.webp",
   "./assets/npc/mallang.webp",
+  "./assets/npc/jenny.webp",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-180.png"
