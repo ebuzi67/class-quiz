@@ -169,15 +169,16 @@ const Maps = (() => {
     kor56: { name: "꼬마 방송국", emoji: "🎙️", parent: "hill", npc: "mallang", solid: [[2, 5, 4, 6], [3, 7, 3, 7], [2, 9, 2, 13], [3, 10, 3, 13], [4, 11, 4, 13], [16, 5, 17, 6], [16, 8, 17, 11], [16, 12, 17, 14]] }
   };
   const QUIZ_NPC = {
-    semsem: { name: "셈셈 박사", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 수학 미션을 풀 수 있어. 5문제 중 4문제를 맞히면 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] },
-    mallang: { name: "말랑 작가", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 국어 미션을 풀 수 있어. 5문제 중 4문제를 맞히면 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] }
+    semsem: { name: "셈셈 박사", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 수학 미션을 풀 수 있어. " + r.size + " 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] },
+    mallang: { name: "말랑 작가", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 국어 미션을 풀 수 있어. " + r.size + " 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] }
   };
   Object.entries(QUIZ_ROOMS).forEach(([id, q]) => {
     ROOMS[id] = {
       name: q.name, emoji: q.emoji, parent: q.parent, floor: [2, 5, 17, 14], door: { x: 9, y: 15, w: 2 },
       solid: q.solid.concat(TABLE, LAMPS),
       stations: [{ x: 7, y: 7, w: 6, h: 4, activity: id, label: "📝 미션 탁자" }],
-      npcs: [{ id: q.npc, name: QUIZ_NPC[q.npc].name, x: 4, y: 8, dir: "right", activity: id, actionLabel: "📝 미션 시작", lines: QUIZ_NPC[q.npc].line(q) }]
+      npcs: [{ id: q.npc, name: QUIZ_NPC[q.npc].name, x: 4, y: 8, dir: "right", activity: id, actionLabel: "📝 미션 시작",
+        lines: QUIZ_NPC[q.npc].line(Object.assign({ size: /12$/.test(id) ? "10문제 중 8문제를 맞히면" : "5문제 중 4문제를 맞히면" }, q)) }]
     };
   });
 
