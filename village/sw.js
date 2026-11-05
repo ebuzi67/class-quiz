@@ -1,7 +1,7 @@
 // 꼬마 발명가 마을 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // (친구들과 함께 놀기는 인터넷이 있어야 해요. 혼자 둘러보기는 저장분으로도 돼요.)
-const CACHE = "village-v13";
+const CACHE = "village-v14";
 const FILES = [
   "./",
   "./index.html",
@@ -55,7 +55,8 @@ const FILES = [
 const SCOPE = self.registration.scope;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)));
+  // GitHub Pages는 파일을 브라우저에 10분까지 저장해 두게 해요. 그 저장분을 건너뛰어야 새 버전이 바로 들어와요.
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES.map((f) => new Request(f, { cache: "reload" })))));
   self.skipWaiting();
 });
 
@@ -74,7 +75,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || !url.href.startsWith(SCOPE)) return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-cache" })
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
