@@ -176,10 +176,10 @@ const Maps = (() => {
     doors: [
       { id: "engschool", x: 11, y: 11, w: 2, out: { x: 11, y: 13, dir: "down" }, pick: ["eng12", "eng34", "eng56"], name: "영어 학교", emoji: "🔤" },
       { id: "hill", x: 23, y: 2, w: 3, to: "hill", out: { x: 24, y: 4, dir: "down" }, name: "배움 동산", emoji: "📚" },
-      // 오른쪽 빈 땅: 음악당 자리. 건물 그림이 오기 전까지는 울타리 앞에서 음악 방 고르기 창이 열려요.
-      { id: "musichall", x: 36, y: 16, w: 2, activity: "mushub", out: { x: 36, y: 18, dir: "up" }, name: "음악당", emoji: "🎵" }
+      // 오른쪽 땅: 음악당(그림은 tools/village/make_art.py가 교과 언덕 그림 위에 올려요)
+      { id: "musichall", x: 37, y: 16, w: 2, out: { x: 37, y: 18, dir: "down" }, pick: ["mus12", "mus34", "mus56"], name: "음악당", emoji: "🎵" }
     ],
-    areas: [{ id: "engschool", r: [5, 0, 19, 10] }],
+    areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }],
     spawn: { x: 24, y: 4, dir: "down" },
     npcs: [
       { id: "jenny", name: "제니 선생님", x: 15, y: 14, dir: "down",
@@ -202,6 +202,22 @@ const Maps = (() => {
       stations: [{ x: 8, y: 7, w: 8, h: 3, activity: id, label: "📝 미션 탁자" }],
       npcs: [{ id: "jenny", name: "제니 선생님", x: 5, y: 9, dir: "right", activity: id, actionLabel: "📝 미션 시작",
         lines: ["Hello! 여기는 " + q.name + "이야.", "가운데 탁자에서 영어 미션을 풀 수 있어. 10문제 중 8문제를 맞히면 통과!", "영어 낱말은 🔊 소리로 들려줄게. Let's go!"] }]
+    };
+  });
+
+  // 음악 방: 그림 1402x1122를 25x20칸으로 나눠요. 아래 가운데 문, 가운데 긴 탁자(의자 포함)는 같아요.
+  const MUS_ROOMS = {
+    mus12: { name: "노래 놀이방", emoji: "🥁", solid: [[3, 8, 4, 13], [20, 8, 22, 11], [21, 12, 22, 13]] },
+    mus34: { name: "악기 연습실", emoji: "🎼", solid: [[3, 8, 4, 12], [3, 13, 3, 14], [21, 10, 22, 13], [22, 8, 22, 9]] },
+    mus56: { name: "작은 공연장", emoji: "🎹", solid: [[3, 9, 3, 11], [21, 9, 22, 11], [22, 12, 22, 14]] }
+  };
+  Object.entries(MUS_ROOMS).forEach(([id, q]) => {
+    ROOMS[id] = {
+      name: q.name, emoji: q.emoji, parent: "subjects", w: 25, h: 20, floor: [3, 8, 22, 14], extra: [[10, 15, 14, 15]], door: { x: 11, y: 16, w: 3 },
+      solid: q.solid.concat([[8, 8, 16, 13]]),
+      stations: [{ x: 8, y: 8, w: 9, h: 6, activity: id, label: "📝 미션 탁자" }],
+      npcs: [{ id: "lala", name: "라라 선생님", x: 5, y: 10, dir: "right", activity: id, actionLabel: "📝 미션 시작",
+        lines: ["안녕! 여기는 " + q.name + "이야.", "가운데 탁자에서 음악 미션을 풀 수 있어. 10문제 중 8문제를 맞히면 통과!", "소리 문제는 🔊 다시 듣기를 눌러 몇 번이든 들어 봐."] }]
     };
   });
 

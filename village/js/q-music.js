@@ -218,20 +218,4 @@
     ]
   });
 
-  // 🎵 음악당 입구: 학년을 골라 음악 방으로 가요.
-  // (음악당 건물 그림이 오기 전까지는 교과 언덕 오른쪽 빈 땅 앞에서 이 창이 열려요)
-  Activities.register("mushub", ({ el, frame, ctx }) => {
-    const root = frame("🎵 음악당: 몇 학년 방으로 갈까요?");
-    root.append(Quiz.npcBanner(el, Quiz.NPCS.mus, "안녕! 나는 라라 선생님이야. 귀를 쫑긋! 소리를 잘 듣고 맞혀 보자!"));
-    const row = el("div", "qz-missions");
-    Quiz.rooms.filter((r) => r.id.startsWith("mus")).forEach((r) => {
-      const p = ctx.getProgress(r.id) || { done: [] };
-      const all = p.done.length === r.missions.length;
-      const b = el("button", "qz-mission" + (all ? " done" : ""), "<span>" + r.e + "</span><b>" + r.grade.replace(/^\S+ /, "") + "</b><small>" + r.title + " · " + (all ? "✅ 도장" : "미션 " + p.done.length + "/" + r.missions.length) + "</small>");
-      b.onclick = () => { ctx.sfx("door"); Activities.open(r.id); };
-      row.append(b);
-    });
-    root.append(row);
-    ctx.speak("음악당이에요. 몇 학년 방으로 갈까요?");
-  });
 })();
