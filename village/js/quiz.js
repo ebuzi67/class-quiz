@@ -4,14 +4,15 @@
 // 미션을 모두 통과하면 그 방 도장을 받아요.
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
-//     input?: true(숫자 패드로 답하기), unit?: "단위", explain?: "풀이", say?: "읽어 줄 말", sayEn?: "영어로 읽어 줄 말" }
+//     input?: true(숫자 패드로 답하기), unit?: "단위", explain?: "풀이", say?: "읽어 줄 말", sayEn?: "영어로 읽어 줄 말",
+//     play?: [{ f, at, d, vol, type }] 들려줄 소리, key?: "같은 글이라도 다른 문제인지 가르는 값(소리 문제)" }
 "use strict";
 
 const Quiz = (() => {
   const ROUND = 10, PASS = 8;
   const sizeOf = (def) => ({ round: def.round || ROUND, pass: def.pass || PASS });
   // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
-  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" } };
+  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" }, mus: { id: "lala", name: "라라 선생님" } };
   const npcOf = (roomId) => NPCS[roomId.replace(/\d+$/, "")];
   function npcBanner(el, npc, line) {
     const b = el("div", "qz-npc");
@@ -144,11 +145,16 @@ const Quiz = (() => {
       root.append(top, box);
       let current = null;
       // sayEn: 영어 낱말·문장은 한국어 질문 뒤에 영어 목소리로 이어서 읽어요
-      const read = (q) => { ctx.speak(q.say || strip(q.text)); if (q.sayEn && ctx.speakEn) ctx.speakEn(q.sayEn); };
-      listen.onclick = () => current && read(current);
+      // play: 음악 문제의 소리. 질문을 다 읽은 뒤에 들려주고, 🔊 다시 듣기는 소리만 다시 들려줘요.
+      const play = (q) => ctx.playNotes && ctx.playNotes(q.play);
+      const read = (q) => {
+        if (q.play && ctx.speakThen) return ctx.speakThen(q.say || strip(q.text), () => { if (current === q) play(q); });
+        ctx.speak(q.say || strip(q.text)); if (q.sayEn && ctx.speakEn) ctx.speakEn(q.sayEn);
+      };
+      listen.onclick = () => current && (current.play ? play(current) : read(current));
 
       function newQuestion() {
-        for (let k = 0; k < 20; k++) { const q = m.gen(tools); const key = q.text + "|" + (q.visual || "") + "|" + q.answer; if (!seen.has(key) || k === 19) { seen.add(key); return q; } }
+        for (let k = 0; k < 20; k++) { const q = m.gen(tools); const key = q.text + "|" + (q.visual || "") + "|" + q.answer + "|" + (q.key || ""); if (!seen.has(key) || k === 19) { seen.add(key); return q; } }
       }
 
       function drawDots(results) { dots.innerHTML = Array.from({ length: ROUND }, (_, k) => "<span class='" + (results[k] === true ? "ok" : results[k] === false ? "no" : k === i ? "now" : "") + "'></span>").join(""); }

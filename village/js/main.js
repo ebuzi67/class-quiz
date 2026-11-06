@@ -65,7 +65,20 @@
       else if (kind === "pop") tone(880, t, 0.1, "sine", 0.15);
       else if (kind === "stamp") [784, 988, 1175, 1568].forEach((f, i) => tone(f, t + i * 0.08, 0.35, "triangle", 0.2));
     }
-    return { ensure, music, sfx };
+    // 음악 문제용: 음 여러 개를 정해진 때에 울려요. [{ f: 주파수, at: 시작(초), d: 길이(초), vol, type }]
+    // 듣는 동안은 배경 음악을 잠깐 꺼요.
+    let duckTimer = null;
+    function notes(list) {
+      if (!ensure() || !list || !list.length) return 0;
+      const t0 = ac.currentTime + 0.08;
+      let end = 0;
+      list.forEach((n) => { tone(n.f, t0 + n.at, n.d || 0.4, n.type || "triangle", n.vol == null ? 0.3 : n.vol); end = Math.max(end, n.at + (n.d || 0.4)); });
+      musicGain.gain.setTargetAtTime(0, ac.currentTime, 0.03);
+      clearTimeout(duckTimer);
+      duckTimer = setTimeout(() => musicGain.gain.setTargetAtTime(0.09, ac.currentTime, 0.3), (end + 0.6) * 1000);
+      return end;
+    }
+    return { ensure, music, sfx, notes };
   })();
 
   let koVoice = null, enVoice = null;
@@ -78,7 +91,16 @@
   }
   if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
   // en: 영어 낱말·문장을 영어 목소리로 읽어요. 앞에 읽던 한국어 말 뒤에 이어서 읽어요.
-  function speak(text, en) {
+  // 다 읽은 뒤에 done을 불러요(읽어 주기가 꺼져 있거나 끝 알림이 안 와도 조금 뒤에 불러요)
+  function speakThen(text, done) {
+    let called = false;
+    const once = () => { if (!called) { called = true; done(); } };
+    if (!settings.voice || !("speechSynthesis" in window)) { setTimeout(once, 300); return; }
+    speak(text, false, once);
+    setTimeout(once, 900 + text.length * 110);
+  }
+
+  function speak(text, en, onEnd) {
     if (!settings.voice || !("speechSynthesis" in window)) return;
     try {
       if (!en) speechSynthesis.cancel();
@@ -88,6 +110,7 @@
       u.lang = en ? "en-US" : "ko-KR"; u.rate = en ? 0.8 : 0.95; u.pitch = 1.1;
       const v = en ? enVoice : koVoice;
       if (v) u.voice = v;
+      if (onEnd) { u.onend = onEnd; u.onerror = onEnd; }
       speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -518,9 +541,10 @@
     ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true],
     ["math12", "🧸", "수학 1-2", true], ["math34", "⚖️", "수학 3-4", true], ["math56", "🕵️", "수학 5-6", true],
     ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true],
-    ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true]
+    ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true],
+    ["mus12", "🥁", "음악 1-2", true], ["mus34", "🎼", "음악 3-4", true], ["mus56", "🎹", "음악 5-6", true]
   ];
-  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56"];
+  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56"];
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
@@ -1086,7 +1110,7 @@
   };
 
   Activities.init($("#activity"), {
-    speak, speakEn: (t) => speak(t, true), sfx: Sound.sfx, award,
+    speak, speakEn: (t) => speak(t, true), speakThen, playNotes: Sound.notes, sfx: Sound.sfx, award,
     close: () => {},
     getProgress: (id) => progress[id],
     setProgress: (id, v) => { progress[id] = v; store.set("progress", progress); Net.sendRecord({ stamps, progress }); }
