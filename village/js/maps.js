@@ -175,7 +175,9 @@ const Maps = (() => {
     ],
     doors: [
       { id: "engschool", x: 11, y: 11, w: 2, out: { x: 11, y: 13, dir: "down" }, pick: ["eng12", "eng34", "eng56"], name: "영어 학교", emoji: "🔤" },
-      { id: "hill", x: 23, y: 2, w: 3, to: "hill", out: { x: 24, y: 4, dir: "down" }, name: "배움 동산", emoji: "📚" }
+      { id: "hill", x: 23, y: 2, w: 3, to: "hill", out: { x: 24, y: 4, dir: "down" }, name: "배움 동산", emoji: "📚" },
+      // 오른쪽 빈 땅: 음악당 자리. 건물 그림이 오기 전까지는 울타리 앞에서 음악 방 고르기 창이 열려요.
+      { id: "musichall", x: 36, y: 16, w: 2, activity: "mushub", out: { x: 36, y: 18, dir: "up" }, name: "음악당", emoji: "🎵" }
     ],
     areas: [{ id: "engschool", r: [5, 0, 19, 10] }],
     spawn: { x: 24, y: 4, dir: "down" },
