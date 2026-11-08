@@ -1,0 +1,27 @@
+{
+  "name": "넘버블럭스",
+  "short_name": "넘버블럭스",
+  "description": "넘버블럭스 친구들과 이야기하는 앱 모음: 원이랑 대화하기, 투랑 대화하기",
+  "lang": "ko",
+  "id": "/class-quiz/numberblocks/",
+  "start_url": "./index.html",
+  "scope": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#cfe6fb",
+  "theme_color": "#8fc4f2",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
