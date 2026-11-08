@@ -9,7 +9,7 @@ GitHub Pages로 `https://ebuzi67.github.io/class-quiz/`에 올라가는 학습 �
 ├─ math/                수학 퀴즈 모음 → math/math5/, math/math1/, math/area5/, math/fraction4/
 ├─ europe/              유럽 탐방 모음 → europe/london/ 등 나라 10개
 ├─ pe/                  체육시간 모음 → pe/mugunghwa/ 등 게임 5개
-├─ roblox/  village/  one-chat/   (모음 없이 따로 있는 앱)
+├─ roblox/  village/  one-chat/  motion/   (모음 없이 따로 있는 앱)
 ```
 
 - **새 앱은 주제에 맞는 모음 폴더 안에** 만들어요. 수학 앱은 `math/새앱/`, 유럽 나라는 `europe/나라/`, 몸놀이는 `pe/게임/`.
