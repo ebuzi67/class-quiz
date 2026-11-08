@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>투랑 대화하기</title>
+<link rel="manifest" href="manifest.json?v=2">
+<meta name="theme-color" content="#ffe2c2">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="투랑 대화하기">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+:root {
+  --bg: #fff8ef;
+  --stage: #ffe2c2;
+  --one: #e87a12;
+  --ink: #2a1a17;
+  --muted: #8a6a62;
+  --bubble-me: #2f6fd6;
+  --bubble-me-ink: #ffffff;
+  --bubble-one: #ffffff;
+  --line: #f1d6c6;
+  --shade: rgba(40, 20, 15, .5);
+  --font-display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1514; --stage: #2c1d1b; --ink: #fbeee9; --muted: #c4a59c;
+    --bubble-me: #4a86ea; --bubble-one: #33241f; --line: #4a3330; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.wrap {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  width: 100%; max-width: 720px; margin: 0 auto;
+}
+header { background: var(--stage); border-bottom: 3px solid var(--line); flex: none; }
+header .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; }
+.one-fig { width: 104px; flex: none; cursor: pointer; color: var(--ink); }
+.one-fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+.who { min-width: 0; flex: 1; }
+.who h1 { font-family: var(--font-display); font-weight: 400; font-size: 30px; margin: 0; color: var(--one); line-height: 1.1; }
+.who p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+.tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: none; max-width: 190px; }
+.icon-btn {
+  font: inherit; font-size: 14px; border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.icon-btn[aria-pressed="true"] { border-color: var(--one); color: var(--one); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--bubble-me); outline-offset: 2px; }
+
+main { flex: 1; overflow-y: auto; min-height: 0; }
+main .wrap { display: flex; flex-direction: column; gap: 12px; padding-block: 16px; }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row.me { justify-content: flex-end; }
+.avatar { width: 34px; height: 34px; flex: none; }
+.bubble {
+  max-width: 78%; padding: 10px 14px; border-radius: 20px; line-height: 1.55;
+  white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; min-width: 0;
+}
+.row.one .bubble { background: var(--bubble-one); border: 2px solid var(--line); border-bottom-left-radius: 6px; }
+.row.me .bubble { background: var(--bubble-me); color: var(--bubble-me-ink); border-bottom-right-radius: 6px; }
+.dots { color: var(--muted); }
+.dots span { display: inline-block; animation: hop 1s infinite; }
+.dots span:nth-child(2) { animation-delay: .15s; } .dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes hop { 0%,60%,100% { transform: none } 30% { transform: translateY(-4px) } }
+
+footer { flex: none; border-top: 2px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom, 0px); }
+footer .wrap { padding-block: 10px; display: flex; flex-direction: column; gap: 8px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.chip {
+  flex: none; font: inherit; font-size: 15px; background: var(--stage); color: var(--ink);
+  border: 2px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.board { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 8px; width: min(240px, 60vw); }
+.board button {
+  aspect-ratio: 1; font-size: 32px; border-radius: 14px; border: 2px solid var(--line);
+  background: var(--stage); cursor: pointer; padding: 0;
+}
+.board button:disabled { cursor: default; }
+.chip.answer { font-family: var(--font-display); font-size: 20px; min-width: 52px; }
+form#form { display: flex; gap: 8px; }
+#msg {
+  flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 16px; border-radius: 999px;
+  border: 2px solid var(--line); background: var(--bubble-one); color: var(--ink);
+}
+#mic {
+  flex: none; width: 48px; border-radius: 999px; border: 2px solid var(--line); background: var(--bubble-one);
+  font-size: 22px; cursor: pointer; color: var(--ink);
+}
+#mic.on { border-color: var(--one); background: var(--stage); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { transform: scale(1.08) } }
+.big-btn, #send {
+  font-family: var(--font-display); font-size: 18px; border: none; border-radius: 999px; padding: 10px 20px;
+  background: var(--one); color: #fff; cursor: pointer;
+}
+#send:disabled, .chip:disabled, #mic:disabled { opacity: .5; cursor: default; }
+
+.sheet { position: fixed; inset: 0; background: var(--shade); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.sheet > div { background: var(--bg); color: var(--ink); border-radius: 18px; padding: 22px; width: 100%; max-width: 420px; }
+.sheet h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0 0 10px; }
+.sheet li { line-height: 1.7; }
+.sheet .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+/* 투 움직임 */
+.one-body { transform-origin: 50% 100%; animation: bob 2.4s ease-in-out infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+.lid { transform-box: fill-box; transform-origin: center; animation: blink 4.5s infinite; }
+@keyframes blink { 0%,94%,100% { transform: scaleY(0) } 96% { transform: scaleY(1) } }
+.mouth-open { opacity: 0; }
+.talking .mouth-open { animation: talk .28s infinite alternate; }
+.talking .mouth-shut { animation: talk .28s infinite alternate-reverse; }
+@keyframes talk { from { opacity: 0 } to { opacity: 1 } }
+.arm-r { transform-origin: 74px 80px; }
+.wave .arm-r { animation: wave .5s ease-in-out 3 alternate; }
+@keyframes wave { from { transform: rotate(0) } to { transform: rotate(-55deg) } }
+.jump .one-body { animation: jump .45s ease-out 2; }
+@keyframes jump { 50% { transform: translateY(-14px) } }
+@media (prefers-reduced-motion: reduce) {
+  .one-body, .lid, .dots span, .wave .arm-r, .jump .one-body, #mic.on { animation: none; }
+}
+@media (max-width: 460px) {
+  .one-fig { width: 76px; }
+  .who h1 { font-size: 24px; }
+  .who p { display: none; }
+  .tools { max-width: 120px; }
+}
+</style>
+</head>
+<body>
+
+<template id="one-svg">
+  <svg viewBox="0 0 100 150" aria-hidden="true">
+    <text x="50" y="16" text-anchor="middle" font-family="Jua, sans-serif" font-size="20" fill="currentColor">2</text>
+    <g class="one-body">
+      <path d="M38 114 q-3 18 0 24 q4 4 7 0 q2 -8 -1 -24z" fill="#b85a08"/>
+      <path d="M55 114 q-3 16 1 24 q4 4 7 0 q2 -8 -2 -24z" fill="#b85a08"/>
+      <path d="M27 78 q-12 12 -11 24 q3 5 8 2 q3 -11 5 -22z" fill="#d06a0c"/>
+      <g class="arm-r"><path d="M73 78 q12 12 11 24 q-3 5 -8 2 q-3 -11 -5 -22z" fill="#d06a0c"/></g>
+      <rect x="26" y="70" width="48" height="46" rx="5" fill="#ec8417"/>
+      <rect x="26" y="24" width="48" height="46" rx="5" fill="#f0901f"/>
+      <rect x="26" y="24" width="48" height="6" rx="3" fill="#f8b360" opacity=".7"/>
+      <line x1="27" y1="70" x2="73" y2="70" stroke="#c96a0d" stroke-width="1.5" opacity=".6"/>
+      <circle cx="40" cy="42" r="8.5" fill="#c2620c"/>
+      <circle cx="60" cy="42" r="8.5" fill="#c2620c"/>
+      <circle cx="40" cy="42" r="6.5" fill="#fff"/>
+      <circle cx="60" cy="42" r="6.5" fill="#fff"/>
+      <circle cx="40.5" cy="43" r="3.8" fill="#111"/>
+      <circle cx="60.5" cy="43" r="3.8" fill="#111"/>
+      <circle cx="42" cy="41" r="1.2" fill="#fff"/>
+      <circle cx="62" cy="41" r="1.2" fill="#fff"/>
+      <ellipse class="lid" cx="40" cy="42" rx="7" ry="7" fill="#f0901f"/>
+      <ellipse class="lid" cx="60" cy="42" rx="7" ry="7" fill="#f0901f"/>
+      <path class="mouth-shut" d="M41 56 q9 9 18 0 q-9 4 -18 0z" fill="#8a3d05"/>
+      <g class="mouth-open">
+        <path d="M40 54 q10 15 20 0 q-10 3 -20 0z" fill="#5e2903"/>
+        <path d="M43 55.5 q7 2.5 14 0 v2.5 q-7 2.5 -14 0z" fill="#fff"/>
+      </g>
+    </g>
+  </svg>
+</template>
+
+<header>
+  <div class="wrap">
+    <div class="one-fig" id="fig" title="투를 누르면 손을 흔들어요"></div>
+    <div class="who">
+      <h1>투 (Two)</h1>
+      <p>나는 2야! 블록 두 개, 짝꿍이 최고! 같이 놀자!</p>
+    </div>
+    <div class="tools">
+      <button class="icon-btn" id="voice" type="button" aria-pressed="false">🔈 소리</button>
+      <button class="icon-btn" id="reset" type="button">↺ 처음</button>
+      <button class="icon-btn" id="installBtn" type="button" hidden>📲 설치</button>
+    </div>
+  </div>
+</header>
+
+<main id="scroller">
+  <div class="wrap" id="log" aria-live="polite"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="chips" id="chips"></div>
+    <form id="form" autocomplete="off">
+      <button id="mic" type="button" aria-label="말로 하기" hidden>🎤</button>
+      <input id="msg" maxlength="100" placeholder="투에게 말을 걸어 보세요" aria-label="투에게 보낼 말">
+      <button id="send" type="submit">보내기</button>
+    </form>
+  </div>
+</footer>
+
+<script src="words.js"></script>
+<script src="brain.js"></script>
+<script>
+// ---------- 화면 ----------
+// 투의 말과 놀이는 brain.js에 있어요. 이 아래는 화면만 맡아요.
+const GREETING = "안녕! 나는 투야! ✌️ 둘, 둘, 짝꿍 둘! 오늘은 무슨 이야기 할까?";
+const CHAT_STORE = "two-chat-history";
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+
+const $ = (id) => document.getElementById(id);
+const log = $("log"), scroller = $("scroller"), msg = $("msg"), send = $("send"), fig = $("fig"), mic = $("mic");
+fig.append($("one-svg").content.cloneNode(true));
+
+let view = [], busy = false, speak = false;
+
+function save() { store.set(CHAT_STORE, JSON.stringify(view.slice(-100))); }
+function scrollDown() { scroller.scrollTop = scroller.scrollHeight; }
+
+function miniOne() {
+  const s = document.createElement("div");
+  s.className = "avatar";
+  s.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="10" y="20" width="20" height="18" rx="2.5" fill="#ec8417"/><rect x="10" y="2" width="20" height="18" rx="2.5" fill="#f0901f"/><circle cx="15.5" cy="9.5" r="3.6" fill="#fff"/><circle cx="24.5" cy="9.5" r="3.6" fill="#fff"/><circle cx="15.7" cy="10" r="2" fill="#111"/><circle cx="24.7" cy="10" r="2" fill="#111"/><path d="M16 15 q4 4 8 0 q-4 1.6 -8 0z" fill="#8a3d05"/></svg>`;
+  return s;
+}
+
+function addBubble(who, text) {
+  const row = document.createElement("div");
+  row.className = "row " + who;
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  if (who === "one") row.append(miniOne());
+  row.append(b);
+  log.append(row);
+  scrollDown();
+  return b;
+}
+
+function act(kind) {
+  fig.classList.remove("wave", "jump");
+  void fig.offsetWidth;
+  fig.classList.add(kind);
+}
+function talk(on) { fig.classList.toggle("talking", on); }
+
+// 소리로 읽을 글 다듬기. 휴대폰 음성은 숫자를 늘 "일, 이, 삼"으로 읽어서,
+// 세는 말(번, 개, 문제…) 앞의 숫자는 "한, 두, 세"로 바꿔 줘요: "3번 이기면" → "세 번 이기면"
+// 순서를 말하는 "1번 문제"는 "일 번 문제"가 맞아서 그대로 둬요.
+const NATIVE_TENS = ["", "열", "스물", "서른", "마흔", "쉰", "예순", "일흔", "여든", "아흔"];
+const NATIVE_ONES = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉"];
+function nativeCount(n) {
+  if (n === 20) return "스무";
+  return NATIVE_TENS[Math.floor(n / 10)] + NATIVE_ONES[n % 10];
+}
+function speechText(text) {
+  return text
+    .split("\n").filter((line) => !line.startsWith("🟧")).join("\n") // 블록 그림 줄은 읽지 않아요
+    .replace(/[\u{1F300}-\u{1FAFF}☀-➿⬀-⯿\uFE0F]/gu, "")
+    .replace(/\+/g, " 더하기 ")
+    .replace(/\s:\s/g, " 대 ") // (너 1 : 투 2) → 너 1 대 투 2
+    .replace(/(\d+)\s*(번째|번(?!\s*문제)|개|문제|줄|명|마리|살|판|가지|칸|장|권|시간|시)/g, (m, d, unit) => {
+      const n = Number(d);
+      if (n < 1 || n > 99) return m;
+      if (unit === "번째") return (n === 1 ? "첫" : nativeCount(n)) + " 번째";
+      return nativeCount(n) + " " + unit;
+    });
+}
+
+function sayAloud(text) {
+  if (!speak || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(speechText(text));
+    u.lang = "ko-KR"; u.pitch = 1.4; u.rate = 1.05;
+    u.onstart = () => talk(true);
+    u.onend = u.onerror = () => talk(false);
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function renderChips() {
+  const box = $("chips");
+  box.textContent = "";
+  chipsNow().forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (c.big ? " answer" : "");
+    btn.textContent = c.label;
+    btn.disabled = busy;
+    btn.onclick = () => ask(c.label);
+    box.append(btn);
+  });
+  box.scrollLeft = 0;
+}
+
+// 숨은 투 찾기 판: 누르면 그 칸 번호를 투에게 보내요
+function addBoard(spec) {
+  const row = document.createElement("div");
+  row.className = "row one";
+  const b = document.createElement("div");
+  b.className = "bubble";
+  const grid = document.createElement("div");
+  grid.className = "board";
+  grid.style.setProperty("--cols", spec.cols);
+  const cells = spec.spots.map((emoji, i) => {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.textContent = emoji;
+    c.setAttribute("aria-label", `${i + 1}번 ${emoji}`);
+    c.onclick = () => { if (!busy && game?.type === "hide" && game.cells === cells) ask(`${emoji} 뒤에 있니?`, i); };
+    grid.append(c);
+    return c;
+  });
+  b.append(grid);
+  row.append(miniOne(), b);
+  log.append(row);
+  if (game?.type === "hide") game.cells = cells;
+  scrollDown();
+}
+
+function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+async function ask(text, cell = null) {
+  text = text.trim();
+  if (!text || busy) return;
+  msg.value = "";
+  addBubble("me", text);
+  view.push({ who: "me", text });
+  busy = true;
+  send.disabled = true;
+  renderChips();
+  const lines = reply(text, cell);
+  const said = [];
+  for (const line of lines) {
+    if (line.board) {
+      await wait(400);
+      addBoard(line.board);
+      view.push({ who: "one", text: "🔍 " + line.board.spots.join(" ") });
+      continue;
+    }
+    const b = addBubble("one", "");
+    b.innerHTML = '<span class="dots"><span>●</span> <span>●</span> <span>●</span></span>';
+    talk(true);
+    await wait(500 + Math.min(line.length * 12, 700));
+    b.textContent = line;
+    talk(false);
+    view.push({ who: "one", text: line });
+    said.push(line);
+    scrollDown();
+  }
+  sayAloud(said.join(" "));
+  busy = false;
+  send.disabled = false;
+  save();
+  renderChips();
+}
+
+function render() {
+  log.textContent = "";
+  addBubble("one", GREETING);
+  view.forEach((m) => addBubble(m.who, m.text));
+  renderChips();
+}
+
+// ---------- 말로 하기 (마이크) ----------
+const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null;
+if (Recog) {
+  mic.hidden = false;
+  mic.onclick = () => {
+    if (recog) { recog.stop(); return; }
+    try { speechSynthesis.cancel(); } catch (e) {}
+    recog = new Recog();
+    recog.lang = "ko-KR";
+    recog.interimResults = true;
+    let finalText = "";
+    recog.onresult = (e) => {
+      const r = Array.from(e.results).map((x) => x[0].transcript).join("");
+      msg.value = r;
+      if (e.results[e.results.length - 1].isFinal) finalText = r;
+    };
+    recog.onend = () => {
+      mic.classList.remove("on");
+      recog = null;
+      if (finalText.trim()) ask(finalText);
+    };
+    recog.onerror = () => {};
+    mic.classList.add("on");
+    try { recog.start(); } catch (e) { mic.classList.remove("on"); recog = null; }
+  };
+}
+
+// ---------- 버튼 연결 ----------
+$("form").addEventListener("submit", (e) => { e.preventDefault(); ask(msg.value); });
+$("reset").onclick = () => {
+  try { speechSynthesis.cancel(); } catch (e) {}
+  if (busy) return;
+  view = []; resetBrain(); save(); render(); act("wave");
+};
+const voiceBtn = $("voice");
+if (!("speechSynthesis" in window)) voiceBtn.hidden = true;
+voiceBtn.onclick = () => {
+  speak = !speak;
+  voiceBtn.setAttribute("aria-pressed", String(speak));
+  voiceBtn.textContent = speak ? "🔊 소리" : "🔈 소리";
+  if (!speak) { try { speechSynthesis.cancel(); } catch (e) {} talk(false); }
+};
+fig.onclick = () => act(Math.random() < .5 ? "wave" : "jump");
+
+try {
+  const saved = JSON.parse(store.get(CHAT_STORE) || "null");
+  if (Array.isArray(saved)) view = saved.filter((m) => m && typeof m.text === "string");
+} catch (e) {}
+render();
+act("wave");
+
+// ---------- 홈 화면에 설치하기 ----------
+// 안드로이드·PC 크롬: 브라우저가 설치 가능하다고 알려 줄 때만 버튼을 보여 주고, 누르면 설치 창을 띄워요.
+// 아이폰·아이패드: 자동 설치 창이 없어서, 누르면 "공유 → 홈 화면에 추가" 순서를 안내해요.
+(() => {
+  const btn = $("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone() || !(ev || ios); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    const s = document.createElement("div");
+    s.className = "sheet";
+    s.innerHTML = `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <div class="actions"><button class="big-btn">알겠어요</button></div></div>`;
+    s.addEventListener("click", (e) => { if (e.target === s || e.target.closest("button")) s.remove(); });
+    document.body.append(s);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

@@ -1,0 +1,617 @@
+// 투랑 대화하기: 투의 말과 놀이
+// 투는 AI가 아니에요. 이 파일에 정해 둔 말과 놀이로만 대답하고, 아무 데도 연결하지 않아요.
+// 화면(index.html)은 reply(글, 누른칸)으로 투의 대답 줄들을 받고, chipsNow()로 아래 버튼들을 받아요.
+// 대답 줄은 글(string)이거나, 숨은 투 찾기 판({board})이에요.
+// 놀이와 마음 읽기의 짜임은 one-chat/brain.js(원)와 같아요. 한쪽을 고치면 다른 쪽도 같이 고쳐 주세요.
+
+// ---------- 도우미 ----------
+const lastPick = {};
+function pick(list, key) {
+  let i = Math.floor(Math.random() * list.length);
+  if (key && list.length > 1 && i === lastPick[key]) i = (i + 1) % list.length;
+  if (key) lastPick[key] = i;
+  return list[i];
+}
+const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const blocks = (n) => "🟧".repeat(n);
+const norm = (t) => t.toLowerCase().replace(/[\s.,!?~^'"…·]/g, "");
+const has = (n, keys) => keys.some((k) => n.includes(k));
+
+// 한글 한 글자를 초성·중성·종성 번호로 나누고 다시 붙여요
+function parts(ch) {
+  const c = ch.charCodeAt(0) - 0xac00;
+  return { cho: Math.floor(c / 588), jung: Math.floor((c % 588) / 28), jong: c % 28 };
+}
+const compose = (cho, jung, jong) => String.fromCharCode(0xac00 + cho * 588 + jung * 28 + jong);
+const isHangul = (ch) => ch >= "가" && ch <= "힣";
+
+// 받침이 있으면 앞의 말, 없으면 뒤의 말: josa(5, "이야", "야") → "5야", josa("텐", "이", "가") → "텐이"
+const NUM_BATCHIM = [true, true, false, true, false, false, true, true, true, false]; // 영 일 이 삼 사 오 육 칠 팔 구
+function josa(w, withB, without) {
+  let b;
+  if (typeof w === "number") b = w % 10 === 0 ? true : NUM_BATCHIM[w % 10];
+  else { const last = w[w.length - 1]; b = isHangul(last) && parts(last).jong !== 0; }
+  return w + (b ? withB : without);
+}
+// '기'로, '산'으로, '달'로
+const ro = (syl) => { const j = parts(syl).jong; return `'${syl}'` + (j === 0 || j === 8 ? "로" : "으로"); };
+
+// ---------- 넘버블럭스 친구들 ----------
+const SELF = "투";
+const FRIENDS = {
+  1: { name: "원", facts: ["원은 빨간색 블록 하나야. 눈도 하나! 하나인 걸 제일 좋아해!", "원이 둘 모이면 바로 내가 돼! 그래서 원은 내 반쪽 같은 친구야!", "원은 씩씩하고 호기심이 많아. 뭐든 '하나!' 하고 먼저 해 봐!"],
+    play: "원이랑은 짝꿍 춤을 춰! 원이 '하나!' 하면 나는 '둘!' 해!", now: "원은 오늘 해님한테 '하나!' 하고 인사하고 있대! ☝️" },
+  2: { name: "투", facts: ["그건 바로 나야! 주황색 블록 두 개! 짝꿍인 게 제일 좋아!"],
+    play: "나랑 놀려면 지금 바로 놀면 돼! 끝말잇기 할까?", now: "나는 지금 너랑 이야기하고 있지! 헤헤 ✌️" },
+  3: { name: "쓰리", facts: ["쓰리는 노란색 블록 세 개야. 장난꾸러기 광대라서 다들 깔깔 웃어!", "쓰리는 저글링을 잘해! 공 세 개를 휙휙휙~", "나랑 원이 합쳐지면 쓰리가 돼! 둘 더하기 하나!"],
+    play: "쓰리랑은 저글링 놀이! 쓰리는 공 세 개, 투는 공 두 개!", now: "쓰리는 오늘 새 마술을 연습하고 있어! 🎩" },
+  4: { name: "포", facts: ["포는 초록색 블록 네 개야. 네모 반듯한 걸 좋아해!", "포는 정리 정돈 대장이야. 줄 맞추는 걸 좋아해!", "투 둘이 모이면 포가 돼! 2줄씩 2번, 딱 네모!"],
+    play: "포랑은 네모 모양 찾기를 해! 창문도 네모, 책도 네모!", now: "포는 오늘 방 정리를 하고 있대. 반듯반듯!" },
+  5: { name: "파이브", facts: ["파이브는 블록 다섯 개야. 손가락이 다섯 개라서 하이파이브를 잘해! 🖐️", "파이브는 별 모양을 좋아해. 별도 뾰족한 데가 다섯 개거든! ⭐", "파이브는 친구들을 잘 웃게 해 주는 신나는 친구야!"],
+    play: "파이브랑은 하이파이브 놀이! 짝! 짝! 짝!", now: "파이브는 오늘 별 그림을 그리고 있어! ⭐" },
+  6: { name: "식스", facts: ["식스는 블록 여섯 개야. 주사위처럼 점 여섯 개가 될 수 있어! 🎲", "식스는 벌집 모양 육각형을 좋아해! 🐝", "투 셋이 모이면 식스가 돼! 둘, 넷, 여섯!"],
+    play: "식스랑은 주사위 놀이! 데굴데굴~ 몇 나올까?", now: "식스는 오늘 꿀벌 친구들을 만나러 갔대! 🐝" },
+  7: { name: "세븐", facts: ["세븐은 무지개색 블록 일곱 개야. 무지개도 일곱 색깔이지! 🌈", "세븐은 행운의 숫자래! 세븐을 만나면 기분이 좋아져!", "일주일도 일곱 날이야! 월화수목금토일!"],
+    play: "세븐이랑은 무지개 찾기 놀이! 빨주노초파남보!", now: "세븐은 오늘 비 온 뒤 무지개를 보러 갔어! 🌈" },
+  8: { name: "에이트", facts: ["에이트는 블록 여덟 개야. 문어처럼 다리가 여덟 개인 슈퍼히어로! 🐙", "에이트는 '옥토블록'으로 변신해서 친구들을 도와줘!", "투 넷이 모이면 에이트가 돼! 둘, 넷, 여섯, 여덟!"],
+    play: "에이트랑은 슈퍼히어로 놀이! 투는 꼬마 히어로!", now: "에이트는 오늘도 누가 도움이 필요한지 살펴보고 있어! 🦸" },
+  9: { name: "나인", facts: ["나인은 블록 아홉 개야. 3줄씩 3번, 커다란 네모가 될 수 있어!", "나인은 조용하고 생각이 깊은 친구야.", "나인은 3이 세 번 모인 거야! 쓰리랑도 친해!"],
+    play: "나인이랑은 큰 네모 만들기! 투는 두 칸 담당!", now: "나인은 오늘 책을 읽고 있대. 📚" },
+  10: { name: "텐", facts: ["텐은 블록 열 개야. 손가락 열 개처럼 딱 맞는 대장이야! 🔟", "텐은 '10, 9, 8…' 하고 세면서 로켓을 쏘는 걸 좋아해! 🚀", "투 다섯이 모이면 텐이 돼! 엄청 크지?"],
+    play: "텐이랑은 로켓 놀이! 10, 9, 8… 3, 2, 1, 발사! 🚀", now: "텐은 오늘 친구들이랑 로켓을 만들고 있어! 🚀" },
+};
+const FRIEND_NAMES = { "원": 1, "투": 2, "쓰리": 3, "포": 4, "파이브": 5, "식스": 6, "세븐": 7, "에이트": 8, "나인": 9, "텐": 10 };
+// "포는 누구야"의 포는 친구 이름이지만 "포도"의 포는 아니에요: 이름 바로 뒤에 오는 말로 가려요
+// skipSelf: 투 자신의 이름은 빼고 찾아요
+function friendIn(n, skipSelf) {
+  return Object.keys(FRIEND_NAMES).find((k) => !(skipSelf && k === SELF) &&
+    new RegExp(k + "(은|는|이|가|야|랑|이랑|하고|한테|의|누구|소개|이야기|얘기|에대해|요즘|오늘|뭐|$)").test(n)) || null;
+}
+
+// ---------- 수 읽기 ----------
+const NATIVE = [["열", 10], ["아홉", 9], ["여덟", 8], ["일곱", 7], ["여섯", 6], ["다섯", 5], ["넷", 4], ["네", 4], ["셋", 3], ["세", 3], ["둘", 2], ["두", 2], ["하나", 1], ["한", 1], ["영", 0]];
+const SINO = { "영": 0, "공": 0, "일": 1, "이": 2, "삼": 3, "사": 4, "오": 5, "육": 6, "칠": 7, "팔": 8, "구": 9, "십": 10 };
+// "5", "다섯", "다섯 개", "오" 같은 대답에서 수를 찾아요
+function parseNum(t) {
+  const n = norm(t);
+  const d = n.match(/\d+/);
+  if (d) return Number(d[0]);
+  const f = friendIn(n);
+  if (f) return FRIEND_NAMES[f];
+  for (const [w, v] of NATIVE) if (n.startsWith(w)) return v;
+  const s = n.replace(/(개|야|요|이야|입니다|이에요)$/, "");
+  if (s.length === 1 && s in SINO) return SINO[s];
+  return null;
+}
+
+// ---------- 정해 둔 대답 ----------
+// keys 중 하나가 들어 있으면(띄어쓰기 무시) replies 중 하나를 골라요. 위에 있을수록 먼저 봐요.
+// ask: 투가 되물었을 때 아이의 다음 말을 어떻게 받을지("day": 하루 이야기, "chat": 그 밖의 이야기)
+const TOPICS = [
+  { id: "real", keys: ["진짜야", "진짜투", "로봇", "컴퓨터", "인공지능", "사람이야"], replies: [
+    "나는 투 흉내를 내는 앱 친구야! 정해진 말만 할 수 있지만 같이 놀면 재밌을 거야! ✌️",
+  ] },
+  { id: "bye", keys: ["잘가", "또봐", "바이바이", "안녕히", "갈게", "이제끝"], replies: [
+    "잘 가! 또 놀러 와! 하나, 둘, 안녕! 👋", "오늘 정말 재밌었어! 다음에 또 만나자! 짝꿍 약속! ✌️",
+  ], act: "wave" },
+  { id: "how", keys: ["어떻게지내", "잘지내", "잘지냈", "요즘어때", "요즘뭐해", "뭐하고지내", "별일없"], replies: [
+    "나는 잘 지내! 요즘 원이랑 노래 연습하느라 엄청 바빠! 너는 요즘 어떻게 지내?",
+    "투는 신나게 잘 지내지! 아침마다 '하나, 둘!' 체조를 해. 너는 요즘 어때?",
+    "요즘 넘버랜드는 아주 신나! 매일 짝꿍 춤 대회가 열려. 너는 잘 지내?",
+  ], ask: "day" },
+  { id: "today", keys: ["오늘하루", "오늘어땠", "오늘뭐했", "오늘은어때", "뭐했어", "뭐했니", "하루어땠"], replies: [
+    "오늘 아침에 양말 두 짝을 짝 맞춰 신었어! 짝꿍 양말 최고! 🧦",
+    "오늘은 원이랑 짝꿍 춤을 췄어! 하나, 둘! 하나, 둘! 💃",
+    "오늘 새 노래를 만들었어. '둘, 둘, 짝꿍 둘~' 🎵",
+    "오늘은 쓰리가 저글링하는 걸 봤어. 나는 공 두 개로 따라 해 봤지! 헤헤",
+    "오늘은 자전거를 탔어. 바퀴도 두 개, 페달도 두 개! 🚲",
+    "오늘 포랑 블록 쌓기를 했어. 투 둘이 모이면 포가 되거든!",
+    "오늘은 비가 와서 장화 두 짝 신고 물웅덩이에서 첨벙첨벙 놀았어! ☔",
+    "오늘은 짝꿍 찾기 놀이를 했어. 젓가락도 두 개, 장갑도 두 짝!",
+  ], then: "너는 오늘 하루 어땠어?", ask: "day" },
+  { id: "hi", keys: ["안녕", "하이", "반가", "hello"], replies: [
+    "안녕! 나는 투야! 둘, 둘, 짝꿍 둘! ✌️", "반가워! 오늘은 뭐 하고 놀까?", "안녕안녕! 투가 두 손 흔들고 있어! 👋👋",
+  ], act: "wave" },
+  { id: "love", keys: ["사랑해", "좋아해", "최고야", "멋져", "귀여"], replies: [
+    "헤헤, 나도 네가 좋아! 우리 둘이 짝꿍 하자! 🧡", "우와, 고마워! 투 얼굴이 더 주황색이 됐어! ☺️",
+  ], act: "jump" },
+  { id: "thanks", keys: ["고마워", "고맙", "감사"], replies: ["천만에! 투는 너랑 있는 게 좋아!", "언제든지! 투는 늘 네 편이야! 🧡"] },
+  { id: "sorry", keys: ["미안"], replies: ["괜찮아! 우리는 짝꿍이잖아. 다시 신나게 놀자!"] },
+  { id: "bestie", keys: ["제일친한", "단짝", "베프", "친한친구"], replies: ["원이랑 제일 친해! 원 둘이 모이면 내가 되니까, 원은 내 반쪽 같은 친구야!"], then: "너는 단짝 친구 있어?", ask: "chat" },
+  { id: "name", keys: ["이름", "누구야", "누구니", "넌누구", "너누구"], replies: [
+    "나는 투야! 숫자 2지. 주황색 블록 두 개로 되어 있어!", "내 이름은 투! 원 둘이 모이면 내가 돼!",
+  ] },
+  { id: "age", keys: ["몇살", "나이"], replies: ["나는 숫자 2니까… 두 살이라고 할까? 헤헤!"], then: "너는 몇 살이야?", ask: "chat" },
+  { id: "feel", keys: ["기분"], replies: ["나는 너랑 이야기해서 기분 최고야! 두 배로 좋아!"], then: "너는 지금 기분이 어때?", ask: "day" },
+  { id: "where", keys: ["어디살", "어디에살", "사는곳", "집이어디", "넘버랜드", "어디있어"], replies: [
+    "나는 넘버랜드에 살아! 숫자 친구들이 다 모여 사는 마을이야. 길도 집도 블록으로 되어 있어!",
+    "넘버랜드에는 숫자 언덕, 숫자 공원, 숫자 바다가 있어! 투의 집은 2층 집이야. 블록이 두 개라서 딱 맞아!",
+  ] },
+  { id: "morning", keys: ["아침"], replies: ["아침에 일어나면 두 팔을 쭉~ 펴고 '하나, 둘!' 체조를 해!"], then: "너는 아침에 뭐 먹었어?", ask: "chat" },
+  { id: "night", keys: ["밤에", "저녁"], replies: ["밤에는 별을 두 개씩 세다가 잠들어. 둘, 넷, 여섯… 쿨쿨 💤"] },
+  { id: "weekend", keys: ["주말", "쉬는날", "방학", "소풍"], replies: ["쉬는 날엔 친구들이랑 넘버랜드 공원으로 소풍 가! 김밥도 두 줄 싸 가! 🍙"], then: "너는 쉬는 날에 뭐 하는 게 좋아?", ask: "chat" },
+  { id: "school", keys: ["학교", "유치원", "선생님"], replies: ["넘버랜드에는 숫자 놀이 학교가 있어! 투는 거기서 '짝꿍 반장'이야! 짝을 맞춰 주거든!"], then: "너는 학교에서 뭐가 제일 좋아?", ask: "chat" },
+  { id: "family", keys: ["가족"], replies: ["넘버블럭스 친구들이 다 가족 같아! 모이면 더 큰 숫자가 되거든!"], then: "너는 가족이랑 뭐 하는 게 제일 좋아?", ask: "chat" },
+  { id: "dream", keys: ["꿈이뭐", "커서", "되고싶", "장래희망"], replies: ["나는 세상에서 제일 신나는 노래를 부르는 가수가 되고 싶어! 🎤"], then: "너는 커서 뭐가 되고 싶어?", ask: "chat" },
+  { id: "birthday", keys: ["생일"], replies: ["투의 생일엔 케이크에 초를 두 개 꽂아! 후~ 후~ 두 번 불어! 🎂"], then: "너는 생일에 뭐 하고 싶어?", ask: "chat" },
+  { id: "weather", keys: ["날씨", "비와", "눈와", "더워", "추워"], replies: ["비 오면 장화 두 짝, 눈 오면 장갑 두 짝! 투는 언제나 준비 완료!"], then: "오늘 날씨는 어때?", ask: "chat" },
+  { id: "hobby", keys: ["취미", "뭐하고놀", "뭐하는거좋"], replies: ["나는 노래하기, 춤추기, 짝꿍 찾기가 좋아!"], then: "너는 뭐 하고 노는 게 좋아?", ask: "chat" },
+  { id: "fav", keys: ["좋아하는", "뭐좋아", "제일좋"], replies: [
+    "나는 짝꿍인 걸 좋아해! 양말 두 짝, 신발 두 짝, 젓가락 두 개! 🧦", "나는 노래랑 춤이 제일 좋아! 하나, 둘! 🎵",
+  ], then: "너는 뭐 좋아해?", ask: "chat" },
+  { id: "color", keys: ["색깔", "무슨색", "주황"], replies: ["나는 주황색! 귤처럼, 당근처럼 주황색이야! 🍊"], then: "너는 무슨 색이 좋아?", ask: "chat" },
+  { id: "food", keys: ["배고", "먹", "간식", "밥"], replies: ["나는 귤 두 개면 충분해! 🍊🍊"], then: "너는 뭐 먹는 거 좋아해?", ask: "chat" },
+  { id: "sleep", keys: ["졸려", "잘자", "잘게", "자야"], replies: ["잘 자! 별 둘, 달 하나, 그리고 투! 좋은 꿈 꿔! 🌙"] },
+  { id: "song", keys: ["노래"], replies: [
+    "🎵 둘, 둘, 짝꿍 둘~ 주황 블록 둘~ 함께라서 신나지~ 나는 투야! 🎵",
+    "🎵 원 더하기 원은 투~ 투 더하기 투는 포~ 둘씩 더하면 계속 커지지~ 🎵",
+  ], act: "jump" },
+  { id: "joke", keys: ["웃긴", "농담", "재밌는얘기", "재미있는얘기", "재밌는이야기", "재미있는이야기"], replies: [
+    "숫자 6이 왜 7을 무서워할까? 7이 뭐든 다 먹어 버리거든! 헤헤 😆",
+    "투가 신발 가게에 가면 몇 짝 살까? 당연히 두 짝! 짝꿍이니까! 👟👟",
+    "투가 거울을 보면 몇 명일까? 투가 둘! 그럼 포가 되나? 헤헤 😄",
+    "블록들이 제일 좋아하는 운동은? 쌓기 운동! 😆",
+  ], act: "jump" },
+];
+
+const FALLBACK = [
+  "음~ 그건 투가 잘 모르겠어! 대신 같이 놀래? 끝말잇기, 가위바위보, 숨은 투 찾기가 있어! ✌️",
+  "우와, 그렇구나! 투는 짝꿍 놀이를 제일 잘해. 같이 해 볼래?",
+  "헤헤, 투는 아직 그 말은 몰라! 아래 버튼을 눌러서 같이 놀자!",
+];
+
+// ---------- 아이 마음 읽기 (위로) ----------
+// 힘든 이야기는 다른 무엇보다 먼저 들어요. first: 처음 들었을 때, 그 뒤 두 번까지 더 들어 줘요.
+const HARD = [
+  { id: "danger", keys: ["때렸", "때려", "맞았", "괴롭", "따돌", "왕따", "죽고싶", "죽을래", "사라지고싶", "아무도날", "다날싫어", "만졌", "비밀로하래"], first: [
+    "말해 줘서 정말 고마워. 그건 혼자 참으면 안 되는 일이야. 지금 바로 엄마 아빠나 선생님께 꼭 말하자. 어른들이 너를 지켜 줄 거야. 투도 늘 네 편이야. 🧡",
+  ], follow: [
+    "네 잘못이 아니야. 꼭 엄마 아빠나 선생님께 말하기, 투랑 약속! ✌️",
+    "투는 네가 정말 소중해. 믿을 수 있는 어른께 꼭 이야기해 줘. 그러면 도와주실 거야.",
+  ] },
+  { id: "friend", keys: ["싸웠", "싸워", "놀려", "놀렸", "놀림", "안놀아", "절교", "삐졌", "친구가미워", "친구가싫"], first: [
+    "친구랑 그런 일이 있었구나. 많이 속상했겠다. 무슨 일이 있었는지 투한테 이야기해 줄래?",
+    "아이고, 마음이 아팠겠다. 투가 두 팔로 꼭 안아 줄게. 어떻게 된 거야?",
+  ], follow: [
+    "그랬구나. 그럴 땐 '나 그거 속상했어' 하고 말해 보는 것도 좋아. 친구도 몰랐을 수 있거든.",
+    "투도 원이랑 다툰 적 있어. 그런데 '미안해', '괜찮아' 하고 나니까 다시 짝꿍이 됐어!",
+  ] },
+  { id: "scolded", keys: ["혼났", "혼나", "혼내", "꾸중", "야단"], first: [
+    "혼나서 속상했구나. 혼나도 엄마 아빠는 너를 정말정말 사랑해! 무슨 일이 있었어?",
+    "그랬구나… 투도 실수해서 혼난 적 있어. 무슨 일이었어?",
+  ], follow: [
+    "실수는 누구나 해! 다음에 조금씩 고치면 돼. 투는 네가 멋진 아이인 걸 알아.",
+    "엄마 아빠한테 '속상했어요' 하고 말하고 꼭 안아 달라고 해 봐. 마음이 금방 풀릴 거야.",
+  ] },
+  { id: "study", keys: ["어려워", "어렵", "못하겠", "숙제", "공부", "시험", "받아쓰기", "틀렸", "못했"], first: [
+    "어려운 걸 하느라 정말 애썼구나! 어려운 건 천천히, 하나씩 하면 돼. 하나, 그리고 둘! 뭐가 제일 어려웠어?",
+    "틀려도 괜찮아! 틀리면서 배우는 거야. 투는 네가 열심히 하는 게 제일 멋져! 어떤 게 어려웠어?",
+  ], follow: [
+    "그건 정말 어려울 수 있어. 모를 땐 엄마 아빠나 선생님께 '도와주세요' 하고 말해도 돼. 그것도 용감한 거야!",
+    "한 번에 다 하지 않아도 돼. 하나 하고, 쉬고, 또 하나! 천천히 짝꿍처럼 한 걸음씩!",
+  ] },
+  { id: "sick", keys: ["아파", "아프", "다쳤", "다쳐", "감기", "열나", "넘어졌"], first: [
+    "아이고, 아프구나! 꼭 엄마 아빠한테 말하고 푹 쉬어야 해. 투가 '호~ 호~' 두 번 해 줄게!",
+    "다쳤구나… 많이 아팠겠다. 어른한테 꼭 보여 드리자! 지금은 좀 괜찮아?",
+  ], follow: [
+    "따뜻한 물 마시고 푹 자면 금방 나을 거야. 투가 옆에서 응원할게! 💪",
+    "아플 땐 쉬는 게 제일 중요해. 다 나으면 투랑 신나게 놀자!",
+  ] },
+  { id: "lonely", keys: ["외로", "혼자야", "혼자있", "같이놀친구가없", "친구가없"], first: [
+    "혼자라서 외로웠구나. 지금은 투가 같이 있어! 우리 둘이 짝꿍이야. ✌️",
+  ], follow: [
+    "그럴 땐 먼저 '같이 놀자!' 하고 말해 봐. 친구도 짝꿍을 기다리고 있을지 몰라!",
+    "엄마 아빠한테 '나랑 놀아 줘!' 하고 말해 보는 것도 좋아. 같이 놀면 훨씬 신나!",
+  ] },
+  { id: "angry", keys: ["화나", "화났", "짜증", "열받"], first: [
+    "화가 많이 났구나. 화날 땐 투랑 같이 숨을 크게 쉬어 보자. 하나… 둘… 셋… 후~ 무슨 일 때문에 화가 났어?",
+  ], follow: [
+    "그럴 만했네! 화가 나는 건 이상한 게 아니야. 그냥 물건을 던지거나 친구를 때리지만 않으면 돼.",
+    "화난 마음을 말로 잘 이야기했어! 엄마 아빠한테도 이렇게 말해 보면 좋겠다.",
+  ] },
+  { id: "scared", keys: ["무서", "무섭", "겁나"], first: [
+    "무서웠구나. 무서울 땐 엄마 아빠 곁에 꼭 붙어 있자. 투도 같이 있어 줄게! 뭐가 무서웠어?",
+  ], follow: [
+    "무서운 마음은 엄마 아빠한테 말하면 반으로 줄어들어! 꼭 말해 봐.",
+    "투랑 같이 용감 주문 외워 보자! '하나, 둘, 셋, 나는 용감해!' ✨",
+  ] },
+  { id: "sad", keys: ["슬퍼", "슬프", "슬펐", "속상", "울었", "울고", "눈물", "우울", "서운"], first: [
+    "슬펐구나… 투가 꼭 안아 줄게. 슬플 땐 울어도 괜찮아. 무슨 일이 있었는지 말해 줄래?",
+    "속상했구나. 투한테 이야기해 줘서 고마워. 무슨 일이 있었어?",
+  ], follow: [
+    "그랬구나. 그런 일이 있으면 누구라도 슬플 거야. 엄마 아빠한테도 이야기하고 꼭 안아 달라고 해 봐.",
+    "말해 줘서 정말 고마워. 네 마음은 하나도 이상하지 않아. 투는 늘 네 편이야. 🧡",
+  ] },
+  { id: "tired", keys: ["힘들", "지쳐", "피곤"], first: [
+    "많이 힘들었구나. 오늘 정말 애썼어! 잠깐 쉬어도 괜찮아. 뭐가 힘들었어?",
+  ], follow: [
+    "그랬구나. 힘들 땐 쉬어도 돼. 따뜻한 물 한 잔 마시고 엄마 아빠한테 꼭 안아 달라고 해 봐.",
+    "너는 정말 열심히 했어! 투는 네가 자랑스러워. 🧡",
+  ] },
+];
+const NOT_HARD = /안(힘들|슬|무서|아파|아프|속상|외로|짜증|어려)|(힘들|슬프|무섭|아프|어렵)지않|괜찮|나아졌|다나았/;
+const GOOD = /좋았|좋아|재밌|재미있|신났|신나|행복|최고|기뻐|기뻤|칭찬|잘했|맛있|웃겼|즐거/;
+const UNKNOWN = /^(몰라|모르겠|없어|없는데|글쎄|음+$)/;
+
+function hardOf(n) {
+  n = n.replace(/아파트/g, "");
+  if (NOT_HARD.test(n)) return null;
+  const h = HARD.find((x) => has(n, x.keys)) || null;
+  // "공부했는데 재밌었어"처럼 즐거운 이야기면 위로하지 않아요(위험한 이야기는 빼고)
+  if (h && h.id !== "danger" && GOOD.test(n) && !/(안|못)(좋|재밌|재미있|신나)/.test(n)) return null;
+  return h;
+}
+
+// ---------- 지금 하고 있는 것 ----------
+let game = null;   // 놀이 중일 때: {type: "quiz" | "find" | "chain" | "rps" | "hide", ...}
+let expect = null; // 투가 물어본 뒤: {type: "day" | "chat"} 또는 {type: "comfort", hard, n}
+
+function resetBrain() { game = null; expect = null; }
+
+// ---------- 놀이: 숫자 퀴즈 ----------
+function newQuestion() {
+  const kind = pick(["count", "add", "add", "sub"], "qkind");
+  if (kind === "count") {
+    const n = rand(1, 10);
+    return { answer: n, text: `블록이 몇 개일까?\n${blocks(n)}` };
+  }
+  if (kind === "add") {
+    const a = rand(1, 5), b = rand(1, 5);
+    return { answer: a + b, text: `${a} 더하기 ${josa(b, "은", "는")} 뭘까?\n${blocks(a)} + ${blocks(b)}` };
+  }
+  const a = rand(3, 10), b = rand(1, a - 1);
+  return { answer: a - b, text: `${a} 빼기 ${josa(b, "은", "는")} 뭘까?\n블록 ${a}개에서 ${b}개가 톡 떨어졌어!\n${blocks(a)}` };
+}
+function startQuiz() {
+  game = { type: "quiz", round: 1, score: 0, tries: 0, q: newQuestion() };
+  return ["좋아, 숫자 퀴즈 시작! 모두 5문제야. 아래 버튼을 눌러도 되고 말로 해도 돼!", `1번 문제! ${game.q.text}`];
+}
+function quizTurn(t) {
+  const n = parseNum(t);
+  const q = game.q;
+  if (n === null) return [`숫자로 대답해 줘! ${q.text}`];
+  const out = [];
+  if (n === q.answer) {
+    game.score++;
+    out.push(pick([`딩동댕! ${q.answer}! 정말 잘했어! 🎉`, `맞았어! 정답은 ${q.answer}! 최고야! ⭐`, `우와, ${q.answer} 정답! 투가 신나서 두 번 점프했어!`], "right"));
+    act("jump");
+  } else if (game.tries === 0) {
+    game.tries = 1;
+    return [pick(["음~ 아까워! 블록을 둘씩 묶어서 세어 볼까? 다시 한 번!", "거의 다 왔어! 천천히 다시 생각해 봐!"], "wrong")];
+  } else {
+    out.push(`괜찮아! 정답은 ${josa(q.answer, "이었어", "였어")}. ${blocks(q.answer)} 다음 문제는 꼭 맞힐 수 있어!`);
+  }
+  if (game.round >= 5) {
+    out.push(`퀴즈 끝! 5문제 중에 ${game.score}개 맞혔어! ${game.score >= 4 ? "숫자 박사네! 🏆" : "잘했어! 또 하면 더 잘할 거야! 💪"}`);
+    game = null;
+    return out;
+  }
+  game.round++; game.tries = 0; game.q = newQuestion();
+  out.push(`${game.round}번 문제! ${game.q.text}`);
+  return out;
+}
+
+// ---------- 놀이: 둘인 것 찾기 (짝꿍 찾기) ----------
+const PAIRS = {
+  "눈": "맞아, 눈은 두 개! 짝꿍이야! 👀", "귀": "맞아, 귀도 두 개! 양쪽에 하나씩 짝꿍! 👂", "손": "맞아, 손은 두 개! 짝짝 박수 쳐 볼까? 👏",
+  "발": "맞아, 발도 두 개! 하나, 둘 걸어가자! 🦶", "팔": "맞아, 팔도 두 개! 투처럼 두 팔 쭉~", "다리": "맞아, 다리도 두 개! 깡충깡충!",
+  "양말": "맞아, 양말은 두 짝이 짝꿍! 🧦", "신발": "맞아, 신발도 두 짝! 👟👟", "장갑": "맞아, 장갑도 두 짝! 🧤", "장화": "맞아, 장화도 두 짝! 첨벙첨벙!",
+  "젓가락": "맞아, 젓가락은 두 개가 한 짝! 🥢", "귀걸이": "맞아, 귀걸이도 두 개!", "날개": "맞아, 새도 나비도 날개가 두 개! 🦋",
+  "바퀴": "맞아, 자전거 바퀴는 두 개! 🚲", "자전거": "맞아, 자전거는 바퀴가 두 개! 🚲", "쌍둥이": "맞아, 쌍둥이는 둘이 짝꿍! 👯",
+  "콧구멍": "맞아, 콧구멍도 두 개! 킁킁! 헤헤", "눈썹": "맞아, 눈썹도 두 개!", "무릎": "맞아, 무릎도 두 개!", "어깨": "맞아, 어깨도 두 개!",
+  "볼": "맞아, 볼도 두 개! 말랑말랑!", "엄마아빠": "맞아, 엄마 아빠는 둘이 짝꿍! 🧡",
+  "코": "어? 코는 하나야! 하나인 건 원 친구가 좋아하는 거야! 헤헤 👃", "입": "앗, 입은 하나야! 그건 원 친구한테 알려 주자!",
+  "해": "해는 하나야! 원이 좋아하겠다! ☀️", "달": "달은 하나야! 그건 원 친구 거! 🌙", "배꼽": "배꼽은 하나! 헤헤 😆",
+};
+function startFind() {
+  game = { type: "find", count: 0 };
+  return ["둘인 것 찾기 놀이! 두 개가 짝꿍인 걸 말해 줘! 예를 들면… 눈? 양말? ✌️"];
+}
+function findTurn(t) {
+  const n = norm(t);
+  const hit = Object.keys(PAIRS).sort((a, b) => b.length - a.length).find((k) => n.startsWith(k));
+  const out = [hit ? PAIRS[hit] : pick(["우와, 그것도 둘이구나! 좋아! ✌️", "오~ 짝꿍 찾았다! 잘했어!", "그렇구나! 둘, 둘, 짝꿍 둘! 👍"], "find")];
+  game.count++;
+  if (game.count >= 3) {
+    out.push("세 번이나 찾았어! 너는 짝꿍 찾기 대장이야! 🏅");
+    act("jump");
+    game = null;
+  } else {
+    out.push(pick(["또 둘인 거 찾아볼까?", "하나 더 말해 줘!", "다른 짝꿍도 있을까?"], "findmore"));
+  }
+  return out;
+}
+
+// ---------- 놀이: 끝말잇기 ----------
+// 투가 아는 낱말(WORDS)은 words.js에 있어요(tools/one-chat/words.txt로 원과 같이 만들어요).
+// 아이가 낸 낱말은 거기에 없어도 받아 줘요(두 글자 이상 한글이면 돼요).
+// FIRST_COUNT: 글자마다 그 글자로 시작하는 투의 낱말 수
+const FIRST_COUNT = {};
+WORDS.forEach((w) => { FIRST_COUNT[w[0]] = (FIRST_COUNT[w[0]] || 0) + 1; });
+
+// 아이가 가르쳐 준 낱말: 이 기기에 저장해 두고 다음 끝말잇기부터 투도 써요
+const LEARN_KEY = "two-learned-words";
+function addWord(w) {
+  if (WORDS.includes(w)) return false;
+  WORDS.push(w);
+  FIRST_COUNT[w[0]] = (FIRST_COUNT[w[0]] || 0) + 1;
+  return true;
+}
+function learnWord(w) {
+  if (!addWord(w)) return false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEARN_KEY) || "[]");
+    saved.push(w);
+    localStorage.setItem(LEARN_KEY, JSON.stringify(saved.slice(-500)));
+  } catch (e) {}
+  return true;
+}
+try { JSON.parse(localStorage.getItem(LEARN_KEY) || "[]").forEach((w) => { if (/^[가-힣]{2,6}$/.test(w)) addWord(w); }); } catch (e) {}
+const START_WORDS = ["기차", "사과", "나비", "오리", "바나나", "우유", "피아노", "자두", "하마"];
+const IY = [2, 6, 7, 12, 17, 20]; // ㅑ ㅕ ㅖ ㅛ ㅠ ㅣ
+// 두음법칙: '리'로 끝나면 '이'로도, '라'로 끝나면 '나'로도 시작할 수 있어요
+function startsFor(syl) {
+  const p = parts(syl), out = [syl];
+  if (p.cho === 5) out.push(compose(IY.includes(p.jung) ? 11 : 2, p.jung, p.jong));
+  else if (p.cho === 2 && IY.includes(p.jung)) out.push(compose(11, p.jung, p.jong));
+  return out;
+}
+function chainHint(word) {
+  const s = startsFor(word[word.length - 1]);
+  return s.length > 1 ? `'${s[0]}'(또는 ${ro(s[1])})` : ro(s[0]);
+}
+function startChain() {
+  const w = pick(START_WORDS, "chainStart");
+  game = { type: "chain", used: new Set([w]), last: w, turns: 0 };
+  return [`끝말잇기 시작! 투가 먼저 할게. "${w}"! 이제 ${chainHint(w)} 시작하는 말을 해 줘! ✌️`];
+}
+function chainTurn(t) {
+  const n = norm(t);
+  if (/모르겠|몰라|졌어|항복|생각안나|못하겠/.test(n)) {
+    game = null;
+    return ["헤헤, 이번엔 투가 이겼다! 그래도 너 정말 잘했어! 다음엔 네가 이길 거야! 💪"];
+  }
+  let word = t.replace(/[^가-힣]/g, "");
+  if (word.length > 2) word = word.replace(/(이야|이요|입니다|야|요)$/, "");
+  if (word.length < 2) return [`두 글자 넘는 말로 해 줘! ${chainHint(game.last)} 시작하는 말!`];
+  if (!startsFor(game.last[game.last.length - 1]).includes(word[0])) {
+    return [`앗, "${game.last}" 다음이니까 ${chainHint(game.last)} 시작해야 해! 다시 해 볼까?`];
+  }
+  if (game.used.has(word)) return [`"${word}"는 벌써 나왔어! 다른 말로 해 줘!`];
+  game.used.add(word);
+  game.turns++;
+  const starts = startsFor(word[word.length - 1]);
+  const cands = WORDS.filter((w) => starts.includes(w[0]) && !game.used.has(w));
+  // 다섯 번 넘게 주고받으면 가끔 일부러 져 줘요(아이가 이기는 재미)
+  if (!cands.length || (game.turns >= 5 && Math.random() < 0.25)) {
+    game = null;
+    expect = { type: "teach", starts };
+    act("jump");
+    return [`"${word}"! 우와… ${ro(starts[0])} 시작하는 말… 음… 생각이 안 나! 네가 이겼어! 🏆`,
+      `${ro(starts[0])} 시작하는 말 알면 투한테 알려 줄래? 투도 배우고 싶어!`];
+  }
+  // 아이가 이어 가기 쉬운 낱말(그 끝 글자로 시작하는 말이 많은 것)을 먼저 골라요
+  const easy = cands.filter((c) => startsFor(c[c.length - 1]).reduce((n, st) => n + (FIRST_COUNT[st] || 0), 0) >= 5);
+  const w = pick(easy.length ? easy : cands);
+  game.used.add(w);
+  game.last = w;
+  return [`"${word}" 좋아! 👍 그럼 투는… "${w}"! 이번엔 ${chainHint(w)} 시작하는 말!`];
+}
+
+// 투가 진 뒤 아이가 "충치!", "충돌이 있어"처럼 알려 주면 받아서 배워요. 낱말이 없으면 null
+function teachTurn(t, starts) {
+  for (const tok of t.split(/[^가-힣]+/)) {
+    let w = tok;
+    if (!WORDS.includes(w)) {
+      const cut = w.replace(/(이야|이에요|예요|이요|이|가|은|는|을|를|도|야|요)$/, "");
+      if (cut.length >= 2) w = cut;
+    }
+    if (w.length < 2 || w.length > 6 || !starts.includes(w[0])) continue;
+    act("jump");
+    if (learnWord(w)) return [`아하, "${w}"! 그런 말이 있었구나! 투가 새 낱말을 배웠어. 고마워! 다음 끝말잇기 때 투도 써 볼게! ✌️`, "끝말잇기 한 판 더 할래?"];
+    return [`맞아, "${w}"! 투도 아는 말인데 깜빡했어! 헤헤 😅 너 정말 잘한다!`, "끝말잇기 한 판 더 할래?"];
+  }
+  return null;
+}
+
+// ---------- 놀이: 가위바위보 ----------
+const HANDS = ["✌️ 가위", "✊ 바위", "🖐️ 보"];
+function startRps() {
+  game = { type: "rps", me: 0, two: 0 };
+  return ["가위바위보 시작! 먼저 3번 이기면 승리야! 아래에서 골라 줘! ✌️✊🖐️"];
+}
+function rpsTurn(t) {
+  const n = norm(t);
+  const picks = [/가위|✌/.test(n), /바위|✊/.test(n), /^보|보자기|🖐|보!?$/.test(n)];
+  if (picks.filter(Boolean).length !== 1) return ["가위, 바위, 보 중에 하나만 골라 줘!"];
+  const p = picks.indexOf(true), o = rand(0, 2), r = (p - o + 3) % 3;
+  const out = [`가위바위보! 투는 ${HANDS[o]}! 너는 ${HANDS[p]}!`];
+  if (r === 0) out[0] += "\n비겼다! 한 번 더!";
+  else if (r === 1) { game.me++; out[0] += "\n" + pick(["으앙, 투가 졌다!", "우와, 네가 이겼어!", "앗, 투가 졌어! 너 잘한다!"], "rpsLose"); }
+  else { game.two++; out[0] += "\n" + pick(["헤헤, 투가 이겼다!", "투 승리! 브이! ✌️"], "rpsWin"); act("jump"); }
+  out[0] += `  (너 ${game.me} : 투 ${game.two})`;
+  if (game.me >= 3) { out.push("축하해! 네가 3번 먼저 이겼어! 가위바위보 대장! 🏆"); act("jump"); game = null; }
+  else if (game.two >= 3) { out.push("투가 3번 먼저 이겼어! 하지만 너도 정말 잘했어! 한 판 더 할래?"); game = null; }
+  return out;
+}
+
+// ---------- 놀이: 숨은 투 찾기 ----------
+const HIDE_LEVELS = [{ cols: 2, n: 4 }, { cols: 3, n: 6 }, { cols: 3, n: 9 }];
+const HIDE_SPOTS = ["🌳", "🏠", "📦", "🌷", "🪨", "🚗", "🎁", "🛝", "⛺", "🧺", "🌵", "🍄"];
+function newBoard() {
+  const lv = HIDE_LEVELS[game.level];
+  const spots = [...HIDE_SPOTS].sort(() => Math.random() - .5).slice(0, lv.n);
+  game.spot = rand(0, lv.n - 1);
+  game.spots = spots;
+  game.cols = lv.cols;
+  game.tries = 0;
+  return { board: { cols: lv.cols, spots } };
+}
+function startHide() {
+  game = { type: "hide", level: 0, total: 0, cells: null };
+  return ["숨은 투 찾기! 투가 숨을게. 하나, 둘, 셋… 꼭꼭 숨어라! 🙈", "투가 어디에 숨었을까? 그림을 눌러서 찾아 줘!", newBoard()];
+}
+function hideTurn(cell) {
+  if (cell === null) return ["아래 그림에서 투가 숨은 곳을 눌러 봐! 🔍"];
+  game.tries++; game.total++;
+  const btn = game.cells?.[cell];
+  const where = game.spots[cell];
+  if (cell === game.spot) {
+    if (btn) btn.textContent = "🟧";
+    game.cells?.forEach((b) => (b.disabled = true));
+    act("jump");
+    const out = [pick([`찾았다! 투는 ${where} 뒤에 숨어 있었지롱! 🟧`, `들켰다! ${where} 뒤에 있었어! 헤헤`, `우와, 찾았어! 투는 ${where} 뒤에 있었어!`], "found")];
+    game.level++;
+    if (game.level >= HIDE_LEVELS.length) {
+      out.push(`숨은 투 찾기 끝! 모두 ${game.total}번 만에 다 찾았어! 너는 숨바꼭질 대장! 🏆`);
+      game = null;
+      return out;
+    }
+    out.push("이번엔 더 꼭꼭 숨을게! 하나, 둘, 셋… 🙈", newBoard());
+    return out;
+  }
+  if (btn) { btn.textContent = "💨"; btn.disabled = true; }
+  const r = (i) => Math.floor(i / game.cols), c = (i) => i % game.cols;
+  const hints = [];
+  if (r(game.spot) < r(cell)) hints.push("더 위쪽"); if (r(game.spot) > r(cell)) hints.push("더 아래쪽");
+  if (c(game.spot) < c(cell)) hints.push("더 왼쪽"); if (c(game.spot) > c(cell)) hints.push("더 오른쪽");
+  return [`${where} 뒤에는 없어! 힌트: ${pick(hints)}에 숨었어~`];
+}
+
+// ---------- 계산과 친구 이야기 ----------
+// "3 더하기 2", "하나 더하기 하나", "5-1" 같은 계산
+function tryMath(t) {
+  const m = t.replace(/\s+/g, " ").match(/(\S+?)\s*(더하기|\+|빼기|-|−)\s*(\S+)/);
+  if (!m) return null;
+  const a = parseNum(m[1]), b = parseNum(m[3].replace(/(은|는|이|가)?(뭐야|얼마|몇).*$/, "")), plus = /더하기|\+/.test(m[2]);
+  if (a === null || b === null) return null;
+  if (!plus && a < b) return [`앗, ${a}에서 ${josa(b, "은", "는")} 아직 뺄 수 없어! 큰 수에서 작은 수를 빼 볼까? 예: ${b} 빼기 ${a}`];
+  const r = plus ? a + b : a - b;
+  if (a > 20 || b > 20) return [`우와, 큰 수다! 답은 ${josa(r, "이야", "야")}! 투는 작은 수가 더 좋지만 계산은 잘해! 😄`];
+  if (r === 0) return [`${a} 빼기 ${josa(b, "은", "는")} 0! 블록이 하나도 안 남았어! 텅~`];
+  const pic = plus ? `${blocks(a)} + ${blocks(b)}` : `${blocks(a)} 에서 ${b}개 톡!`;
+  const who = r === 2 ? " 바로 나, 투가 되는 거야! ✌️" : FRIENDS[r] ? ` 바로 ${josa(FRIENDS[r].name, "이", "가")} 되는 거야!` : "";
+  return [`${pic}\n${plus ? "합치면" : "남은 건"} 블록 ${r}개! 그러니까 ${josa(r, "이야", "야")}!${who}`];
+}
+
+const factTurn = {};
+function friendTalk(n) {
+  const name = friendIn(n, true);
+  if (/제일친한|단짝|베프|친한친구/.test(n) && !name) return null;
+  if (/친구/.test(n) && !/[0-9]/.test(n) && !name) {
+    return ["내 친구들은 넘버블럭스야! 원, 쓰리, 포, 파이브… 텐까지 있어! 누가 궁금해? 이름이나 숫자를 말해 줘!"];
+  }
+  const digit = n.match(/^(\d+)(이|은|는|가)?(누구|뭐|궁금)?/);
+  const num = name ? FRIEND_NAMES[name] : digit ? Number(digit[1]) : null;
+  if (num === null) return null;
+  const f = FRIENDS[num];
+  if (!f) return [`${num}! 그건 블록 ${num}개짜리 큰 친구야! ${num % 2 === 0 ? `투가 ${num / 2}명 모이면 될 수 있어!` : "투랑 원이 힘을 합치면 될 수 있어!"}`];
+  if (/놀|같이/.test(n)) return [f.play];
+  if (/뭐해|뭐하|요즘|오늘|지내/.test(n)) return [f.now];
+  const i = factTurn[num] = ((factTurn[num] ?? -1) + 1) % f.facts.length;
+  const out = [f.facts[i]];
+  if (num !== 2 && i === 0 && f.facts.length > 1) out.push(`${josa(f.name, "이", "가")} 더 궁금하면 또 물어봐! 😄`);
+  return out;
+}
+
+// ---------- 투가 물어본 뒤 아이 대답 받기 ----------
+function answerExpect(n) {
+  const e = expect;
+  expect = null;
+  if (e.type === "comfort") {
+    if (/고마|고맙/.test(n)) return ["천만에! 투는 늘 네 편이야. 언제든 이야기해 줘! 🧡 이제 같이 놀까?"];
+    if (NOT_HARD.test(n) || GOOD.test(n)) return ["다행이다! 네가 괜찮다니까 투도 기뻐! 🧡 이제 같이 놀까?"];
+    const line = e.hard.follow[Math.min(e.n, e.hard.follow.length - 1)];
+    if (e.n + 1 < e.hard.follow.length) { expect = { type: "comfort", hard: e.hard, n: e.n + 1 }; return [line]; }
+    return [line, "투가 기분 좋아지는 놀이 해 줄까? 가위바위보나 노래 어때? ✌️"];
+  }
+  if (UNKNOWN.test(n)) return ["괜찮아! 그럼 투랑 재밌는 놀이 할래? 아래에서 골라 봐!"];
+  if (/^그냥|보통|그저그래/.test(n)) return ["그렇구나! 그냥 그런 날도 있지. 투랑 놀면 신나질 거야! 뭐 하고 놀까?"];
+  if (GOOD.test(n) && !/안좋|별로|싫/.test(n)) {
+    act("jump");
+    if (e.type === "day") { expect = { type: "chat" }; return [pick(["우와, 정말 좋았겠다! 투도 신나! 🎉 제일 재밌었던 게 뭐야?", "듣기만 해도 기분이 두 배로 좋아져! 뭐가 제일 좋았어?"], "dayGood")]; }
+    return [pick(["우와 멋지다! 투도 같이 하고 싶어!", "듣기만 해도 기분이 좋아져! 헤헤", "최고다! 투한테 알려 줘서 고마워! ✌️"], "chatGood")];
+  }
+  if (/안좋|별로|싫|나빴/.test(n)) {
+    expect = { type: "comfort", hard: HARD.find((h) => h.id === "sad"), n: 0 };
+    return ["그랬구나… 별로였구나. 무슨 일이 있었는지 투한테 이야기해 줄래?"];
+  }
+  if (e.type === "day") { expect = { type: "chat" }; return [pick(["그랬구나! 그래서 어땠어? 재밌었어?", "오~ 그랬구나! 더 이야기해 줘!"], "dayMid")]; }
+  return [pick(["그렇구나! 투한테 알려 줘서 고마워! ✌️", "오~ 정말? 투는 처음 알았어!", "멋지다! 투도 해 보고 싶어!", "우와, 그렇구나! 너는 정말 재밌는 친구야!"], "chatMid")];
+}
+
+// ---------- 투의 대답 고르기 ----------
+function reply(t, cell = null) {
+  const n = norm(t);
+  // 1. 놀이 그만하기, 놀이 시작하기
+  if (game && /그만|안할래|멈춰|다른거/.test(n)) { game = null; return ["알겠어! 놀이 끝! 다른 거 하고 싶으면 말해 줘! ✌️"]; }
+  if (/끝말/.test(n) && game?.type !== "chain") { expect = null; return startChain(); }
+  if (/가위바위보/.test(n) && game?.type !== "rps") { expect = null; return startRps(); }
+  if (/숨은투|숨어있는투|숨바꼭질|투찾기|투를찾/.test(n) && game?.type !== "hide") { expect = null; return startHide(); }
+  if (/퀴즈|문제내|세기놀이/.test(n) && game?.type !== "quiz") { expect = null; return startQuiz(); }
+  if (/둘인것|짝꿍찾기|짝찾기|둘찾기/.test(n) && game?.type !== "find") { expect = null; return startFind(); }
+  // 2. 놀이 중
+  if (game?.type === "hide") return hideTurn(cell);
+  if (game?.type === "quiz") return quizTurn(t);
+  if (game?.type === "find") return findTurn(t);
+  if (game?.type === "chain") return chainTurn(t);
+  if (game?.type === "rps") return rpsTurn(t);
+  // 끝말잇기에서 투가 진 뒤, 아이가 알려 주는 낱말 받기
+  if (expect?.type === "teach") {
+    const starts = expect.starts;
+    expect = null;
+    const taught = teachTurn(t, starts);
+    if (taught) return taught;
+    if (/모르겠|몰라|없어|글쎄/.test(n)) return ["괜찮아! 우리 둘 다 몰랐네. 다음에 같이 찾아보자! 끝말잇기 또 할래?"];
+  }
+  // 3. 힘든 이야기는 무엇보다 먼저 들어 줘요
+  const hard = hardOf(n);
+  // 위로하는 중에 이어서 하는 힘든 이야기는 처음부터 다시 묻지 않고 계속 들어 줘요(위험한 이야기는 바로 받아요)
+  if (hard && expect?.type === "comfort" && (hard.id !== "danger" || expect.hard.id === "danger")) return answerExpect(n);
+  if (hard) {
+    expect = { type: "comfort", hard, n: 0 };
+    return [pick(hard.first, "hard-" + hard.id)];
+  }
+  // 4. 투가 물어본 것에 대한 대답 (아이가 되묻는 말이면 그냥 넘어가요)
+  if (expect) {
+    if (/\?/.test(t) || /(니|냐|뭐야|누구야|해줘|불러줘|하자|할래|알려줘)$/.test(n)) expect = null;
+    else return answerExpect(n);
+  }
+  // 5. 계산, 친구, 정해 둔 대답
+  const math = tryMath(t);
+  if (math) return math;
+  const friend = friendTalk(n);
+  if (friend) return friend;
+  if (/놀자|놀이|게임|심심/.test(n)) return ["좋아! 끝말잇기, 가위바위보, 숨은 투 찾기, 숫자 퀴즈 중에 뭐 할래? 아래 버튼을 눌러 봐!"];
+  for (const tp of TOPICS) {
+    if (has(n, tp.keys)) {
+      if (tp.act) act(tp.act);
+      if (tp.ask) expect = { type: tp.ask };
+      const out = [pick(tp.replies, tp.id)];
+      if (tp.then) out.push(tp.then);
+      return out;
+    }
+  }
+  if (GOOD.test(n) && !/안좋|별로|싫/.test(n)) return [pick(["우와, 좋았겠다! 투도 기분이 좋아져! 😄", "최고다! 투한테 알려 줘서 고마워! ✌️"], "chatGood")];
+  return [pick(FALLBACK, "fallback")];
+}
+
+// ---------- 아래 버튼 ----------
+const CHIPS = ["어떻게 지내?", "오늘 뭐 했어?", "친구들 이야기 해 줘", "끝말잇기 하자", "가위바위보 하자", "숨은 투 찾기", "숫자 퀴즈 하자", "둘인 것 찾기", "노래 불러 줘", "웃긴 이야기 해 줘"];
+// [{label, big}] big: 크게 보이는 답 버튼
+function chipsNow() {
+  const plain = (list) => list.map((label) => ({ label }));
+  if (game?.type === "quiz") {
+    const a = game.q.answer, opts = new Set([a]);
+    while (opts.size < 3) { const o = a + rand(-3, 3); if (o >= 0 && o <= 12) opts.add(o); }
+    return [...opts].sort((x, y) => x - y).map((o) => ({ label: String(o), big: true })).concat({ label: "그만할래" });
+  }
+  if (game?.type === "find") return plain(["눈", "양말", "젓가락", "장갑", "그만할래"]);
+  if (game?.type === "rps") return HANDS.map((h) => ({ label: h, big: true })).concat({ label: "그만할래" });
+  if (game?.type === "chain") return plain(["모르겠어", "그만할래"]);
+  if (game?.type === "hide") return plain(["그만할래"]);
+  if (expect?.type === "teach") return plain(["몰라", "끝말잇기 또 하자"]);
+  if (expect?.type === "comfort") return plain(["고마워 투", "이제 괜찮아", "가위바위보 하자", "노래 불러 줘"]);
+  if (expect) return plain(["좋았어!", "그냥 그랬어", "별로였어", "몰라"]).concat(plain(CHIPS));
+  return plain(CHIPS);
+}
