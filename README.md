@@ -263,3 +263,14 @@
 - `tools/walk/cities/<나라>/data.js`: 나라 설정(`CITY`: 언어, 국기, 집과 지붕 모양, 마지막 장면), 길, 명소 9곳의 이야기·한마디·퀴즈
 - `tools/walk/cities/<나라>/landmarks.js`: 명소 9곳의 3D 건물
 - `tools/walk/build.py`: 나라 폴더 만들기(화면 글자, 설치 정보, 오프라인 저장, 아이콘)
+
+## 투랑 대화하기 (따로 분리된 앱)
+
+"원이랑 대화하기"와 같은 방식으로 만든 넘버블럭스 투(Two) 앱이에요. AI 없이 정해 둔 말과 놀이로만 대답하고, 다른 앱들과 합치지 않고 `…/class-quiz/two-chat/` 주소에서 "투랑 대화하기" 앱으로 따로 설치돼요.
+
+- 투의 말투와 이야기: 짝꿍·노래·춤을 좋아하는 투, 2층 집, 원은 "반쪽 같은 친구". 친구 소개도 투의 눈으로 해요(원 둘 → 투, 투 둘 → 포).
+- 위로, 일상 대화, 끝말잇기(원과 같은 낱말 약 3,000개, 져 주기·낱말 가르쳐 주기 포함), 가위바위보, 숫자 퀴즈는 원과 같아요.
+- 원 앱과 다른 놀이: 숨은 투 찾기, 둘인 것 찾기(짝꿍 찾기: 눈, 귀, 양말, 젓가락…).
+- 투의 말과 놀이는 `two-chat/brain.js`, 화면은 `two-chat/index.html`이에요. 놀이 짜임은 `one-chat/brain.js`와 같아서, 한쪽을 고치면 다른 쪽도 같이 고쳐야 해요.
+- 끝말잇기 낱말은 원과 같이 `tools/one-chat/words.txt`에서 `python3 tools/one-chat/build_words.py`로 `one-chat/words.js`와 `two-chat/words.js`를 함께 만들어요.
+- `tools/two-chat/make_icons.py`: 투 아이콘(주황 블록 두 개)을 그려서 `two-chat/icons/`에 저장해요.
