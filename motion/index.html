@@ -70,7 +70,8 @@ body[data-bg=grass] #bg{background:
 
 #video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:var(--vo);
   transform:scale(var(--z)) scaleX(-1);pointer-events:none}
-#cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+#cv,#cv2{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+#cv2{z-index:7}
 
 /* ---------- 화면 공통 ---------- */
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -114,14 +115,14 @@ body[data-bg=grass] #bg{background:
 .back{position:fixed;left:calc(var(--u)*2);top:calc(var(--u)*2);z-index:3}
 
 /* ---------- 게임 화면 ---------- */
-#game{justify-content:flex-start;padding:0;pointer-events:none}
+#game{justify-content:flex-start;padding:0;pointer-events:none;z-index:4}
 #game > *{pointer-events:auto}
 #hud{width:100%;display:flex;align-items:center;gap:calc(var(--u)*1.5);padding:calc(var(--u)*1.4) calc(var(--u)*2)}
 #hudMid{flex:1;text-align:center;color:#fff;font-weight:900;font-size:calc(var(--u)*2.4);text-shadow:0 2px 3px #0007;pointer-events:none}
 #hudRight{color:#fff;font-weight:900;font-size:calc(var(--u)*2.6);text-shadow:0 2px 3px #0007;text-align:right;min-width:calc(var(--u)*16);pointer-events:none}
 #hudRight small{display:block;font-size:.65em}
-#msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;text-align:center;
-  background:#ffffffee;border-radius:calc(var(--u)*3);padding:calc(var(--u)*3) calc(var(--u)*4);min-width:min(90vw,calc(var(--u)*50));max-width:94vw;
+#msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;text-align:center;
+  background:#fff;border-radius:calc(var(--u)*3);padding:calc(var(--u)*3) calc(var(--u)*4);min-width:min(90vw,calc(var(--u)*50));max-width:94vw;
   box-shadow:0 1vmin 4vmin #0004}
 #msg.clear{background:none;box-shadow:none;pointer-events:none}
 #msg .mbig{font-size:calc(var(--u)*5.2);font-weight:900;line-height:1.2}
@@ -133,7 +134,7 @@ body[data-bg=grass] #bg{background:
 #msg .row button.ghost{background:#e9eef7;color:var(--ink)}
 #msg .row button.opt{background:#e9eef7;color:var(--ink);font-size:calc(var(--u)*2.1);padding:calc(var(--u)*1.1) calc(var(--u)*2.4)}
 #msg .row button.opt.on{background:linear-gradient(#ffb347,#ff7a2f);color:#fff}
-#toast{position:fixed;left:50%;bottom:calc(var(--u)*2);transform:translateX(-50%);z-index:4;background:#000a;color:#fff;
+#toast{position:fixed;left:50%;bottom:calc(var(--u)*2);transform:translateX(-50%);z-index:6;background:#000a;color:#fff;
   font-weight:800;font-size:calc(var(--u)*2);padding:calc(var(--u)*.8) calc(var(--u)*2.4);border-radius:999px;pointer-events:none}
 </style>
 </head>
@@ -184,6 +185,7 @@ body[data-bg=grass] #bg{background:
 <div id="msg" hidden></div>
 <div id="toast" hidden></div>
 <canvas id="cv"></canvas>
+<canvas id="cv2"></canvas>
 
 <script type="module">
 const $ = (id) => document.getElementById(id);
@@ -227,12 +229,14 @@ const sfx = {
 };
 
 // ---------- 화면 크기 ----------
-const cv = $("cv"), ctx = cv.getContext("2d"), video = $("video");
+// cv: 게임 그림(결과 카드 아래), cv2: 손 표시(맨 위)
+const cv = $("cv"), cv2 = $("cv2"), ctxGame = cv.getContext("2d"), ctxTop = cv2.getContext("2d"), video = $("video");
+let ctx = ctxGame;
 let W = 0, H = 0, U = 1, DPR = 1;
 function resize() {
   DPR = Math.min(2, devicePixelRatio || 1);
   W = innerWidth; H = innerHeight; U = Math.min(W, H * 1.78) / 100;
-  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  for (const c of [cv, cv2]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
 }
 addEventListener("resize", resize); resize();
 
@@ -263,7 +267,7 @@ function feed(id, kind, x, y, now, down) {
     track.set(id, t);
   }
   const dt = Math.max(0.012, (now - t.seen) / 1000);
-  const a = kind === "hand" ? 0.6 : 1;
+  const a = kind === "hand" ? 0.8 : 1;
   const nx = t.x + (x - t.x) * a, ny = t.y + (y - t.y) * a;
   t.px = t.x; t.py = t.y; t.x = nx; t.y = ny;
   const v = Math.hypot(nx - t.px, ny - t.py) / dt / H; // 1초에 화면 높이의 몇 배를 움직였는지
@@ -274,6 +278,8 @@ function feed(id, kind, x, y, now, down) {
 }
 let pointers = [];
 const touching = (p) => p.kind === "hand" || p.down;
+// 베기·주먹으로 칠 때 필요한 손 빠르기(1초에 화면 높이의 몇 배)
+const SWING = 0.5;
 
 const KEYS = [0, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27, 28];
 const BONES = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
@@ -556,10 +562,11 @@ const ninja = {
   spawn(now) {
     const el = (now - phaseT) / 1000, n = el < 10 ? 1 : el < 30 ? pickOne([1, 2, 2]) : pickOne([1, 2, 3, 3]);
     for (let i = 0; i < n; i++) {
-      const bomb = el > 6 && Math.random() < 0.14;
+      if (this.items.length >= 7) break;
+      const bomb = el > 6 && Math.random() < 0.1 && !this.items.some((f) => f.bomb);
       const [e, c] = bomb ? ["💣", "#333"] : pickOne(FRUITS);
       const x = rand(0.15, 0.85) * W, g = 1.0 * H, h = rand(0.5, 0.78) * H;
-      this.items.push({ e, c, bomb, x, y: H + 6 * U, vx: (W / 2 - x) * rand(0.15, 0.45), vy: -Math.sqrt(2 * g * h), rot: 0, vr: rand(-3, 3), r: 6.5 * U });
+      this.items.push({ e, c, bomb, x, y: H + 6 * U, vx: (W / 2 - x) * rand(0.03, 0.15) + rand(-0.05, 0.05) * W, vy: -Math.sqrt(2 * g * h), rot: 0, vr: rand(-3, 3), r: 7 * U });
     }
     this.next = now + (el < 20 ? 1100 : el < 40 ? 900 : 750);
   },
@@ -569,9 +576,9 @@ const ninja = {
     for (const f of this.items) { f.vy += g * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt; }
     for (const p of this.pieces) { p.vy += g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; }
     for (const p of pointers) {
-      if (!p.fresh || p.speed < 0.9) continue;
+      if (!p.fresh || p.speed < SWING) continue;
       for (const f of this.items) {
-        if (f.dead || segDist(f.x, f.y, p.px, p.py, p.x, p.y) > f.r * 1.15) continue;
+        if (f.dead || segDist(f.x, f.y, p.px, p.py, p.x, p.y) > f.r * (p.kind === "hand" ? 1.6 : 1.15)) continue;
         f.dead = true;
         if (f.bomb) {
           this.life--; sfx.boom(); flashScreen("#ff2200", 400); burst(f.x, f.y, ["#ff7b00", "#ffd000", "#555"], 30, 0.9, 1.6);
@@ -601,7 +608,7 @@ const ninja = {
       if (f.bomb) { ctx.fillStyle = "#ff330044"; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1.2 + 0.1 * Math.sin(now / 80)), 0, 7); ctx.fill(); }
       drawEmoji(f.e, f.x, f.y, f.r * 2, f.rot);
     }
-    drawTrails("#e8fbff", 0.9);
+    drawTrails("#e8fbff", SWING);
   },
   hud() { return { mid: `${hearts(this.life, 3)}  🍉 ${this.cut}개` }; },
 };
@@ -623,8 +630,8 @@ const monster = {
   },
   hitCheck(m, now, onHit) {
     for (const p of pointers) {
-      if (!p.fresh || p.speed < 0.85) continue;
-      if (segDist(m.x, m.y, p.px, p.py, p.x, p.y) > m.r * 1.1) continue;
+      if (!p.fresh || p.speed < SWING) continue;
+      if (segDist(m.x, m.y, p.px, p.py, p.x, p.y) > m.r * (p.kind === "hand" ? 1.4 : 1.1)) continue;
       if (now - (m.lastHit[p.id] || 0) < 280) continue;
       m.lastHit[p.id] = now; m.hitAt = now; onHit(p); return;
     }
@@ -644,7 +651,7 @@ const monster = {
     const maxM = this.boss ? 1 + Math.floor(s / 2) : 1 + s;
     if (now > this.next && this.mons.length < maxM) { this.newMon(now, !!this.boss); this.next = now + (this.boss ? 2500 : rand(700, 1300)); }
     const move = (m, spd) => {
-      if (now > m.moveAt) { m.tx = rand(A.x0, A.x1); m.ty = rand(A.y0 + 4 * U, A.y1 - 6 * U); m.moveAt = now + rand(1500, 3000); }
+      if (now > m.moveAt) { m.tx = rand(A.x0, A.x1); m.ty = rand(Math.max(A.y0 + 4 * U, H * 0.2 + m.r), A.y1 - 6 * U); m.moveAt = now + rand(1500, 3000); }
       m.x += (m.tx - m.x) * spd * dt; m.y += (m.ty - m.y) * spd * dt;
     };
     for (const m of this.mons) {
@@ -697,10 +704,10 @@ const monster = {
       ctx.fillStyle = "#ff3b3b"; roundRect(x, y, w * b.hp / b.max, 2.6 * U, 1.3 * U); ctx.fill();
       label(`🐲 보스  ${b.hp}/${b.max}`, W / 2, y + 1.3 * U, 2 * U);
       const left = clamp((b.atk - now) / 5000, 0, 1);
-      if (left < 0.35) label("⚠️ 공격 준비!", b.x, b.y - b.r * 1.2, 3.2 * U, "#ff6b6b");
+      if (left < 0.35) label("⚠️ 공격 준비!", b.x, Math.min(H * 0.92, b.y + b.r * 1.35), 3.2 * U, "#ff6b6b");
     }
     ctx.restore();
-    drawTrails("#ffd54f", 0.85);
+    drawTrails("#ffd54f", SWING);
   },
   cursor: "glove",
   hud() { return { mid: `${hearts(this.life, 5)}  스테이지 ${this.stage}/3 · ${this.boss ? "보스전!" : `남은 몬스터 ${Math.max(0, 10 - this.kills)}`}` }; },
@@ -1273,7 +1280,7 @@ addEventListener("keydown", (e) => {
 let lastFrame = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - (lastFrame || now)) / 1000); lastFrame = now;
+  const dt = Math.min(0.12, (now - (lastFrame || now)) / 1000); lastFrame = now;
   if (mode === "cam") readCamera(now);
   readMouse(now);
   for (const [id, t] of track) if (now - t.seen > 350) track.delete(id);
@@ -1281,15 +1288,19 @@ function frame(now) {
   if (mode === "cam") updateDwell(dt, now);
   if (G && phase === "play") G.update(dt, now);
 
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.clearRect(0, 0, W, H);
+  for (const c of [ctxGame, ctxTop]) { c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, W, H); }
+  ctx = ctxGame;
   if (G && !$("game").hidden) {
     G.draw(now);
     drawFx(now, dt);
+    // 결과·설명 카드가 떠 있으면 뒤의 게임 그림을 어둡게 해서 카드가 잘 보이게 해요
+    if (phase === "end" || phase === "intro") { ctx.fillStyle = "#0006"; ctx.fillRect(0, 0, W, H); }
     if (mode === "cam" && phase === "play" && now - lastPoseAt > 1500) label("카메라 앞에 서서 몸이 보이게 해요 📷", W / 2, H * 0.94, 2.8 * U, "#ffe066");
     hud();
   } else if (mode === "cam") drawBodies(false);
+  ctx = ctxTop;
   if (mode === "cam") drawCursors(G && phase === "play" ? G.cursor : null);
+  ctx = ctxGame;
   for (const t of pointers) t.fresh = false;
 }
 requestAnimationFrame(frame);
