@@ -17,12 +17,13 @@
 ├─ roblox/                   로블록스 스튜디오 퀴즈 (tower-defense/, jump-map/)
 ├─ motion/                   무브무브 놀이터 (모션 게임 8가지, 앱 하나)
 ├─ village/                  꼬마 발명가 마을
-└─ one-chat/                 원이랑 대화하기
+└─ numberblocks/             넘버블럭스
+   ├─ one-chat/  two-chat/   (원이랑 대화하기, 투랑 대화하기)
 ```
 
 새 앱을 만들 때 지킬 규칙은 `CLAUDE.md`에 있어요.
 
-- 예전 주소(`fraction4/`, `math5/`, `math1/`, `area5/`, `london/` 등 나라 10개, `mugunghwa/`, `체육시간/`)는 열면 새 주소로 넘어가요. 예전 주소에 남은 서비스 워커와 저장분도 스스로 지워요. 예전 주소로 설치했던 앱은 지우고 새 주소에서 다시 설치해야 해요.
+- 예전 주소(`fraction4/`, `math5/`, `math1/`, `area5/`, `london/` 등 나라 10개, `mugunghwa/`, `체육시간/`, `one-chat/`, `two-chat/`)는 열면 새 주소로 넘어가요. 예전 주소에 남은 서비스 워커와 저장분도 스스로 지워요. 예전 주소로 설치했던 앱은 지우고 새 주소에서 다시 설치해야 해요.
 - 전체 메뉴 아이콘: `tools/home/make_icons.py`, 수학 퀴즈 모음 아이콘: `tools/math/make_icons.py`
 
 ## 수학 퀴즈 (`math/`)
@@ -97,19 +98,42 @@
 - 포즈 인식 파일은 체육시간의 `pe/lib/`을 함께 써요(따로 복사하지 않음).
 - 아이콘: `tools/motion/make_icons.py`
 
-## 원이랑 대화하기 (따로 분리된 앱)
+## 넘버블럭스 (`numberblocks/`)
 
-넘버블럭스 원(One)과 채팅하듯 이야기하는 아이용 앱이에요. AI가 아니라 미리 정해 둔 말과 놀이로만 대답해서, 키·요금·준비 없이 바로 쓰고 아무 데도 연결하지 않아요. 전체 메뉴(`index.html`)에서 고르거나 `…/class-quiz/one-chat/` 주소로 열어서 "원이랑 대화하기" 앱으로 설치해요.
+`…/class-quiz/numberblocks/`에서 원과 투 중에 골라요. 이 모음 페이지도 "넘버블럭스" 앱으로 설치할 수 있고, 원·투 앱도 각각 따로 설치할 수 있어요.
+
+| 앱 | 폴더 | 내용 |
+|---|---|---|
+| 원이랑 대화하기 | `numberblocks/one-chat/` | 빨간 블록 원과 이야기, 끝말잇기, 가위바위보, 숨은 원 찾기, 숫자 퀴즈, 하나인 것 찾기 |
+| 투랑 대화하기 | `numberblocks/two-chat/` | 주황 블록 투와 이야기, 끝말잇기, 가위바위보, 숨은 투 찾기, 숫자 퀴즈, 둘인 것 찾기 |
+
+- 모음 아이콘과 첫 화면 그림: `tools/numberblocks/make_icons.py`가 `tools/numberblocks/numberblocks.jpg`로 만들어요.
+
+### 원이랑 대화하기 (`numberblocks/one-chat/`)
+
+넘버블럭스 원(One)과 채팅하듯 이야기하는 아이용 앱이에요. AI가 아니라 미리 정해 둔 말과 놀이로만 대답해서, 키·요금·준비 없이 바로 쓰고 아무 데도 연결하지 않아요. 넘버블럭스 모음에서 고르거나 `…/class-quiz/numberblocks/one-chat/` 주소로 열어서 "원이랑 대화하기" 앱으로 따로 설치할 수도 있어요.
 
 - 원의 일상: 사는 곳(넘버랜드), 오늘 한 일, 아침·밤·쉬는 날, 꿈, 생일 이야기. 원이 되물으면("너는 오늘 어땠어?") 아이의 대답을 받아 이어 가요.
 - 친구들: 투~텐(1~10)을 소개하고, "투는 요즘 뭐해?", "투랑 뭐 하고 놀아?"에도 대답해요.
 - 위로: 친구·꾸중·공부·아픔·외로움·화·무서움·슬픔·힘듦 이야기를 알아듣고 공감한 뒤 두 번 더 들어 줘요. 맞았다, 괴롭힘처럼 위험한 이야기는 바로 엄마 아빠나 선생님께 말하라고 해요.
 - 놀이: 끝말잇기(두음법칙 인정, 원이 아는 낱말 약 3,000개), 가위바위보(먼저 3번), 숨은 원 찾기(그림 누르기, 3단계), 숫자 퀴즈, 하나인 것 찾기. "3 더하기 2는?" 같은 계산은 블록 그림으로 설명해요.
 - 🎤 말로 하기(지원하는 브라우저만), 🔊 대답 소리로 읽기, ↺ 처음부터. 대화는 기기에만 남아요.
-- 원의 말과 놀이는 모두 `one-chat/brain.js`에 있어요. `TOPICS`(정해 둔 대답), `HARD`(위로), `FRIENDS`(친구), `WORDS`(끝말잇기 낱말)를 고치면 돼요. 화면은 `one-chat/index.html`이에요.
-- 끝말잇기 낱말은 `tools/one-chat/words.txt`에 주제별로 있어요. 고친 뒤 `python3 tools/one-chat/build_words.py`를 실행하면 `one-chat/words.js`가 새로 만들어져요.
+- 원의 말과 놀이는 모두 `numberblocks/one-chat/brain.js`에 있어요. `TOPICS`(정해 둔 대답), `HARD`(위로), `FRIENDS`(친구), `WORDS`(끝말잇기 낱말)를 고치면 돼요. 화면은 `numberblocks/one-chat/index.html`이에요.
+- 끝말잇기 낱말은 `tools/numberblocks/one-chat/words.txt`에 주제별로 있어요. 고친 뒤 `python3 tools/numberblocks/one-chat/build_words.py`를 실행하면 `numberblocks/one-chat/words.js`가 새로 만들어져요.
 - 끝말잇기에서 원이 지면 "그 글자로 시작하는 말 알려 줄래?" 하고 물어요. 아이가 알려 준 낱말은 그 기기에 저장돼서(`one-learned-words`) 다음 판부터 원도 써요.
-- `tools/one-chat/make_icons.py`: `tools/one-chat/one.jpg`(원 그림)로 `one-chat/icons/` 아이콘을 만들어요.
+- `tools/numberblocks/one-chat/make_icons.py`: `tools/numberblocks/one-chat/one.jpg`(원 그림)로 `numberblocks/one-chat/icons/` 아이콘을 만들어요.
+
+### 투랑 대화하기 (`numberblocks/two-chat/`)
+
+"원이랑 대화하기"와 같은 방식으로 만든 넘버블럭스 투(Two) 앱이에요. AI 없이 정해 둔 말과 놀이로만 대답해요. 넘버블럭스 모음에서 고르거나 `…/class-quiz/numberblocks/two-chat/` 주소로 열어서 "투랑 대화하기" 앱으로 따로 설치할 수도 있어요.
+
+- 투의 말투와 이야기: 짝꿍·노래·춤을 좋아하는 투, 2층 집, 원은 "반쪽 같은 친구". 친구 소개도 투의 눈으로 해요(원 둘 → 투, 투 둘 → 포).
+- 위로, 일상 대화, 끝말잇기(원과 같은 낱말 약 3,000개, 져 주기·낱말 가르쳐 주기 포함), 가위바위보, 숫자 퀴즈는 원과 같아요.
+- 원 앱과 다른 놀이: 숨은 투 찾기, 둘인 것 찾기(짝꿍 찾기: 눈, 귀, 양말, 젓가락…).
+- 투의 말과 놀이는 `numberblocks/two-chat/brain.js`, 화면은 `numberblocks/two-chat/index.html`이에요. 놀이 짜임은 `numberblocks/one-chat/brain.js`와 같아서, 한쪽을 고치면 다른 쪽도 같이 고쳐야 해요.
+- 끝말잇기 낱말은 원과 같이 `tools/numberblocks/one-chat/words.txt`에서 `python3 tools/numberblocks/one-chat/build_words.py`로 `numberblocks/one-chat/words.js`와 `numberblocks/two-chat/words.js`를 함께 만들어요.
+- 목소리: 기기의 한국어 목소리 중 남자 목소리를 찾아 써요. 없으면 기본 목소리를 낮게(pitch 0.7) 내려요. 🔊 소리를 켜면 보이는 🎙 목소리 버튼으로 다른 목소리를 들어 보고 고를 수 있어요(그 기기에 저장, `two-voice`).
+- `tools/numberblocks/two-chat/make_icons.py`: `tools/numberblocks/two-chat/two.jpg`(투 그림)의 바둑판 배경을 흰색으로 바꿔서 `numberblocks/two-chat/icons/` 아이콘을 만들어요.
 
 ## 꼬마 발명가 마을 (따로 분리된 앱)
 
@@ -263,15 +287,3 @@
 - `tools/walk/cities/<나라>/data.js`: 나라 설정(`CITY`: 언어, 국기, 집과 지붕 모양, 마지막 장면), 길, 명소 9곳의 이야기·한마디·퀴즈
 - `tools/walk/cities/<나라>/landmarks.js`: 명소 9곳의 3D 건물
 - `tools/walk/build.py`: 나라 폴더 만들기(화면 글자, 설치 정보, 오프라인 저장, 아이콘)
-
-## 투랑 대화하기 (따로 분리된 앱)
-
-"원이랑 대화하기"와 같은 방식으로 만든 넘버블럭스 투(Two) 앱이에요. AI 없이 정해 둔 말과 놀이로만 대답하고, 다른 앱들과 합치지 않고 `…/class-quiz/two-chat/` 주소에서 "투랑 대화하기" 앱으로 따로 설치돼요.
-
-- 투의 말투와 이야기: 짝꿍·노래·춤을 좋아하는 투, 2층 집, 원은 "반쪽 같은 친구". 친구 소개도 투의 눈으로 해요(원 둘 → 투, 투 둘 → 포).
-- 위로, 일상 대화, 끝말잇기(원과 같은 낱말 약 3,000개, 져 주기·낱말 가르쳐 주기 포함), 가위바위보, 숫자 퀴즈는 원과 같아요.
-- 원 앱과 다른 놀이: 숨은 투 찾기, 둘인 것 찾기(짝꿍 찾기: 눈, 귀, 양말, 젓가락…).
-- 투의 말과 놀이는 `two-chat/brain.js`, 화면은 `two-chat/index.html`이에요. 놀이 짜임은 `one-chat/brain.js`와 같아서, 한쪽을 고치면 다른 쪽도 같이 고쳐야 해요.
-- 끝말잇기 낱말은 원과 같이 `tools/one-chat/words.txt`에서 `python3 tools/one-chat/build_words.py`로 `one-chat/words.js`와 `two-chat/words.js`를 함께 만들어요.
-- 목소리: 기기의 한국어 목소리 중 남자 목소리를 찾아 써요. 없으면 기본 목소리를 낮게(pitch 0.7) 내려요. 🔊 소리를 켜면 보이는 🎙 목소리 버튼으로 다른 목소리를 들어 보고 고를 수 있어요(그 기기에 저장, `two-voice`).
-- `tools/two-chat/make_icons.py`: `tools/two-chat/two.jpg`(투 그림)의 바둑판 배경을 흰색으로 바꿔서 `two-chat/icons/` 아이콘을 만들어요.

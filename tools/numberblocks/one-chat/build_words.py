@@ -1,13 +1,14 @@
-# tools/one-chat/words.txt 의 낱말로 one-chat/words.js 와 two-chat/words.js 를 만들어요(원과 투가 같은 낱말을 써요).
+# tools/numberblocks/one-chat/words.txt 의 낱말로 numberblocks/one-chat/words.js 와 numberblocks/two-chat/words.js 를 만들어요(원과 투가 같은 낱말을 써요).
 # 한글 두 글자 이상만 남기고, 겹치는 낱말과 BLOCK에 있는 낱말은 빼요.
-# 실행: python3 tools/one-chat/build_words.py
+# 실행: python3 tools/numberblocks/one-chat/build_words.py
 import json
 import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE / "words.txt"
-OUTS = [HERE.parents[1] / app / "words.js" for app in ("one-chat", "two-chat")]
+ROOT = HERE.parents[2]
+OUTS = [ROOT / "numberblocks" / app / "words.js" for app in ("one-chat", "two-chat")]
 
 # 원이 아이에게 말하지 않았으면 하는 낱말(words.txt에 실수로 들어가도 빼요)
 BLOCK = {"장난감총", "칼싸움", "사격", "식칼", "니모", "금눈돔", "열기", "돈부리"}
@@ -25,13 +26,13 @@ def main():
     body = json.dumps(words, ensure_ascii=False, separators=(",", ":"))
     text = (
         "// 원이랑 대화하기·투랑 대화하기: 끝말잇기에서 쓰는 낱말\n"
-        "// tools/one-chat/build_words.py 가 tools/one-chat/words.txt 로 만든 파일이에요. 여기를 고치지 말고 words.txt 를 고쳐요.\n"
+        "// tools/numberblocks/one-chat/build_words.py 가 tools/numberblocks/one-chat/words.txt 로 만든 파일이에요. 여기를 고치지 말고 words.txt 를 고쳐요.\n"
         f"const WORDS = {body};\n"
     )
     firsts = {w[0] for w in words}
     for out in OUTS:
         out.write_text(text, encoding="utf-8")
-        print(f"{len(words)} words, {len(firsts)} first syllables -> {out.relative_to(HERE.parents[1])}")
+        print(f"{len(words)} words, {len(firsts)} first syllables -> {out.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

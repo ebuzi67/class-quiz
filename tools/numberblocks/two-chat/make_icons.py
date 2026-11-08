@@ -1,12 +1,12 @@
-# 투랑 대화하기 앱 아이콘을 two-chat/icons/에 만들어요.
-# 원본: tools/two-chat/two.jpg (투 캐릭터 그림 그대로). 그림에 박혀 있는 회색·흰색 바둑판 배경을 흰색으로 바꾸고,
+# 투랑 대화하기 앱 아이콘을 numberblocks/two-chat/icons/에 만들어요.
+# 원본: tools/numberblocks/two-chat/two.jpg (투 캐릭터 그림 그대로). 그림에 박혀 있는 회색·흰색 바둑판 배경을 흰색으로 바꾸고,
 # 하얀 정사각형 가운데에 그림 전체가 들어가게 놓아요.
-# 실행: python3 tools/two-chat/make_icons.py
+# 실행: python3 tools/numberblocks/two-chat/make_icons.py
 from pathlib import Path
 from PIL import Image, ImageChops
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE.parents[1] / "two-chat" / "icons"
+OUT = HERE.parents[2] / "numberblocks" / "two-chat" / "icons"
 MARGIN = 0.06  # 가장자리 여백(한 변의 비율)
 
 

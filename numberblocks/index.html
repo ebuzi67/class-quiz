@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>넘버블럭스</title>
+<link rel="manifest" href="manifest.json?v=1">
+<meta name="theme-color" content="#8fc4f2">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="넘버블럭스">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: #1f2d44;
+    background: linear-gradient(#8fc4f2, #cfe6fb 45%, #f4f9ff);
+    font-family: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    font-size: 19px; line-height: 1.5; display: flex; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .app { width: 100%; max-width: 520px; }
+  a.home { display: inline-block; margin-bottom: 8px; color: #2c4a6e; font-size: .85em; text-decoration: none; }
+  .hero { display: block; width: 100%; max-width: 360px; margin: 0 auto 6px; border-radius: 22px; box-shadow: 0 6px 18px rgba(30, 70, 120, .18); }
+  h1 { font-family: "Jua", sans-serif; font-weight: 400; text-align: center; font-size: 1.8em; margin: 12px 0 2px; }
+  .sub { text-align: center; color: #45607f; margin: 0 0 18px; font-size: .85em; }
+  a.card {
+    display: flex; gap: 16px; align-items: center; text-decoration: none; color: inherit;
+    background: #fff; border: 2px solid #d6e8fa; border-radius: 20px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  a.card:hover, a.card:focus-visible { border-color: #5aa3e6; }
+  a.card img { width: 72px; height: 72px; border-radius: 16px; flex: none; }
+  a.card b { display: block; font-family: "Jua", sans-serif; font-weight: 400; font-size: 1.2em; }
+  a.card small { color: #5b6f86; }
+  .note { text-align: center; color: #5b6f86; font-size: .8em; margin-top: 18px; }
+  button { font: inherit; font-weight: 700; font-size: .9rem; border: 2px solid #d6e8fa; background: #fff; border-radius: 999px; padding: 8px 16px; cursor: pointer; color: inherit; }
+  [hidden] { display: none !important; }
+  .install-btn { display: block; width: 100%; margin: 0 0 18px; padding: 16px; border: 0; border-radius: 16px; background: #e8302a; color: #fff; font-size: 1rem; }
+  .install-guide { position: fixed; inset: 0; background: rgba(20,30,40,.5); display: grid; place-items: center; padding: 16px; z-index: 10; }
+  .install-guide > div { background: #fff; border-radius: 18px; padding: 22px 24px; max-width: 420px; width: 100%; }
+  .install-guide h2 { font-size: 1.3rem; margin: 0 0 8px; }
+  .install-guide ol { margin: 0 0 16px; padding-left: 1.3em; line-height: 1.7; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <a class="home" href="../">← 전체 메뉴</a>
+    <img class="hero" src="hero.jpg" alt="넘버블럭스 로고와 원">
+    <h1>넘버블럭스</h1>
+    <p class="sub">숫자 친구들이랑 이야기하고 놀아요!</p>
+    <button class="install-btn" id="installBtn" hidden>📲 넘버블럭스를 앱으로 설치하기</button>
+    <a class="card" href="one-chat/">
+      <img src="one-chat/icons/icon-192.png" alt="">
+      <span><b>원이랑 대화하기</b><small>하나뿐인 빨간 블록 원과 이야기하고 끝말잇기·숨은 원 찾기</small></span>
+    </a>
+    <a class="card" href="two-chat/">
+      <img src="two-chat/icons/icon-192.png" alt="">
+      <span><b>투랑 대화하기</b><small>짝꿍을 좋아하는 주황 블록 투와 이야기하고 둘인 것 찾기</small></span>
+    </a>
+    <p class="note">넘버블럭스 앱 하나로 원과 투를 모두 만날 수 있어요. 한 친구만 따로 두고 싶으면, 그 친구를 연 다음 "📲 설치"를 눌러요.</p>
+    <p class="note">원과 투는 AI가 아니라 미리 정해 둔 말과 놀이로만 대답하고, 아무 데도 연결하지 않아요.</p>
+  </div>
+<script>
+// ---------- 홈 화면에 설치하기 ----------
+// 앱으로 연 게 아니면 버튼을 항상 보여 줘요. 크롬이 설치 창을 줄 수 있으면 바로 띄우고,
+// 아니면 설치 순서를 안내해요(아이폰·아이패드는 "공유 → 홈 화면에 추가", 그 밖에는 크롬 ⋮ 메뉴).
+(() => {
+  const btn = document.getElementById("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone(); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    const g = document.createElement("div"); g.className = "install-guide";
+    g.innerHTML = ios
+      ? `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <button>알겠어요</button></div>`
+      : `<div role="dialog" aria-label="설치 안내"><h2>앱으로 설치하기</h2>
+      <ol><li>크롬 오른쪽 위 <b>⋮</b> 메뉴를 눌러요.</li><li><b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.</li><li>메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요. 다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어요.</li></ol>
+      <button>알겠어요</button></div>`;
+    g.addEventListener("click", (e) => { if (e.target === g || e.target.closest("button")) g.remove(); });
+    document.body.appendChild(g);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
