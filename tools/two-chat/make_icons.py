@@ -1,47 +1,40 @@
-# 투랑 대화하기 앱 아이콘(주황 블록 두 개, 눈 두 개)을 two-chat/icons/에 만들어요.
-# 투 그림 파일이 생기면 tools/one-chat/make_icons.py 처럼 그 그림으로 바꿔도 돼요.
+# 투랑 대화하기 앱 아이콘을 two-chat/icons/에 만들어요.
+# 원본: tools/two-chat/two.jpg (투 캐릭터 그림 그대로). 그림에 박혀 있는 회색·흰색 바둑판 배경을 흰색으로 바꾸고,
+# 하얀 정사각형 가운데에 그림 전체가 들어가게 놓아요.
 # 실행: python3 tools/two-chat/make_icons.py
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops
 
-OUT = Path(__file__).resolve().parents[2] / "two-chat" / "icons"
-S = 1024  # 크게 그린 다음 줄여서 가장자리를 매끄럽게 해요
+HERE = Path(__file__).resolve().parent
+OUT = HERE.parents[1] / "two-chat" / "icons"
+MARGIN = 0.06  # 가장자리 여백(한 변의 비율)
 
 
-def draw():
-    im = Image.new("RGB", (S, S), "white")
-    d = ImageDraw.Draw(im)
-    k = S / 100  # 100칸 좌표계
-
-    def box(x0, y0, x1, y1):
-        return [x0 * k, y0 * k, x1 * k, y1 * k]
-
-    # 다리와 팔
-    d.rounded_rectangle(box(37, 84, 44, 97), radius=3.5 * k, fill="#b85a08")
-    d.rounded_rectangle(box(56, 84, 63, 97), radius=3.5 * k, fill="#b85a08")
-    d.rounded_rectangle(box(22, 56, 30, 76), radius=4 * k, fill="#d06a0c")
-    d.rounded_rectangle(box(70, 56, 78, 76), radius=4 * k, fill="#d06a0c")
-    # 블록 두 개
-    d.rounded_rectangle(box(29, 49, 71, 86), radius=4 * k, fill="#ec8417")
-    d.rounded_rectangle(box(29, 11, 71, 49), radius=4 * k, fill="#f0901f")
-    d.line(box(30, 49, 70, 49), fill="#c96a0d", width=int(0.8 * k))
-    # 눈 두 개
-    for cx in (40, 60):
-        d.ellipse(box(cx - 7.5, 21, cx + 7.5, 36), fill="#c2620c")
-        d.ellipse(box(cx - 5.7, 22.8, cx + 5.7, 34.2), fill="white")
-        d.ellipse(box(cx - 3, 25.5, cx + 3.6, 32.1), fill="#111111")
-        d.ellipse(box(cx + 0.6, 25.8, cx + 2.6, 27.8), fill="white")
-    # 입
-    d.chord(box(41, 37, 59, 46), 0, 180, fill="#8a3d05")
-    d.chord(box(44, 37.5, 56, 41.5), 0, 180, fill="white")
-    return im
+def clean(im):
+    # 거의 흰색이고 색이 없는(회색 계열) 점은 모두 흰색으로: 바둑판 배경이 사라져요
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b = px[x, y]
+            if min(r, g, b) > 210 and max(r, g, b) - min(r, g, b) < 18:
+                px[x, y] = (255, 255, 255)
+    # 흰 바탕을 뺀 그림 부분만 남겨요
+    bbox = ImageChops.difference(im, Image.new("RGB", im.size, "white")).getbbox()
+    return im.crop(bbox) if bbox else im
 
 
 def main():
+    src = Image.open(HERE / "two.jpg").convert("RGB")
+    src = src.resize((src.width // 4, src.height // 4), Image.LANCZOS)  # 아이콘에는 이 정도면 충분해요
+    src = clean(src)
     OUT.mkdir(parents=True, exist_ok=True)
-    big = draw()
     for size in (192, 512, 180):
-        big.resize((size, size), Image.LANCZOS).save(OUT / f"icon-{size}.png", optimize=True)
+        inner = round(size * (1 - 2 * MARGIN))
+        scale = inner / max(src.size)
+        fit = src.resize((round(src.width * scale), round(src.height * scale)), Image.LANCZOS)
+        icon = Image.new("RGB", (size, size), "white")
+        icon.paste(fit, ((size - fit.width) // 2, (size - fit.height) // 2))
+        icon.save(OUT / f"icon-{size}.png", optimize=True)
 
 
 if __name__ == "__main__":

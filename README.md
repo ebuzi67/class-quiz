@@ -273,4 +273,5 @@
 - 원 앱과 다른 놀이: 숨은 투 찾기, 둘인 것 찾기(짝꿍 찾기: 눈, 귀, 양말, 젓가락…).
 - 투의 말과 놀이는 `two-chat/brain.js`, 화면은 `two-chat/index.html`이에요. 놀이 짜임은 `one-chat/brain.js`와 같아서, 한쪽을 고치면 다른 쪽도 같이 고쳐야 해요.
 - 끝말잇기 낱말은 원과 같이 `tools/one-chat/words.txt`에서 `python3 tools/one-chat/build_words.py`로 `one-chat/words.js`와 `two-chat/words.js`를 함께 만들어요.
-- `tools/two-chat/make_icons.py`: 투 아이콘(주황 블록 두 개)을 그려서 `two-chat/icons/`에 저장해요.
+- 목소리: 기기의 한국어 목소리 중 남자 목소리를 찾아 써요. 없으면 기본 목소리를 낮게(pitch 0.7) 내려요. 🔊 소리를 켜면 보이는 🎙 목소리 버튼으로 다른 목소리를 들어 보고 고를 수 있어요(그 기기에 저장, `two-voice`).
+- `tools/two-chat/make_icons.py`: `tools/two-chat/two.jpg`(투 그림)의 바둑판 배경을 흰색으로 바꿔서 `two-chat/icons/` 아이콘을 만들어요.
