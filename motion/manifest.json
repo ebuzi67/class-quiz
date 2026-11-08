@@ -1,0 +1,27 @@
+{
+  "name": "무브무브 놀이터",
+  "short_name": "무브무브",
+  "description": "카메라가 몸 움직임을 알아보는 모션 게임: 운동(과일 닌자, 몬스터전, 동작 미션, 리듬 체조), 두뇌(셈하기 풍선, 순서 기억), 순발력(색깔 사냥꾼, 두더지 잡기)",
+  "lang": "ko",
+  "id": "/class-quiz/motion/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#5db3ff",
+  "theme_color": "#2B7FE0",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

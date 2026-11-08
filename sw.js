@@ -13,6 +13,7 @@ const FILES = [
   "./math/icons/icon-192.png",
   "./europe/icons/icon-192.png",
   "./pe/icons/icon-192.png",
+  "./motion/icons/icon-192.png",
   "./roblox/icons/icon-192.png",
   "./village/icons/icon-192.png",
   "./one-chat/icons/icon-192.png"
