@@ -2,6 +2,18 @@
 "use strict";
 
 (() => {
+  // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
+  // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
+  // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
+  const BUILD = "19";
+  try {
+    if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
+      sessionStorage.setItem("village-rebuild", BUILD);
+      fetch(location.href, { cache: "reload" }).catch(() => {}).then(() => location.reload());
+      return;
+    }
+  } catch (e) {}
+
   const T = Maps.T;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
