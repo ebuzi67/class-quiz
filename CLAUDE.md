@@ -10,7 +10,7 @@ GitHub Pages로 `https://ebuzi67.github.io/class-quiz/`에 올라가는 학습 �
 ├─ europe/              유럽 탐방 모음 → europe/london/ 등 나라 10개
 ├─ pe/                  체육시간 모음 → pe/mugunghwa/ 등 게임 5개
 ├─ numberblocks/        넘버블럭스 모음 → numberblocks/one-chat/(원), numberblocks/two-chat/(투)
-├─ roblox/  village/  motion/   (모음 없이 따로 있는 앱)
+├─ roblox/  village/  motion/  island/   (모음 없이 따로 있는 앱. island/는 집에서 쓰는 섬 생활 게임 "몽글몽글 섬")
 ```
 
 - **새 앱은 주제에 맞는 모음 폴더 안에** 만들어요. 수학 앱은 `math/새앱/`, 유럽 나라는 `europe/나라/`, 몸놀이는 `pe/게임/`.

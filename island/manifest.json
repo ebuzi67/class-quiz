@@ -1,0 +1,17 @@
+{
+  "name": "몽글몽글 섬",
+  "short_name": "몽글몽글 섬",
+  "description": "낚시하고, 그림 그리고, 섬을 꾸미며 노는 나만의 섬 생활 게임",
+  "lang": "ko",
+  "id": "/class-quiz/island/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#74c4ee",
+  "theme_color": "#74c4ee",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
