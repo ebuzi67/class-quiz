@@ -18,7 +18,7 @@ function newState() {
     bag: { daisy: 2, fence: 4 }, trees: {}, obj: {}, floor: {}, shells: {}, shellAt: 0,
     designs: [HEART, null, null, null, null, null, null, null], cur: 0, dex: {},
     stats: { fruit: 0, fish: 0, sold: 0, design: 0, placed: 0, shell: 0, bought: 0, home: 0 }, claimed: {}, mute: false,
-    scene: "island", home: { obj: {}, floor: {}, wall: WALLS[0], flr: "wood" }, realTime: true
+    scene: "island", home: { obj: {}, floor: {}, wall: WALLS[0], flr: "wood" }, sky: "auto"
   };
 }
 function loadState() {
@@ -30,6 +30,7 @@ function loadState() {
       base.look = Object.assign(newState().look, s.look);
       base.stats = Object.assign(newState().stats, s.stats);
       base.home = Object.assign(newState().home, s.home);
+      if (!s.sky && s.realTime === false) base.sky = "day";   // 예전 "항상 낮" 설정 이어받기
     }
   } catch (e) { /* 저장분이 깨졌으면 새로 시작 */ }
   return base;
@@ -148,9 +149,20 @@ function updateEnv() {
   ENV.season = m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
   let n = h >= 20.5 || h < 5 ? 1 : h >= 18.5 ? (h - 18.5) / 2 : h < 7 ? 1 - (h - 5) / 2 : 0;
   let s = h >= 17 && h < 18.5 ? (h - 17) / 1.5 : h >= 18.5 && h < 20.5 ? 1 - (h - 18.5) / 2 : 0;
-  if (!state.realTime) n = s = 0;
+  // 하늘 단추로 고른 때: auto(실제 시각), day(낮), sunset(저녁), night(밤)
+  if (state.sky === "day") n = s = 0;
+  else if (state.sky === "sunset") { n = 0; s = 1; }
+  else if (state.sky === "night") { n = 1; s = 0; }
   ENV.night = n; ENV.sunset = s;
-  ENV.label = SEASONS[ENV.season] + " · " + (n > 0.5 ? "🌙 밤" : s > 0.3 ? "🌇 저녁" : h < 7 && state.realTime ? "🌅 새벽" : "☀️ 낮");
+  ENV.label = SEASONS[ENV.season] + " · " + (n > 0.5 ? "🌙 밤" : s > 0.3 ? "🌇 저녁" : h < 7 && state.sky === "auto" ? "🌅 새벽" : "☀️ 낮");
+  const sk = SKIES[state.sky] || SKIES.auto;
+  $("sky-icon").textContent = sk[0]; $("sky-name").textContent = sk[1];
+}
+const SKIES = { auto: ["🕒", "자동", "🕒 지금 시각을 따라가요."], day: ["☀️", "낮", "☀️ 환한 낮이야!"], sunset: ["🌇", "저녁", "🌇 노을 지는 저녁이야."], night: ["🌙", "밤", "🌙 밤이 됐어. 귀한 물고기가 잘 잡혀!"] };
+function nextSky() {
+  const order = Object.keys(SKIES);
+  state.sky = order[(order.indexOf(state.sky) + 1) % order.length];
+  touch(); updateEnv(); refreshHud(); sfx("pop"); toast(SKIES[state.sky][2]);
 }
 
 // ───────── 지도 살피기 ─────────
@@ -616,6 +628,7 @@ $("modal").addEventListener("pointerdown", (e) => { if (e.target === $("modal"))
 $("hud-right").addEventListener("click", (e) => {
   const b = e.target.closest("[data-open]");
   if (!b || !$("intro").hidden) return;
+  if (b.dataset.open === "sky") { nextSky(); return; }
   if (build) endBuild();
   ({ bag: openBag, build: () => startBuild(), studio: openStudio, dex: openDex, note: openNote, set: openSet })[b.dataset.open]();
 });
@@ -701,10 +714,10 @@ function openNote() {
 
 function openSet() {
   openModal("set", "⚙️ 설정", '<div class="field"><button class="btn" data-mute="1">' + (state.mute ? "🔇 소리 꺼짐" : "🔊 소리 켜짐") + "</button> " +
-    '<button class="btn" data-rt="1">' + (state.realTime ? "🌙 낮과 밤 따라가기 켜짐" : "☀️ 항상 낮") + "</button></div>" +
+    '<button class="btn" data-rt="1">하늘: ' + SKIES[state.sky][0] + " " + SKIES[state.sky][1] + "</button></div>" +
     '<div class="how">🚶 <b>걷기</b>: 가고 싶은 곳을 꾹 누르기 (키보드는 방향키나 WASD)<br>✨ <b>행동</b>: 오른쪽 아래 노란 단추 (키보드는 스페이스)<br>' +
     "🎣 <b>낚시</b>: 물가를 보고 행동 → 찌가 쑥 들어가고 ❗가 뜨면 얼른 한 번 더!<br>🌳 과일은 " + (REGROW_MS / 60000) + "분마다 다시 열려요.<br>" +
-    "🔨 <b>꾸미기</b>: 아래에서 물건을 고르고 땅을 눌러요. 🧽는 도로 줍기.<br>🏠 보라 지붕 집에 들어가면 가구를 놓고 벽지·바닥을 바꿀 수 있어요. 옷장도 집 안에 있어요.<br>🌙 실제 시간에 맞춰 밤이 되고, 밤에는 귀한 물고기가 더 잘 잡혀요.<br>🍁 계절마다 풍경과 상점의 한정 물건이 바뀌어요.<br>💾 놀던 내용은 이 기기에 저절로 저장돼요.</div>" +
+    "🔨 <b>꾸미기</b>: 아래에서 물건을 고르고 땅을 눌러요. 🧽는 도로 줍기.<br>🏠 보라 지붕 집에 들어가면 가구를 놓고 벽지·바닥을 바꿀 수 있어요. 옷장도 집 안에 있어요.<br>🌙 위쪽 하늘 단추를 누르면 낮 → 저녁 → 밤 → 자동(실제 시각)으로 바뀌어요. 밤에는 귀한 물고기가 더 잘 잡혀요.<br>🍁 계절마다 풍경과 상점의 한정 물건이 바뀌어요.<br>💾 놀던 내용은 이 기기에 저절로 저장돼요.</div>" +
     (isStandalone() ? "" : '<div class="field"><button class="btn go" data-install="1">📲 몽글몽글 섬을 앱으로 설치하기</button></div>') +
     '<div class="field"><button class="btn small" data-reset="1">🗑️ 섬을 처음부터 다시 시작</button></div>');
 }
@@ -729,7 +742,7 @@ $("modal-body").addEventListener("click", (e) => {
   } else if (d.roomset) {
     state.home[d.roomset] = d.dv != null ? +d.dv : d.v; touch(); sfx("put"); openRoomStyle(d.roomset);
   } else if (d.rt) {
-    state.realTime = !state.realTime; touch(); updateEnv(); refreshHud(); openSet();
+    nextSky(); openSet();
   } else if (d.claim) {
     const m = MISSIONS.find((x) => x.id === d.claim);
     state.claimed[m.id] = 1; state.coins += m.r; sfx("good"); touch(); refreshHud(); openNote();

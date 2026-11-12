@@ -1,6 +1,6 @@
 // 몽글몽글 섬 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-const CACHE = "island-v3";
+const CACHE = "island-v4";
 const FILES = [
   "./",
   "./index.html",
