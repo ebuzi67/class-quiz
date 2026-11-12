@@ -1,6 +1,8 @@
 // 배움 동산 문제 방(수학·국어) 공통 틀
 // 방마다 미션이 5개 있어요. 미션 하나는 10문제이고, 8문제 이상 맞히면 통과예요.
 // 방에 round·pass를 적으면 그 방만 문제 수와 통과 기준이 달라져요.
+// 방에 levels: true를 적으면 미션마다 난이도(보통·어려움)를 골라요. gen(도구, hard)의 hard가 true면 어려운 문제를 만들어요.
+// 어려움을 통과하면 보통도 통과한 것으로 쳐요. 도장은 미션을 모두 통과하면(어느 난이도든) 받아요.
 // 미션을 모두 통과하면 그 방 도장을 받아요.
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
@@ -111,7 +113,9 @@ const Quiz = (() => {
 
   function run({ el, frame, wait, ctx }, def) {
     const root = frame(def.e + " " + def.title + " · " + def.grade);
-    const getP = () => Object.assign({ done: [], best: {} }, ctx.getProgress(def.id) || {});
+    const getP = () => Object.assign({ done: [], hard: [], best: {} }, ctx.getProgress(def.id) || {});
+    let hard = false; // 지금 고른 난이도(levels가 있는 방)
+    const bestKey = (m) => m.id + (hard ? ":h" : "");
 
     const { round: ROUND, pass: PASS } = sizeOf(def);
 
@@ -121,15 +125,25 @@ const Quiz = (() => {
       const npc = npcOf(def.id);
       const line = "안녕! 나는 " + npc.name + (ieyo(npc.name) === "예요" ? "야. " : "이야. ") + def.title + "에 온 걸 환영해! 미션을 골라 봐. " + ROUND + "문제 중 " + PASS + "문제를 맞히면 통과야.";
       root.append(npcBanner(el, npc, line));
+      if (def.levels) {
+        const row = el("div", "qz-levels");
+        [[false, "🙂 보통"], [true, "🔥 어려움"]].forEach(([h, label]) => {
+          const b = el("button", "qz-level" + (h === hard ? " on" : "") + (h ? " hard" : ""), label);
+          b.onclick = () => { ctx.sfx("tap"); hard = h; home(); };
+          row.append(b);
+        });
+        root.append(row);
+      }
       const grid = el("div", "qz-missions");
       def.missions.forEach((m) => {
-        const done = p.done.includes(m.id);
-        const b = el("button", "qz-mission" + (done ? " done" : ""), "<span>" + m.e + "</span><b>" + m.name + "</b><small>" + (done ? "✅ 통과" : p.best[m.id] != null ? "최고 " + p.best[m.id] + "/" + ROUND : m.desc) + "</small>");
+        const done = (hard ? p.hard : p.done).includes(m.id), best = p.best[bestKey(m)];
+        const desc = hard && m.hardDesc ? m.hardDesc : m.desc;
+        const b = el("button", "qz-mission" + (done ? " done" : ""), "<span>" + m.e + "</span><b>" + m.name + "</b><small>" + (done ? (hard ? "⭐ 통과" : "✅ 통과") : best != null ? "최고 " + best + "/" + ROUND : desc) + "</small>");
         b.onclick = () => { ctx.sfx("tap"); play(m); };
         grid.append(b);
       });
       root.append(grid);
-      root.append(el("div", "ob-note", "통과한 미션 " + p.done.length + " / " + def.missions.length + (p.done.length === def.missions.length ? " · 🎉 도장을 받았어요!" : " · 모두 통과하면 도장을 받아요")));
+      root.append(el("div", "ob-note", "통과한 미션 " + p.done.length + " / " + def.missions.length + (def.levels ? " · 🔥 어려움 " + p.hard.length + " / " + def.missions.length : "") + (p.done.length === def.missions.length ? " · 🎉 도장을 받았어요!" : " · 모두 통과하면 도장을 받아요")));
       ctx.speak(line);
     }
 
@@ -138,7 +152,7 @@ const Quiz = (() => {
       const seen = new Set();
       root.innerHTML = "";
       const top = el("div", "qz-top");
-      const title = el("div", "rb-level", m.e + " " + m.name);
+      const title = el("div", "rb-level", m.e + " " + m.name + (def.levels ? (hard ? " · 🔥 어려움" : " · 🙂 보통") : ""));
       const dots = el("div", "qz-dots");
       const listen = el("button", "btn btn-soft qz-listen", "🔊 다시 듣기");
       top.append(title, dots, listen);
@@ -156,7 +170,7 @@ const Quiz = (() => {
       listen.onclick = () => current && (current.play ? play(current) : read(current));
 
       function newQuestion() {
-        for (let k = 0; k < 20; k++) { const q = m.gen(tools); const key = q.text + "|" + (q.visual || "") + "|" + q.answer + "|" + (q.key || ""); if (!seen.has(key) || k === 19) { seen.add(key); return q; } }
+        for (let k = 0; k < 20; k++) { const q = m.gen(tools, hard); const key = q.text + "|" + (q.visual || "") + "|" + q.answer + "|" + (q.key || ""); if (!seen.has(key) || k === 19) { seen.add(key); return q; } }
       }
 
       function drawDots(results) { dots.innerHTML = Array.from({ length: ROUND }, (_, k) => "<span class='" + (results[k] === true ? "ok" : results[k] === false ? "no" : k === i ? "now" : "") + "'></span>").join(""); }
@@ -225,9 +239,10 @@ const Quiz = (() => {
 
       function finish() {
         const p = getP();
-        p.best[m.id] = Math.max(p.best[m.id] || 0, right);
+        p.best[bestKey(m)] = Math.max(p.best[bestKey(m)] || 0, right);
         const pass = right >= PASS;
         if (pass && !p.done.includes(m.id)) p.done.push(m.id);
+        if (pass && hard && !p.hard.includes(m.id)) p.hard.push(m.id);
         ctx.setProgress(def.id, p);
         if (p.done.length === def.missions.length) ctx.award(def.id);
         ctx.sfx(pass ? "win" : "thud");

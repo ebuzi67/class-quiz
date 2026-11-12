@@ -143,7 +143,7 @@ const Maps = (() => {
       [25, 26, 29, 27], [30, 27, 32, 27], [32, 22, 38, 28], [35, 17, 39, 21], [37, 14, 39, 17] // 오른쪽 표지판·쉼터·나무
     ],
     doors: [
-      { id: "tower", x: 8, y: 14, w: 2, out: { x: 8, y: 16, dir: "down" }, pick: ["math12", "math34", "math56"], name: "수학 탑", emoji: "🔢" },
+      { id: "tower", x: 8, y: 14, w: 2, out: { x: 8, y: 16, dir: "down" }, pick: ["math1", "math2", "math3", "math4", "math5", "math6"], name: "수학 탑", emoji: "🔢" },
       { id: "library", x: 30, y: 14, w: 2, out: { x: 30, y: 16, dir: "down" }, pick: ["kor12", "kor34", "kor56"], name: "국어 도서관", emoji: "📖" },
       { id: "top", x: 19, y: 0, w: 3, to: "village", out: { x: 20, y: 2, dir: "down" }, name: "마을로", emoji: "🏡" },
       // 아래쪽 아치 문: 교과 언덕(영어 학교, 나중에 다른 교과)으로 가는 길
@@ -153,7 +153,7 @@ const Maps = (() => {
     spawn: { x: 20, y: 2, dir: "down" },
     npcs: [
       { id: "semsem", name: "셈셈 박사", x: 11, y: 17, dir: "down",
-        lines: ["반가워! 나는 셈셈 박사야. 저기 도형 모자를 쓴 건물이 수학 탑이야.", "수학 탑에 들어가면 1-2학년, 3-4학년, 5-6학년 방 중에서 고를 수 있어.", "방마다 미션이 5개! 모두 통과하면 도장을 받아."] },
+        lines: ["반가워! 나는 셈셈 박사야. 저기 도형 모자를 쓴 건물이 수학 탑이야.", "수학 탑에 들어가면 1학년부터 6학년까지 내 학년 방을 고를 수 있어.", "방마다 미션이 5개! 모두 통과하면 도장을 받아."] },
       { id: "mallang", name: "말랑 작가", x: 28, y: 18, dir: "down",
         lines: ["안녕! 나는 이야기를 쓰는 말랑 작가야.", "책 지붕 건물이 국어 도서관이야. 들어가서 내 학년 방을 골라 봐.", "한글 놀이방, 이야기 도서관, 꼬마 방송국이 기다리고 있어!"] }
     ]
@@ -224,20 +224,24 @@ const Maps = (() => {
   // 수학·국어 방: 그림이 모두 같은 구조(아래 가운데 문, 가운데 큰 탁자)라 바닥은 같고 가구만 달라요.
   const TABLE = [[7, 7, 12, 10], [6, 8, 6, 9], [13, 8, 13, 9]];
   const QUIZ_ROOMS = {
-    math12: { name: "숫자 놀이방", emoji: "🧸", parent: "hill", npc: "semsem", solid: [[2, 5, 2, 10], [2, 11, 4, 13], [17, 5, 17, 9], [17, 13, 17, 14]] },
-    math34: { name: "측정 공방", emoji: "⚖️", parent: "hill", npc: "semsem", solid: [[2, 5, 4, 6], [2, 7, 2, 10], [2, 11, 3, 14], [17, 6, 17, 11], [17, 13, 17, 14], [13, 14, 16, 14]] },
-    math56: { name: "수학 탐정 사무소", emoji: "🕵️", parent: "hill", npc: "semsem", solid: [[2, 7, 2, 13], [3, 11, 3, 13], [16, 8, 17, 11], [17, 5, 17, 7], [17, 12, 17, 14]] },
+    // 수학 방은 학년마다 하나씩 6개예요. 그림은 두 학년이 함께 써요(1·2학년, 3·4학년, 5·6학년).
+    math1: { name: "숫자 놀이방", emoji: "🧸", parent: "hill", npc: "semsem", art: "math12", levels: true, solid: [[2, 5, 2, 10], [2, 11, 4, 13], [17, 5, 17, 9], [17, 13, 17, 14]] },
+    math2: { name: "구구단 놀이방", emoji: "🎲", parent: "hill", npc: "semsem", art: "math12", levels: true, solid: [[2, 5, 2, 10], [2, 11, 4, 13], [17, 5, 17, 9], [17, 13, 17, 14]] },
+    math3: { name: "측정 공방", emoji: "⚖️", parent: "hill", npc: "semsem", art: "math34", levels: true, solid: [[2, 5, 4, 6], [2, 7, 2, 10], [2, 11, 3, 14], [17, 6, 17, 11], [17, 13, 17, 14], [13, 14, 16, 14]] },
+    math4: { name: "도형 공방", emoji: "📐", parent: "hill", npc: "semsem", art: "math34", levels: true, solid: [[2, 5, 4, 6], [2, 7, 2, 10], [2, 11, 3, 14], [17, 6, 17, 11], [17, 13, 17, 14], [13, 14, 16, 14]] },
+    math5: { name: "수학 탐정 사무소", emoji: "🕵️", parent: "hill", npc: "semsem", art: "math56", levels: true, solid: [[2, 7, 2, 13], [3, 11, 3, 13], [16, 8, 17, 11], [17, 5, 17, 7], [17, 12, 17, 14]] },
+    math6: { name: "수학 연구소", emoji: "🔬", parent: "hill", npc: "semsem", art: "math56", levels: true, solid: [[2, 7, 2, 13], [3, 11, 3, 13], [16, 8, 17, 11], [17, 5, 17, 7], [17, 12, 17, 14]] },
     kor12: { name: "한글 놀이방", emoji: "🧩", parent: "hill", npc: "mallang", solid: [[2, 5, 3, 8], [2, 9, 2, 13], [3, 13, 4, 13], [14, 5, 17, 6], [17, 7, 17, 9], [16, 10, 17, 12]] },
     kor34: { name: "이야기 도서관", emoji: "📚", parent: "hill", npc: "mallang", solid: [[2, 5, 5, 6], [2, 7, 2, 9], [2, 10, 3, 11], [2, 12, 2, 14], [4, 14, 4, 14], [15, 7, 17, 9], [17, 5, 17, 6], [16, 12, 17, 14], [15, 13, 15, 14]] },
     kor56: { name: "꼬마 방송국", emoji: "🎙️", parent: "hill", npc: "mallang", solid: [[2, 5, 4, 6], [3, 7, 3, 7], [2, 9, 2, 13], [3, 10, 3, 13], [4, 11, 4, 13], [16, 5, 17, 6], [16, 8, 17, 11], [16, 12, 17, 14]] }
   };
   const QUIZ_NPC = {
-    semsem: { name: "셈셈 박사", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 수학 미션을 풀 수 있어. " + r.size + " 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] },
+    semsem: { name: "셈셈 박사", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 수학 미션을 풀 수 있어. " + r.size + " 통과!", "🙂 보통과 🔥 어려움 중에서 골라 봐. 미션 5개를 모두 통과하면 도장을 줄게."] },
     mallang: { name: "말랑 작가", line: (r) => ["어서 와! 여기는 " + r.name + "이야.", "가운데 탁자에서 국어 미션을 풀 수 있어. " + r.size + " 통과!", "미션 5개를 모두 통과하면 도장을 줄게."] }
   };
   Object.entries(QUIZ_ROOMS).forEach(([id, q]) => {
     ROOMS[id] = {
-      name: q.name, emoji: q.emoji, parent: q.parent, floor: [2, 5, 17, 14], door: { x: 9, y: 15, w: 2 },
+      name: q.name, emoji: q.emoji, parent: q.parent, art: q.art, floor: [2, 5, 17, 14], door: { x: 9, y: 15, w: 2 },
       solid: q.solid.concat(TABLE, LAMPS),
       stations: [{ x: 7, y: 7, w: 6, h: 4, activity: id, label: "📝 미션 탁자" }],
       npcs: [{ id: q.npc, name: QUIZ_NPC[q.npc].name, x: 4, y: 8, dir: "right", activity: id, actionLabel: "📝 미션 시작",
@@ -272,7 +276,7 @@ const Maps = (() => {
   function buildRoom(id) {
     const r = ROOMS[id];
     const W = r.w || 20, H = r.h || 18;
-    const sc = { id, name: r.name, emoji: r.emoji, w: W, h: H, img: "assets/" + id + ".webp", backdrop: r.backdrop || "#2a1712", indoor: true,
+    const sc = { id, name: r.name, emoji: r.emoji, w: W, h: H, img: "assets/" + (r.art || id) + ".webp", backdrop: r.backdrop || "#2a1712", indoor: true,
       npcs: r.npcs.map((n) => Object.assign({}, n)), stations: r.stations.map((s) => Object.assign({}, s)), labels: [], doors: [], areas: [] };
     sc.solid = grid(W, H, true);
     paint(sc.solid, r.floor, false);

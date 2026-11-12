@@ -157,7 +157,7 @@
   #board-sort button.on { border-color: var(--wood); background: #ffe9a8; }
   .board-help { color: #9a8270; font-size: 14px; margin: 6px 0; }
   #board-table { overflow: auto; flex: 1; border-top: 2px solid #efe4d2; }
-  .br-row { display: grid; grid-template-columns: minmax(150px, 1.6fr) minmax(90px, 1fr) repeat(18, minmax(42px, .5fr)) 60px 104px; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #efe4d2; min-width: 1340px; }
+  .br-row { display: grid; grid-template-columns: minmax(150px, 1.6fr) minmax(90px, 1fr) repeat(21, minmax(40px, .5fr)) 60px 104px; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid #efe4d2; min-width: 1460px; }
   .br-head { position: sticky; top: 0; background: var(--paper); z-index: 1; font-size: 15px; color: #7a6250; }
   .br-name { display: flex; align-items: center; gap: 6px; font-size: 17px; }
   .br-name canvas { width: 30px; height: 30px; image-rendering: pixelated; background: #cfe9f5; border-radius: 6px; flex: none; }
@@ -185,6 +185,10 @@
   .qz-npc img { height: 84px; flex: none; }
   .qz-npc b { display: inline-block; background: #e8743b; color: #fff; padding: 1px 10px; border-radius: 6px; font-size: 15px; font-weight: normal; }
   .qz-npc p { margin: 4px 0 0; font-size: 18px; }
+  .qz-levels { display: flex; gap: 10px; justify-content: center; margin: 2px 0 6px; }
+  .qz-level { border: 3px solid #d9c3a3; border-radius: 14px; background: #fff; font-size: 20px; padding: 6px 22px; }
+  .qz-level.on { border-color: var(--wood); background: #d9f7c8; box-shadow: 0 3px 0 var(--wood); }
+  .qz-level.hard.on { background: #ffd9c2; }
   .qz-missions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 8px 0 12px; }
   .qz-mission { border: 3px solid var(--wood); border-radius: 14px; background: #fff; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; box-shadow: 0 4px 0 var(--wood); }
   .qz-mission span { font-size: 36px; } .qz-mission b { font-size: 19px; } .qz-mission small { font-size: 14px; color: #7a6250; }
