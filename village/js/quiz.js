@@ -5,7 +5,8 @@
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
 //     input?: true(숫자 패드로 답하기), unit?: "단위", explain?: "풀이", say?: "읽어 줄 말", sayEn?: "영어로 읽어 줄 말",
-//     play?: [{ f, at, d, vol, type }] 들려줄 소리, key?: "같은 글이라도 다른 문제인지 가르는 값(소리 문제)" }
+//     play?: [{ f, at, d, vol, type }] 들려줄 소리,
+//     parts?: [{ label, notes: [...] }] 소리를 부분(첫 번째, 두 번째…)으로 나눠 그림으로도 보여 줘요(play 대신), key?: "같은 글이라도 다른 문제인지 가르는 값(소리 문제)" }
 "use strict";
 
 const Quiz = (() => {
@@ -146,7 +147,8 @@ const Quiz = (() => {
       let current = null;
       // sayEn: 영어 낱말·문장은 한국어 질문 뒤에 영어 목소리로 이어서 읽어요
       // play: 음악 문제의 소리. 질문을 다 읽은 뒤에 들려주고, 🔊 다시 듣기는 소리만 다시 들려줘요.
-      const play = (q) => ctx.playNotes && ctx.playNotes(q.play);
+      let board = null; // 소리 그림판(parts가 있는 문제)
+      const play = (q) => (board ? board.playAll() : ctx.playNotes && ctx.playNotes(q.play));
       const read = (q) => {
         if (q.play && ctx.speakThen) return ctx.speakThen(q.say || strip(q.text), () => { if (current === q) play(q); });
         ctx.speak(q.say || strip(q.text)); if (q.sayEn && ctx.speakEn) ctx.speakEn(q.sayEn);
@@ -163,9 +165,12 @@ const Quiz = (() => {
       function show() {
         const q = current = shown = newQuestion();
         drawDots(results);
+        if (board) board.stop();
+        board = null;
         box.innerHTML = "";
         box.append(el("div", "qz-text", q.text));
-        if (q.visual) box.append(el("div", "qz-visual", q.visual));
+        if (q.parts) { board = soundBoard(el, ctx, q.parts); q.play = board.all; box.append(board.node); }
+        else if (q.visual) box.append(el("div", "qz-visual", q.visual));
         const fb = el("div", "mg-result");
         const answer = (given, btn) => {
           const ok = String(given) === String(q.answer);
@@ -241,6 +246,59 @@ const Quiz = (() => {
     }
 
     home();
+  }
+
+  // 소리 그림판: 소리가 날 때마다 동그라미가 하나씩 나타나요.
+  // 높은 소리는 위에, 큰 소리는 크게, 빨리 나는 소리는 촘촘하게 찍혀요. 칸을 누르면 그 소리만 다시 들려줘요.
+  // 교실이 시끄러워도 눈으로 보며 풀 수 있게 하려고 만들었어요.
+  const GAP = 0.8; // 부분 사이 쉬는 시간(초)
+  const PART_COLORS = ["#4f7fe8", "#e8743b", "#3a9d5d"];
+  function soundBoard(el, ctx, parts) {
+    const node = el("div", "qz-board");
+    const all = [];
+    let offset = 0;
+    const dur = (ns) => Math.max(...ns.map((n) => n.at + (n.d || 0.4)));
+    const maxDur = Math.max(...parts.map((p) => dur(p.notes)));
+    const fs = parts.flatMap((p) => p.notes.map((n) => Math.log2(n.f)));
+    const lo = Math.min(...fs), hi = Math.max(...fs);
+    const vols = parts.flatMap((p) => p.notes.map((n) => (n.vol == null ? 0.3 : n.vol)));
+    const vmax = Math.max(...vols);
+    const timers = [];
+    const panels = parts.map((p, k) => {
+      const panel = el("button", "qz-part");
+      panel.style.setProperty("--c", PART_COLORS[k % PART_COLORS.length]);
+      panel.append(el("div", "qz-part-label", "▶ " + p.label));
+      const area = el("div", "qz-part-area");
+      const dots = p.notes.map((n) => {
+        const d = el("span", "qz-note");
+        // 소리가 하나면 가운데, 여러 개면 시간 순서대로 왼쪽에서 오른쪽으로 놓아요
+        const x = p.notes.length === 1 ? 50 : 14 + (n.at / maxDur) * 72, y = hi - lo < 0.05 ? 50 : 80 - ((Math.log2(n.f) - lo) / (hi - lo)) * 60;
+        // 크기 차이가 있으면 크게·작게 보여 주고, 없으면 촘촘해도 겹치지 않게 작게 그려요
+        const sized = vmax - Math.min(...vols) > 0.05;
+        const size = sized ? 14 + 40 * ((n.vol == null ? 0.3 : n.vol) / vmax) : Math.min(34, 220 / Math.max(...parts.map((q) => q.notes.length)));
+        Object.assign(d.style, { left: x + "%", top: y + "%", width: size + "px", height: size + "px" });
+        area.append(d);
+        return d;
+      });
+      panel.append(area);
+      node.append(panel);
+      const start = offset;
+      p.notes.forEach((n) => all.push(Object.assign({}, n, { at: n.at + start })));
+      offset += dur(p.notes) + GAP;
+      const run = (shift) => p.notes.forEach((n, i) => timers.push(setTimeout(() => {
+        dots[i].classList.remove("on"); void dots[i].offsetWidth; dots[i].classList.add("on");
+      }, (shift + n.at) * 1000 + 80)));
+      panel.onclick = () => { stop(); dots.forEach((d) => d.classList.remove("on")); ctx.playNotes && ctx.playNotes(p.notes); run(0); };
+      return { dots, run, start };
+    });
+    function stop() { timers.splice(0).forEach(clearTimeout); }
+    function playAll() {
+      stop();
+      panels.forEach((pn) => pn.dots.forEach((d) => d.classList.remove("on")));
+      if (ctx.playNotes) ctx.playNotes(all);
+      panels.forEach((pn) => pn.run(pn.start));
+    }
+    return { node, all, playAll, stop };
   }
 
   const strip = (h) => String(h).replace(/<span class='fr'><b>(\d+)<\/b><i>(\d+)<\/i><\/span>/g, " $2분의 $1").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();

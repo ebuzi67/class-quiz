@@ -14,6 +14,10 @@
   const melody = (semis, gap, vol) => semis.map((n, i) => note(n, i * gap, gap * 0.9, vol));
 
   // ───────────── 1-2학년: 노래 놀이방 ─────────────
+  // 교실이 시끄러워도 잘 들리게: 한 옥타브 높여(태블릿 스피커가 잘 내는 높이) 또렷한 음색으로 울려요.
+  // 소리마다 동그라미 그림이 함께 나와서 눈으로도 비교할 수 있어요(quiz.js의 소리 그림판).
+  const LOUD = 0.32, SOFT = 0.035;
+  const loud12 = (n, at, d, vol = 0.24) => note(n + 12, at, d, vol, "square");
   const INST12 = [
     ["🥁", "북", "두드려서"], ["🎹", "피아노", "건반을 눌러서"], ["🎸", "기타", "줄을 튕겨서"], ["🎻", "바이올린", "활로 줄을 켜서"],
     ["🎺", "트럼펫", "입으로 불어서"], ["🎷", "색소폰", "입으로 불어서"]
@@ -24,27 +28,31 @@
     id: "mus12", e: "🥁", title: "노래 놀이방", grade: "음악 1-2학년",
     missions: [
       { id: "high", e: "🎚️", name: "높은 소리 낮은 소리", desc: "두 소리 비교하기", gen() {
-        const a = rnd(0, 12); let b; do { b = rnd(-3, 15); } while (Math.abs(a - b) < 3);
+        // 높이 차이를 크게(5도 이상) 두고, 동그라미 위치로도 보여 줘요
+        const a = rnd(0, 12); let b; do { b = rnd(0, 19); } while (Math.abs(a - b) < 7);
         const ans = b > a ? "높아요 ⬆️" : "낮아요 ⬇️";
-        return { text: "두 번째 소리는 첫 번째 소리보다 높을까요, 낮을까요?", visual: listen("소리 두 개"), choices: ["높아요 ⬆️", "낮아요 ⬇️"], answer: ans,
-          play: [note(a, 0, 0.6), note(b, 0.9, 0.6)], key: a + "," + b, explain: b > a ? "두 번째 소리가 더 높아요. 새처럼 가늘고 높은 소리예요." : "두 번째 소리가 더 낮아요. 곰처럼 굵고 낮은 소리예요." };
+        return { text: "두 번째 소리는 첫 번째 소리보다 높을까요, 낮을까요?", choices: ["높아요 ⬆️", "낮아요 ⬇️"], answer: ans,
+          parts: [{ label: "첫 번째", notes: [loud12(a, 0, 0.8)] }, { label: "두 번째", notes: [loud12(b, 0, 0.8)] }], key: a + "," + b,
+          explain: b > a ? "두 번째 소리가 더 높아요. 동그라미도 더 위에 있어요. 새처럼 가늘고 높은 소리예요." : "두 번째 소리가 더 낮아요. 동그라미도 더 아래에 있어요. 곰처럼 굵고 낮은 소리예요." };
       } },
       { id: "speed", e: "🐇", name: "빠르게 느리게", desc: "빠르기 비교하기", gen() {
-        const tune = pick([[0, 4, 7, 4], [7, 5, 4, 2], [0, 2, 4, 5, 7], [4, 4, 7, 7, 9]]), slow = rnd(45, 60) / 100, fast = rnd(18, 26) / 100;
+        // 빠르기 차이를 3배 넘게 두고, 동그라미 간격으로도 보여 줘요
+        const tune = pick([[0, 4, 7, 4, 0], [7, 5, 4, 2, 0], [0, 2, 4, 5, 7], [0, 4, 2, 5, 4]]), slow = rnd(60, 70) / 100, fast = rnd(16, 20) / 100;
         const firstFast = rnd(0, 1) === 1, g1 = firstFast ? fast : slow, g2 = firstFast ? slow : fast;
-        const one = melody(tune, g1), start = tune.length * g1 + 0.7;
-        const two = melody(tune, g2).map((n) => Object.assign(n, { at: n.at + start }));
+        const mel = (gap) => tune.map((n, k) => loud12(n, k * gap, gap * 0.8));
         const ans = firstFast ? "느려졌어요 🐢" : "빨라졌어요 🐇";
-        return { text: "같은 노래를 두 번 들려줄게요. 두 번째는 빨라졌을까요, 느려졌을까요?", visual: listen("노래 두 번"), choices: ["빨라졌어요 🐇", "느려졌어요 🐢"], answer: ans,
-          play: one.concat(two), key: tune + g1 + g2, explain: firstFast ? "두 번째가 거북이처럼 느렸어요." : "두 번째가 토끼처럼 빨랐어요." };
+        return { text: "같은 노래를 두 번 들려줄게요. 두 번째는 빨라졌을까요, 느려졌을까요?", choices: ["빨라졌어요 🐇", "느려졌어요 🐢"], answer: ans,
+          parts: [{ label: "첫 번째", notes: mel(g1) }, { label: "두 번째", notes: mel(g2) }], key: tune + g1 + g2,
+          explain: firstFast ? "두 번째가 거북이처럼 느렸어요. 동그라미 사이도 넓어요." : "두 번째가 토끼처럼 빨랐어요. 동그라미가 촘촘해요." };
       } },
       { id: "loud", e: "🔊", name: "크게 작게", desc: "셈여림 비교하기", gen() {
-        const n = pick([0, 4, 7, 9, 12]), soft = 0.06, loud = 0.45, firstLoud = rnd(0, 1) === 1, times = rnd(2, 3);
-        const one = Array.from({ length: times }, (_, i) => note(n, i * 0.35, 0.3, firstLoud ? loud : soft));
-        const two = Array.from({ length: times }, (_, i) => note(n, 1.4 + i * 0.35, 0.3, firstLoud ? soft : loud));
+        // 크기 차이를 크게 두고, 동그라미 크기로도 보여 줘요
+        const n = pick([0, 4, 7, 9, 12]), firstLoud = rnd(0, 1) === 1, times = rnd(2, 3);
+        const row = (v) => Array.from({ length: times }, (_, k) => loud12(n, k * 0.4, 0.32, v));
         const ans = firstLoud ? "작아졌어요 🤫" : "커졌어요 📢";
-        return { text: "두 번째 소리는 커졌을까요, 작아졌을까요?", visual: listen("소리 두 번"), choices: ["커졌어요 📢", "작아졌어요 🤫"], answer: ans,
-          play: one.concat(two), key: n + "," + firstLoud + times, explain: firstLoud ? "두 번째는 속삭이듯 작은 소리였어요." : "두 번째는 크고 힘찬 소리였어요." };
+        return { text: "두 번째 소리는 커졌을까요, 작아졌을까요?", choices: ["커졌어요 📢", "작아졌어요 🤫"], answer: ans,
+          parts: [{ label: "첫 번째", notes: row(firstLoud ? LOUD : SOFT) }, { label: "두 번째", notes: row(firstLoud ? SOFT : LOUD) }], key: n + "," + firstLoud + times,
+          explain: firstLoud ? "두 번째는 속삭이듯 작은 소리였어요. 동그라미도 작아요." : "두 번째는 크고 힘찬 소리였어요. 동그라미도 커요." };
       } },
       { id: "inst", e: "🎺", name: "악기 이름", desc: "악기 알아보기", gen() {
         const [e, name, way] = pick(INST12), t = rnd(0, 2);
@@ -54,8 +62,8 @@
       } },
       { id: "count", e: "👏", name: "소리 세기", desc: "몇 번 났을까요?", gen() {
         const n = rnd(2, 7), gap = pick([0.35, 0.45, 0.55]), pitch = pick([0, 4, 7, 12]);
-        return { text: "소리가 몇 번 났을까요? 손가락으로 세어 봐요.", visual: listen("몇 번일까요?"), choices: opts(String(n), [n - 1, n + 1, n + 2].filter((x) => x > 0).map(String)), answer: String(n),
-          play: Array.from({ length: n }, (_, i) => note(pitch, i * gap, 0.2, 0.35)), key: n + "," + gap + "," + pitch, explain: "소리가 " + n + "번 났어요." };
+        return { text: "소리가 몇 번 났을까요? 손가락으로 세어 봐요.", choices: opts(String(n), [n - 1, n + 1, n + 2].filter((x) => x > 0).map(String)), answer: String(n),
+          parts: [{ label: "소리", notes: Array.from({ length: n }, (_, k) => loud12(pitch, k * gap, 0.22)) }], key: n + "," + gap + "," + pitch, explain: "소리가 " + n + "번 났어요. 동그라미도 " + n + "개예요." };
       } }
     ]
   });
