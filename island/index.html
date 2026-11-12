@@ -23,7 +23,7 @@
 
   .pill { background: var(--cream); border: 3px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 20px; box-shadow: 0 3px 0 rgba(74,59,82,.35); }
   #hud-left { position: fixed; left: calc(10px + env(safe-area-inset-left)); top: calc(10px + env(safe-area-inset-top)); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; pointer-events: none; }
-  #island-name { font-size: 16px; padding: 4px 12px; }
+  #island-name, #env { font-size: 16px; padding: 4px 12px; }
   #hud-right { position: fixed; right: calc(10px + env(safe-area-inset-right)); top: calc(10px + env(safe-area-inset-top)); display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 70vw; }
   .hbtn { position: relative; width: 62px; height: 62px; border-radius: 18px; border: 3px solid var(--line); background: var(--cream); box-shadow: 0 4px 0 rgba(74,59,82,.4);
     display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; line-height: 1; padding: 0; }
@@ -53,6 +53,9 @@
   #build-items { flex: 1; display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; }
   .slot { position: relative; flex: none; width: 66px; height: 66px; border-radius: 16px; border: 3px solid #cbbfd2; background: #fff; font-size: 34px; display: flex; align-items: center; justify-content: center; padding: 0; }
   .slot img { width: 46px; height: 46px; image-rendering: pixelated; border-radius: 6px; }
+  .slot.txt { flex-direction: column; font-size: 26px; line-height: 1; background: #ffe9f0; }
+  .slot.txt small { font-size: 13px; margin-top: 3px; }
+  .sw.big { width: 58px; height: 58px; border-radius: 14px; }
   .slot.on { border-color: #ff5f7a; box-shadow: 0 0 0 4px #ffd0da; }
   .slot .cnt { position: absolute; right: -4px; bottom: -4px; background: var(--line); color: #fff; font-size: 14px; border-radius: 999px; padding: 1px 7px; }
   #build-tip { position: fixed; left: 50%; top: calc(84px + env(safe-area-inset-top)); transform: translateX(-50%); font-size: 18px; white-space: nowrap; pointer-events: none; background: #ffe9f0; }
@@ -107,6 +110,7 @@
 <div id="hud-left">
   <div class="pill" id="coins">💰 0</div>
   <div class="pill" id="island-name"></div>
+  <div class="pill" id="env"></div>
 </div>
 <div id="hud-right">
   <button class="hbtn" data-open="bag">🎒<small>가방</small></button>
