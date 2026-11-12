@@ -471,6 +471,7 @@
     Activities.register("picker", ({ el, frame }) => {
       const root = frame(door.emoji + " " + door.name + ": 몇 학년 방으로 갈까요?");
       const row = el("div", "qz-missions");
+      if (door.pick.length === 6) row.style.gridTemplateColumns = "repeat(3, 1fr)"; // 6개 학년은 3개씩 두 줄
       door.pick.forEach((id) => {
         const r = scenes[id], st = STAMPS.find((x) => x[0] === id), p = progress[id] || { done: [] };
         const b = el("button", "qz-mission" + (stamps[id] ? " done" : ""),
@@ -539,12 +540,13 @@
   const STAMPS = [
     ["robot", "🤖", "로봇 공장", true], ["magnet", "🧲", "자석 실험실", true], ["greenhouse", "🌱", "관찰 온실", true],
     ["observatory", "🔭", "별 관측소", true], ["workshop", "🛠️", "발명 공방", true], ["garden", "🌻", "반복 정원", true],
-    ["math12", "🧸", "수학 1-2", true], ["math34", "⚖️", "수학 3-4", true], ["math56", "🕵️", "수학 5-6", true],
+    ["math1", "🧸", "수학 1", true], ["math2", "🎲", "수학 2", true], ["math3", "⚖️", "수학 3", true],
+    ["math4", "📐", "수학 4", true], ["math5", "🕵️", "수학 5", true], ["math6", "🔬", "수학 6", true],
     ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true],
     ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true],
     ["mus12", "🥁", "음악 1-2", true], ["mus34", "🎼", "음악 3-4", true], ["mus56", "🎹", "음악 5-6", true]
   ];
-  const QUIZ_IDS = ["math12", "math34", "math56", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56"];
+  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56"];
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
@@ -571,7 +573,7 @@
       if (id === "robot" && !stamps[id] && progress.robot) sub = (progress.robot.cleared || 0) + " / " + Activities.LEVELS.length + "단계";
       if (id === "garden" && !stamps[id] && progress.garden) sub = (progress.garden.cleared || 0) + " / 6단계";
       if (id === "workshop" && !stamps[id] && progress.workshop) sub = progress.workshop.done.length + " / 4 미션";
-      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = "미션 " + progress[id].done.length + " / 5";
+      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = "미션 " + progress[id].done.length + " / 5" + ((progress[id].hard || []).length ? " · 🔥" + progress[id].hard.length : "");
       d.innerHTML = "<div class='e'>" + e + "</div><b>" + name + "</b><small>" + sub + "</small>";
       list.append(d);
     });
@@ -711,7 +713,7 @@
     if (id === "robot" && p.robot) return p.robot.cleared + "/" + Activities.LEVELS.length;
     if (id === "garden" && p.garden) return p.garden.cleared + "/6";
     if (id === "workshop" && p.workshop) return p.workshop.done.length + "/4";
-    if (QUIZ_IDS.includes(id) && p[id]) return p[id].done.length + "/5";
+    if (QUIZ_IDS.includes(id) && p[id]) return p[id].done.length + "/5" + ((p[id].hard || []).length ? "🔥" + p[id].hard.length : "");
     return "";
   }
 
