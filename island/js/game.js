@@ -287,7 +287,7 @@ canvas.addEventListener("pointerdown", (e) => {
   e.preventDefault();
   if (!$("card").hidden) { if (performance.now() > cardUntil) hideCard(); return; }
   if (fishing) { hook(); return; }
-  canvas.setPointerCapture(e.pointerId);
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 못 잡아도 괜찮아요 */ }
   ptr = { e, last: "" };
   if (build) buildAt(e);
 });
@@ -607,6 +607,7 @@ function openSet() {
     '<div class="how">🚶 <b>걷기</b>: 가고 싶은 곳을 꾹 누르기 (키보드는 방향키나 WASD)<br>✨ <b>행동</b>: 오른쪽 아래 노란 단추 (키보드는 스페이스)<br>' +
     "🎣 <b>낚시</b>: 물가를 보고 행동 → 찌가 쑥 들어가고 ❗가 뜨면 얼른 한 번 더!<br>🌳 과일은 " + (REGROW_MS / 60000) + "분마다 다시 열려요.<br>" +
     "🔨 <b>꾸미기</b>: 아래에서 물건을 고르고 땅을 눌러요. 🧽는 도로 줍기.<br>👗 보라 지붕 집에서 옷과 머리를 바꿔요.<br>💾 놀던 내용은 이 기기에 저절로 저장돼요.</div>" +
+    (isStandalone() ? "" : '<div class="field"><button class="btn go" data-install="1">📲 몽글몽글 섬을 앱으로 설치하기</button></div>') +
     '<div class="field"><button class="btn small" data-reset="1">🗑️ 섬을 처음부터 다시 시작</button></div>');
 }
 
@@ -631,10 +632,25 @@ $("modal-body").addEventListener("click", (e) => {
     const m = MISSIONS.find((x) => x.id === d.claim);
     state.claimed[m.id] = 1; state.coins += m.r; sfx("good"); touch(); refreshHud(); openNote();
   } else if (d.mute) { state.mute = !state.mute; touch(); sfx("pop"); openSet(); }
+  else if (d.install) installApp();
   else if (d.reset) {
     if (confirm("정말 처음부터 다시 시작할까요?\n모은 물건과 꾸민 섬이 모두 사라져요.")) { localStorage.removeItem(SAVE_KEY); dirty = false; removeEventListener("pagehide", save); state = newState(); location.reload(); }
   }
 });
+
+// ───────── 앱으로 설치하기 ─────────
+// 크롬이 설치 창을 줄 수 있으면 바로 띄우고, 아니면 설치 순서를 알려 줘요.
+let installEv = null;
+function isStandalone() { return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEv = e; });
+addEventListener("appinstalled", () => { installEv = null; $("intro-install").hidden = true; toast("📲 앱으로 설치했어요! 홈 화면에서 열어요."); });
+async function installApp() {
+  if (installEv) { const e = installEv; installEv = null; e.prompt(); try { await e.userChoice; } catch (err) { /* 취소해도 괜찮아요 */ } return; }
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  openModal("install", "📲 앱으로 설치하기", '<div class="how">' + (ios
+    ? "1. <b>사파리</b>에서 이 페이지를 열어요.<br>2. 위쪽의 <b>공유 단추</b>(□↑)를 눌러요.<br>3. <b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요."
+    : "1. 크롬 오른쪽 위 <b>⋮</b> 메뉴(노트북은 주소창 오른쪽 설치 그림)를 눌러요.<br>2. <b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.<br>3. 메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요.") + "</div>");
+}
 
 // ───────── 그림판 ─────────
 function openStudio() {
@@ -689,7 +705,7 @@ function openStudio() {
     } else px[i] = to;
     paint();
   };
-  cv.addEventListener("pointerdown", (e) => { e.preventDefault(); cv.setPointerCapture(e.pointerId); undo.push(px.slice()); if (undo.length > 30) undo.shift(); down = true; draw(e); });
+  cv.addEventListener("pointerdown", (e) => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 못 잡아도 괜찮아요 */ } undo.push(px.slice()); if (undo.length > 30) undo.shift(); down = true; draw(e); });
   cv.addEventListener("pointermove", (e) => { if (down && tool !== "fill") draw(e); });
   const up = () => { if (down) { down = false; commit(); ui(); } };
   cv.addEventListener("pointerup", up);
@@ -758,6 +774,8 @@ setInterval(spawnShells, 5000);
 refreshHud();
 if (!state.started) {
   $("intro").hidden = false;
+  $("intro-install").hidden = isStandalone();
+  $("intro-install").addEventListener("click", installApp);
   $("intro-go").addEventListener("click", () => {
     state.name = $("in-name").value.trim() || "하늘";
     state.island = $("in-island").value.trim() || "몽글몽글";
