@@ -48,6 +48,12 @@ function refreshDesign(i, code) {
   }
 }
 
+// 지금 계절과 밤낮 (game.js가 채워요)
+const ENV = { season: "summer", night: 0, sunset: 0, label: "" };
+const GRASS = { spring: ["#9fe07c", "#97da74"], summer: ["#92d672", "#8bd06b"], autumn: ["#c3d273", "#bbcb6b"], winter: ["#f2f6fb", "#e8eff7"] };
+const LEAF = { spring: ["#7fd27c", "#9be08f"], summer: ["#4dab59", "#68c56c"], winter: ["#dbe6f0", "#ffffff"] };
+const AUTUMN = [["#e9963b", "#f3b55a"], ["#dc6f3c", "#ee9562"], ["#e8b93b", "#f5d46a"]];
+
 function drawTile(g, world, x, y, time) {
   const t = world.at(x, y), h = tileHash(x, y);
   if (t === T_SEA || t === T_SHALLOW || t === T_WATER || t === T_BRIDGE) {
@@ -87,19 +93,32 @@ function drawTile(g, world, x, y, time) {
     ell(g, x + 0.3 + (h % 4) * 0.1, y + 0.3, 0.09, 0.06); ell(g, x + 0.6, y + 0.65 + (h % 3) * 0.08, 0.07, 0.05);
     return;
   }
-  g.fillStyle = ((x + y) & 1) ? "#92d672" : "#8bd06b"; g.fillRect(x, y, 1, 1);
+  const se = ENV.season;
+  g.fillStyle = GRASS[se][(x + y) & 1]; g.fillRect(x, y, 1, 1);
+  if (se === "winter") {
+    if (h % 6 === 0) { g.fillStyle = "#dbe6f2"; ell(g, x + 0.3 + (h % 5) * 0.1, y + 0.5, 0.12, 0.05); }
+    return;
+  }
+  if (se === "autumn" && h % 9 === 0) {
+    g.fillStyle = AUTUMN[h % 3][0]; g.beginPath(); g.ellipse(x + 0.3 + (h % 5) * 0.1, y + 0.6, 0.07, 0.04, h % 3, 0, Math.PI * 2); g.fill();
+    return;
+  }
   if (h % 5 === 0) {
-    g.fillStyle = "#74bd58";
+    g.fillStyle = se === "autumn" ? "#a3b85a" : "#74bd58";
     const ox = x + 0.2 + (h % 6) * 0.1, oy = y + 0.3 + (h % 4) * 0.13;
     g.fillRect(ox, oy, 0.04, 0.13); g.fillRect(ox + 0.09, oy + 0.03, 0.04, 0.1);
-  } else if (h % 23 === 0) {
-    g.fillStyle = "#fff"; ell(g, x + 0.5, y + 0.5, 0.07, 0.07);
+  } else if (h % 23 === 0 || (se === "spring" && h % 11 === 0)) {
+    g.fillStyle = se === "spring" && h % 2 ? "#ffc1d6" : "#fff"; ell(g, x + 0.5, y + 0.5, 0.07, 0.07);
     g.fillStyle = "#ffd84d"; ell(g, x + 0.5, y + 0.5, 0.03, 0.03);
   }
 }
 
 function drawFloor(g, f, x, y) {
-  if (f === "s") {
+  if (f === "rug") {
+    g.fillStyle = "#c9a3f0"; ell(g, x + 0.5, y + 0.5, 0.49, 0.44);
+    g.fillStyle = "#e3cdfa"; ell(g, x + 0.5, y + 0.5, 0.36, 0.31);
+    g.fillStyle = "#fff"; ell(g, x + 0.5, y + 0.5, 0.14, 0.12);
+  } else if (f === "s" || f === "stone") {
     g.fillStyle = "#c9ced8"; rr(g, x + 0.1, y + 0.14, 0.8, 0.72, 0.28); g.fill();
     g.fillStyle = "#e2e6ee"; rr(g, x + 0.16, y + 0.18, 0.6, 0.45, 0.2); g.fill();
   } else if (designCv[f]) {
@@ -114,8 +133,11 @@ function drawTree(g, st, x, y, ready, shake) {
     g.fillStyle = "#9a6a40"; g.fillRect(cx - 0.08, y + 0.55, 0.16, 0.35);
     for (let i = 0; i < 3; i++) {
       g.fillStyle = ["#3f9f6c", "#47ab75", "#52b87f"][i];
-      const w = 0.5 - i * 0.1, top = y - 0.75 + (2 - i) * 0.42 - 0.1;
-      g.beginPath(); g.moveTo(cx + ox * (i + 1) / 2, top - 0.25); g.lineTo(cx + w, top + 0.5); g.lineTo(cx - w, top + 0.5); g.closePath(); g.fill();
+      const w = 0.5 - i * 0.1, top = y - 0.75 + (2 - i) * 0.42 - 0.1, px = cx + ox * (i + 1) / 2;
+      g.beginPath(); g.moveTo(px, top - 0.25); g.lineTo(cx + w, top + 0.5); g.lineTo(cx - w, top + 0.5); g.closePath(); g.fill();
+      if (ENV.season === "winter") {
+        g.fillStyle = "#fff"; g.beginPath(); g.moveTo(px, top - 0.25); g.lineTo(px + w * 0.45, top + 0.1); g.lineTo(px, top + 0.02); g.lineTo(px - w * 0.45, top + 0.1); g.closePath(); g.fill();
+      }
     }
     return;
   }
@@ -132,9 +154,14 @@ function drawTree(g, st, x, y, ready, shake) {
     return;
   }
   g.fillStyle = "#9a6a40"; rr(g, cx - 0.11, y + 0.3, 0.22, 0.6, 0.06); g.fill();
-  g.fillStyle = "#4dab59";
+  const leaf = ENV.season === "autumn" ? AUTUMN[tileHash(x, y) % 3] : LEAF[ENV.season];
+  g.fillStyle = leaf[0];
   ell(g, cx - 0.3 + ox, y + 0.12, 0.36, 0.34); ell(g, cx + 0.3 + ox, y + 0.12, 0.36, 0.34); ell(g, cx + ox, y - 0.18, 0.48, 0.46);
-  g.fillStyle = "#68c56c"; ell(g, cx - 0.1 + ox, y - 0.3, 0.27, 0.22);
+  g.fillStyle = leaf[1]; ell(g, cx - 0.1 + ox, y - 0.3, 0.27, 0.22);
+  if (ENV.season === "spring") {
+    g.fillStyle = "#ffb7d0";
+    for (const [bx, by] of [[-0.42, 0.0], [0.38, -0.12], [0.12, -0.5], [-0.2, -0.42], [0.44, 0.22], [-0.05, 0.3]]) ell(g, cx + bx + ox, y + by, 0.07, 0.07);
+  }
   if (ready) {
     const e = ITEMS[st.fruit].e;
     drawEmo(g, e, cx - 0.3 + ox, y + 0.38, 0.3); drawEmo(g, e, cx + 0.3 + ox, y + 0.34, 0.3); drawEmo(g, e, cx + ox, y + 0.02, 0.3);
@@ -175,6 +202,12 @@ function drawObj(g, o, x, y, objAt) {
     return;
   }
   shadow(g, cx, y + 0.9, 0.3);
+  if (it.draw === "table") {
+    g.fillStyle = "#a87745"; g.fillRect(x + 0.16, y + 0.45, 0.1, 0.45); g.fillRect(x + 0.74, y + 0.45, 0.1, 0.45);
+    g.fillStyle = "#c9955c"; rr(g, x + 0.04, y + 0.18, 0.92, 0.5, 0.12); g.fill();
+    g.fillStyle = "#deb07a"; rr(g, x + 0.1, y + 0.22, 0.8, 0.3, 0.1); g.fill();
+    return;
+  }
   if (it.draw === "lamp") {
     g.fillStyle = "rgba(255,240,150,.35)"; ell(g, cx, y - 0.25, 0.42, 0.42);
     g.fillStyle = "#5a6072"; g.fillRect(cx - 0.05, y - 0.1, 0.1, 1.0); rr(g, cx - 0.14, y + 0.8, 0.28, 0.1, 0.04); g.fill();
@@ -236,4 +269,50 @@ function drawPerson(g, x, y, look, dir, t, moving) {
 function drawNpc(g, x, y, t) {
   shadow(g, x + 0.5, y + 0.9, 0.3);
   drawEmo(g, "🐱", x + 0.5, y + 0.95 - Math.abs(Math.sin(t * 2)) * 0.05, 0.85);
+}
+
+// 밤에 건물 창문과 불빛이 켜져요
+function drawBuildingLights(g, x, y, n) {
+  g.fillStyle = "rgba(255,229,138," + n + ")";
+  rr(g, x + 0.38, y + 0.9, 0.55, 0.5, 0.08); g.fill(); rr(g, x + 2.07, y + 0.9, 0.55, 0.5, 0.08); g.fill();
+}
+function drawGlow(g, cx, cy, r, n) {
+  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+  gr.addColorStop(0, "rgba(255,236,150," + 0.55 * n + ")");
+  gr.addColorStop(1, "rgba(255,236,150,0)");
+  g.fillStyle = gr; g.fillRect(cx - r, cy - r, r * 2, r * 2);
+}
+
+// ───── 집 안 ─────
+function drawRoomTile(g, home, t, x, y) {
+  if (t === T_WALL) {
+    if (typeof home.wall === "number" && designCv[home.wall]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(designCv[home.wall], x, y, 1, 1); }
+    else { g.fillStyle = home.wall; g.fillRect(x, y, 1, 1); }
+    if (y === 0) { g.fillStyle = "rgba(74,59,82,.25)"; g.fillRect(x, y, 1, 0.1); }
+    else { g.fillStyle = "#fff"; g.fillRect(x, y + 0.84, 1, 0.16); g.fillStyle = "rgba(74,59,82,.18)"; g.fillRect(x, y + 0.96, 1, 0.04); }
+  } else if (t === T_ROOM) {
+    if (typeof home.flr === "number" && designCv[home.flr]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(designCv[home.flr], x, y, 1, 1); }
+    else {
+      const c = FLOORS[home.flr] || FLOORS.wood;
+      g.fillStyle = c[(x + y) & 1]; g.fillRect(x, y, 1, 1);
+      if (home.flr === "wood") { g.fillStyle = "rgba(120,80,40,.18)"; g.fillRect(x, y + 0.48, 1, 0.03); g.fillRect(x + (y & 1 ? 0.3 : 0.7), y, 0.03, 0.5); }
+    }
+  } else if (t === T_EXIT) {
+    g.fillStyle = "#8a5a35"; g.fillRect(x, y, 1, 0.55);
+    g.fillStyle = "#ff9db5"; rr(g, x + (x === 5 ? 0.2 : -0.2), y + 0.06, 1, 0.38, 0.12); g.fill();
+  }
+}
+// 벽에 달린 창문: 바깥 하늘이 보여요
+function drawRoomWindow(g, x, y) {
+  g.fillStyle = "#fff"; rr(g, x - 0.08, y - 0.08, 2.16, 1.26, 0.14); g.fill();
+  g.fillStyle = ENV.night > 0.5 ? "#243a6b" : ENV.sunset > 0.3 ? "#ffb27a" : "#9fdcf5"; rr(g, x, y, 2, 1.1, 0.08); g.fill();
+  drawEmo(g, ENV.night > 0.5 ? "🌙" : ENV.sunset > 0.3 ? "🌇" : "⛅", x + 1.45, y + 0.8, 0.6);
+  g.fillStyle = "#fff"; g.fillRect(x + 0.96, y, 0.08, 1.1); g.fillRect(x, y + 0.51, 2, 0.08);
+}
+function drawWardrobe(g, x, y) {
+  g.fillStyle = "rgba(40,30,50,.2)"; ell(g, x + 0.5, y + 0.92, 0.5, 0.1);
+  g.fillStyle = "#b98a55"; rr(g, x + 0.04, y - 0.75, 0.92, 1.65, 0.1); g.fill();
+  g.fillStyle = "#d3a56e"; rr(g, x + 0.1, y - 0.68, 0.37, 1.4, 0.06); g.fill(); rr(g, x + 0.53, y - 0.68, 0.37, 1.4, 0.06); g.fill();
+  g.fillStyle = "#ffd84d"; ell(g, x + 0.41, y + 0.05, 0.04, 0.04); ell(g, x + 0.59, y + 0.05, 0.04, 0.04);
+  drawEmo(g, "👗", x + 0.5, y - 0.72, 0.4);
 }

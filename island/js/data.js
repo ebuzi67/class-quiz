@@ -3,6 +3,8 @@
 
 const MW = 46, MH = 34;
 const T_SEA = 0, T_SHALLOW = 1, T_SAND = 2, T_GRASS = 3, T_WATER = 4, T_BRIDGE = 5, T_PATH = 6;
+const T_VOID = 7, T_WALL = 8, T_ROOM = 9, T_EXIT = 10;   // 집 안: 바깥, 벽, 방바닥, 나가는 문
+const RW = 12, RH = 9;
 const BAG_MAX = 30;
 const REGROW_MS = 4 * 60 * 1000;   // 과일이 다시 열리는 시간
 const SHELL_MS = 45 * 1000;        // 조개가 새로 밀려오는 시간
@@ -43,19 +45,63 @@ const ITEMS = {
   fence:     { n: "울타리", e: "🚧", k: "decor", buy: 60, block: true, draw: "fence" },
   mushroom:  { n: "버섯 장식", e: "🍄", k: "decor", buy: 150, block: true, s: 0.7 },
   balloon:   { n: "풍선", e: "🎈", k: "decor", buy: 200, block: true, s: 0.85 },
-  lantern:   { n: "등불", e: "🏮", k: "decor", buy: 300, block: true, s: 0.75 },
+  lantern:   { n: "등불", e: "🏮", k: "decor", buy: 300, block: true, s: 0.75, glow: true },
   easel:     { n: "내 그림 이젤", e: "🖼️", k: "decor", buy: 300, block: true, draw: "easel" },
-  lamp:      { n: "가로등", e: "💡", k: "decor", buy: 400, block: true, draw: "lamp" },
-  sofa:      { n: "소파", e: "🛋️", k: "decor", buy: 500, block: true, s: 0.9 },
-  bear:      { n: "곰 인형", e: "🧸", k: "decor", buy: 600, block: true, s: 0.75 },
-  snowman:   { n: "눈사람", e: "⛄", k: "decor", buy: 800, block: true, s: 0.9 },
+  lamp:      { n: "가로등", e: "💡", k: "decor", buy: 400, block: true, draw: "lamp", glow: true },
+  snowman:   { n: "눈사람", e: "⛄", k: "decor", buy: 800, block: true, s: 0.9, season: "winter" },
   moai:      { n: "돌 조각상", e: "🗿", k: "decor", buy: 1200, block: true, s: 0.95 },
   tent:      { n: "텐트", e: "⛺", k: "decor", buy: 1500, block: true, s: 1.1 },
   fountain:  { n: "분수", e: "⛲", k: "decor", buy: 2000, block: true, s: 1.1 },
   carousel:  { n: "회전목마", e: "🎠", k: "decor", buy: 5000, block: true, s: 1.2 },
-  wheel:     { n: "관람차", e: "🎡", k: "decor", buy: 8000, block: true, s: 1.5 }
+  wheel:     { n: "관람차", e: "🎡", k: "decor", buy: 8000, block: true, s: 1.5 },
+
+  // 가구 (cat: "in")
+  candle:   { n: "양초", e: "🕯️", k: "decor", buy: 200, cat: "in", s: 0.6, glow: true },
+  cactus:   { n: "선인장 화분", e: "🌵", k: "decor", buy: 250, cat: "in", block: true, s: 0.7 },
+  rug:      { n: "폭신 러그", e: "🧶", k: "floor", buy: 300, cat: "in" },
+  books:    { n: "책 더미", e: "📚", k: "decor", buy: 300, cat: "in", block: true, s: 0.7 },
+  cake:     { n: "케이크", e: "🎂", k: "decor", buy: 400, cat: "in", block: true, s: 0.65 },
+  table:    { n: "나무 탁자", e: "🍽️", k: "decor", buy: 400, cat: "in", block: true, draw: "table" },
+  sofa:     { n: "소파", e: "🛋️", k: "decor", buy: 500, cat: "in", block: true, s: 0.9 },
+  bear:     { n: "곰 인형", e: "🧸", k: "decor", buy: 600, cat: "in", block: true, s: 0.75 },
+  clock:    { n: "탁상시계", e: "🕰️", k: "decor", buy: 700, cat: "in", block: true, s: 0.7 },
+  slate:    { n: "촬영 슬레이트", e: "🎬", k: "decor", buy: 800, cat: "in", block: true, s: 0.7 },
+  globe:    { n: "지구본", e: "🌎", k: "decor", buy: 900, cat: "in", block: true, s: 0.7 },
+  mic:      { n: "방송 마이크", e: "🎤", k: "decor", buy: 1000, cat: "in", block: true, s: 0.75 },
+  guitar:   { n: "기타", e: "🎸", k: "decor", buy: 1200, cat: "in", block: true, s: 0.85 },
+  bed:      { n: "침대", e: "🛏️", k: "decor", buy: 1500, cat: "in", block: true, s: 1.05 },
+  gamepad:  { n: "게임기", e: "🎮", k: "decor", buy: 1800, cat: "in", block: true, s: 0.7 },
+  bath:     { n: "욕조", e: "🛁", k: "decor", buy: 2000, cat: "in", block: true, s: 1.0 },
+  tv:       { n: "텔레비전", e: "📺", k: "decor", buy: 2500, cat: "in", block: true, s: 0.9, glow: true },
+  camera:   { n: "촬영 카메라", e: "🎥", k: "decor", buy: 2500, cat: "in", block: true, s: 0.85 },
+  computer: { n: "컴퓨터", e: "🖥️", k: "decor", buy: 3000, cat: "in", block: true, s: 0.85 },
+  trophy:   { n: "트로피", e: "🏆", k: "decor", buy: 3000, cat: "in", block: true, s: 0.75 },
+  piano:    { n: "피아노", e: "🎹", k: "decor", buy: 4000, cat: "in", block: true, s: 1.0 },
+
+  // 계절 한정 (그 계절에만 팔아요)
+  blossom:  { n: "벚꽃", e: "🌸", k: "decor", buy: 200, season: "spring", s: 0.65 },
+  clover:   { n: "네잎클로버", e: "🍀", k: "decor", buy: 400, season: "spring", s: 0.6 },
+  parasol:  { n: "파라솔", e: "⛱️", k: "decor", buy: 600, season: "summer", block: true, s: 1.1 },
+  melon:    { n: "수박", e: "🍉", k: "decor", buy: 300, season: "summer", block: true, s: 0.65 },
+  pumpkin:  { n: "호박 등", e: "🎃", k: "decor", buy: 300, season: "autumn", block: true, s: 0.75, glow: true },
+  maple:    { n: "단풍잎 더미", e: "🍁", k: "decor", buy: 200, season: "autumn", s: 0.65 },
+  chestnut: { n: "알밤", e: "🌰", k: "decor", buy: 150, season: "autumn", s: 0.5 },
+  xmas:     { n: "반짝 트리", e: "🎄", k: "decor", buy: 1000, season: "winter", block: true, s: 1.15, glow: true },
+  gift:     { n: "선물 상자", e: "🎁", k: "decor", buy: 400, season: "winter", block: true, s: 0.7 }
 };
-const SHOP_LIST = Object.keys(ITEMS).filter((id) => ITEMS[id].buy);
+const SEASONS = { spring: "🌸 봄", summer: "🌻 여름", autumn: "🍁 가을", winter: "⛄ 겨울" };
+// 상점 진열대: out(바깥 꾸미기), in(가구), season(이번 계절 한정)
+function shopList(tab, season) {
+  return Object.keys(ITEMS).filter((id) => {
+    const it = ITEMS[id];
+    if (!it.buy) return false;
+    if (it.season) return tab === "season" && it.season === season;
+    return tab === (it.cat || "out");
+  });
+}
+// 방 벽지와 바닥 (내 디자인도 쓸 수 있어요)
+const WALLS = ["#ffe6ee", "#e3f4ff", "#e6f7dc", "#fff3c9", "#ece3ff", "#ffffff", "#ffd9b8", "#cfe9e2"];
+const FLOORS = { wood: ["#e2b784", "#d8aa72"], cream: ["#fff3dc", "#f8e8c8"], pink: ["#ffd9e3", "#ffc9d8"], mint: ["#d3f3e3", "#c2ebd6"], sky: ["#d6ecfb", "#c5e2f7"], gray: ["#e3e5ec", "#d5d8e2"] };
 const DEX_GROUPS = [
   { n: "바다 친구", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fish" && ITEMS[id].where === "sea") },
   { n: "강·연못 친구", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fish" && ITEMS[id].where === "fresh") },
@@ -80,6 +126,16 @@ const HAIR_STYLES = [["long", "긴 머리"], ["pig", "양갈래"], ["short", "�
 
 function tileHash(x, y) {
   return (Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0;
+}
+
+function buildRoom() {
+  const at = (x, y) => {
+    if (x < 1 || x > 10 || y < 0 || y > 8) return T_VOID;
+    if (y < 2) return T_WALL;
+    if (y <= 7) return T_ROOM;
+    return (x === 5 || x === 6) ? T_EXIT : T_VOID;
+  };
+  return { at, statics: new Map([["2,2", { t: "wardrobe" }]]), start: [6, 7.4] };
 }
 
 function buildMap() {
