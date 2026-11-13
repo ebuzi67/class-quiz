@@ -57,25 +57,45 @@ function makeRequest(id) {
 }
 function questReward(req) { return sellPrice(req.item) * req.n + 150 + 50 * req.n; }
 function heartsHtml(id) { const h = palHearts(id); return "❤️".repeat(h) + "🤍".repeat(5 - h); }
+// 친구가 할 말을 그때그때 골라요. 계절·시간·내 모습에 맞는 말도 섞이고, 바로 전에 한 말은 다시 하지 않아요.
+const lastLine = {};
+function palLine(id) {
+  const f = FRIENDS[id], n = state.name, more = [
+    n + ", 오늘은 뭐 하고 놀았어?", n + ", 또 만났네! 반가워.", "같이 있으니까 좋다. 내일도 놀러 올 거지?", "수첩의 할 일은 다 했어? 모카가 선물을 준대.",
+    "그림판에서 그린 그림을 옷으로 입을 수 있대. 네 그림 보고 싶어!", "📷 사진 단추로 우리 같이 사진 찍자!", "보라 지붕 집 안도 꾸며 봤어? 나도 구경 가고 싶다."
+  ];
+  if (ENV.night > 0.5) more.push("하암… 밤이 깊었네. 별이 예쁘다.", "밤에는 반딧불이가 날아다녀. 반짝반짝!");
+  else if (ENV.sunset > 0.3) more.push("노을이 정말 예쁘다. 하늘이 주황색이야.");
+  else more.push("햇살이 따뜻해서 기분이 좋아!");
+  more.push({ spring: "꽃잎이 날려! 봄이 왔어.", summer: "여름 바다는 반짝반짝해!", autumn: "단풍이 정말 예쁜 가을이야.", winter: "눈이 온다! 눈사람 만들고 싶어." }[ENV.season]);
+  more.push({ spring: "봄에는 상점에서 벚꽃을 판대.", summer: "여름에는 파라솔 아래가 최고야.", autumn: "가을에는 알밤이랑 호박 등을 판대.", winter: "겨울에는 반짝 트리를 판대!" }[ENV.season]);
+  if (state.look.hat && HATS[state.look.hat]) more.push("그 " + HATS[state.look.hat].n + ", 정말 잘 어울린다!");
+  if (state.look.fit === "dress") more.push("원피스 입었네! 빙글 돌아 봐.");
+  const dex = Object.keys(state.dex).length;
+  more.push(dex >= 20 ? "도감을 " + dex + "종이나 모았어? 대단하다!" : "도감은 지금 " + dex + "종이구나. 같이 더 찾아보자!");
+  if (inParty()) more.push("오늘은 친구들이 많아서 섬이 북적북적해. 신난다!");
+  if (palHearts(id) >= 3) more.push(n + "는 내 가장 친한 친구야!", "너랑 있으면 시간 가는 줄 모르겠어.");
+  const pool = f.lines.concat(f.lines, more).filter((l) => l !== lastLine[id]);   // 친구 고유의 말이 더 자주 나와요
+  return (lastLine[id] = pickOne(pool));
+}
 function openTalk(id, said) {
   const f = FRIENDS[id], ps = palState(id), now = Date.now();
-  if (!ps.req && now >= ps.reqAt) { ps.req = makeRequest(id); touch(); }
   let line = said;
-  if (!line) {
-    if (ps.req) { const it = ITEMS[ps.req.item]; line = f.ask.replace("{item}", it.e + " " + it.n + " " + ps.req.n + "개"); }
-    else {
-      const extra = ENV.night > 0.5 ? ["하암… 밤이 깊었네. 별이 예쁘다."] : ENV.season === "winter" ? ["눈이 온다! 눈사람 만들고 싶어."] : ENV.season === "autumn" ? ["단풍이 정말 예쁜 가을이야."] : ENV.season === "spring" ? ["꽃잎이 날려! 봄이 왔어."] : ["여름 바다는 반짝반짝해!"];
-      line = pickOne(f.lines.concat(extra));
-    }
+  if (!ps.req && now >= ps.reqAt) {   // 새 부탁이 생긴 순간에만 부탁하는 말을 해요
+    ps.req = makeRequest(id); touch();
+    if (!line) { const it = ITEMS[ps.req.item]; line = f.ask.replace("{item}", it.e + " " + it.n + " " + ps.req.n + "개"); }
   }
-  let html = '<div class="talk"><div class="face">' + f.e + '</div><div class="bubble"><b>' + f.n + '</b> <span class="hearts">' + heartsHtml(id) + '</span><p>' + line + "</p></div></div>" +
-    '<p class="note">' + f.n + "는 " + f.favName + "을(를) 좋아해요. 부탁을 들어주거나 선물을 하면 하트가 늘고, 하트가 1·3·5개가 되면 특별한 선물을 받아요.</p><div class=\"tabs\">";
+  if (!line) line = palLine(id);
+  let html = '<div class="talk"><div class="face">' + f.e + '</div><div class="bubble"><b>' + f.n + '</b> <span class="hearts">' + heartsHtml(id) + '</span><p>' + esc(line) + "</p></div></div>";
   if (ps.req) {
     const have = state.bag[ps.req.item] || 0, it = ITEMS[ps.req.item];
-    html += '<button class="btn pink" data-give="' + id + '"' + (have >= ps.req.n ? "" : " disabled") + ">" + it.e + " 건네주기 (" + Math.min(have, ps.req.n) + "/" + ps.req.n + ") → 💰 " + questReward(ps.req) + "</button>";
-  }
-  html += '<button class="btn" data-gift="' + id + '"' + (now < ps.giftAt || !bagCount() ? " disabled" : "") + ">💝 선물하기</button>" +
-    '<button class="btn" data-bye="1">👋 안녕!</button></div>';
+    html += '<div class="ask">💌 <b>' + f.n + "의 부탁</b>: " + it.e + " " + it.n + " " + ps.req.n + "개 가져다주기 (지금 " + Math.min(have, ps.req.n) + "/" + ps.req.n + ")</div>" +
+      '<div class="tabs"><button class="btn pink" data-give="' + id + '"' + (have >= ps.req.n ? "" : " disabled") + ">" + it.e + " 건네주기 → 💰 " + questReward(ps.req) + "</button>";
+  } else html += '<div class="tabs">';
+  html += '<button class="btn go" data-chat="' + id + '">💬 더 이야기하기</button>' +
+    '<button class="btn" data-gift="' + id + '"' + (now < ps.giftAt || !bagCount() ? " disabled" : "") + ">💝 선물하기</button>" +
+    '<button class="btn" data-bye="1">👋 안녕!</button></div>' +
+    '<p class="note">' + f.n + "는 " + f.favName + "을(를) 좋아해요. 부탁을 들어주거나 선물을 하면 하트가 늘고, 하트가 1·3·5개가 되면 특별한 선물을 받아요.</p>";
   openModal("talk", "💬 " + f.n, html);
 }
 function palLevelUp(id, before) {

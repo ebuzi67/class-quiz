@@ -598,7 +598,7 @@ function render() {
     } else if (th.other) drawPerson(g, th.other.x, th.other.y, th.other.look, th.other.dir, time, th.other.moving);
     else if (th.pal) {
       const ps = state.pals[th.pal.id];
-      drawPal(g, FRIENDS[th.pal.id], th.pal, time, !ps || ps.req || Date.now() >= ps.reqAt ? "💬" : null);
+      drawPal(g, FRIENDS[th.pal.id], th.pal, time, !ps || ps.req || Date.now() >= ps.reqAt ? "💌" : "💬");
     } else if (th.bug) drawBug(g, th.bug, time);
     else if (th.pl) drawPlant(g, th.pl, th.x, th.ty, time);
     else if (th.b) drawBuilding(g, th.b.b, th.b.x, th.b.y);
@@ -822,7 +822,7 @@ const GUIDE = [
   ["🔨 꾸미기", "아래 줄에서 물건을 고르고 땅을 눌러서 놓아요. 🧽는 놓은 것을 도로 가방에 넣어요. 왼쪽 아래 화살표로 움직일 수 있어요."],
   ["🎨 그림판", "점을 찍어 내 그림을 그려요(8장). 그린 그림은 옷으로 입거나, 바닥에 깔거나, 벽지·이젤에 쓸 수 있어요."],
   ["🏠 우리 집과 👗 옷장", "보라 지붕 집에 들어가면 내 방이에요. 꾸미기에서 가구를 놓고 벽지·바닥을 바꿔요. 방 안 옷장에서 머리·옷·바지·모자와 이름을 바꿔요. 아래쪽 문으로 나가요."],
-  ["🐰 섬 친구", "토리·곰곰·핑·루비에게 다가가 말을 걸어요. 부탁을 들어주면 코인과 하트를 받고, 선물도 줄 수 있어요. 하트가 1·3·5개가 되면 특별한 선물을 받아요."],
+  ["🐰 섬 친구", "토리·곰곰·핑·루비에게 다가가 말을 걸어요. 몇 번이든 이야기할 수 있고, \"더 이야기하기\"를 누르면 다른 말을 해요. 머리 위에 💌가 보이면 부탁이 있어요. 부탁을 들어주면 코인과 하트를 받고, 선물도 줄 수 있어요. 하트가 1·3·5개가 되면 특별한 선물을 받아요."],
   ["☀️ 하늘과 🍁 계절", "위쪽 하늘 단추를 누르면 낮 → 저녁 → 밤 → 자동(실제 시각)으로 바뀌어요. 밤에는 귀한 물고기가 잘 잡혀요. 계절은 실제 달을 따라 바뀌고, 상점의 계절 한정 물건도 달라져요."],
   ["📷 사진", "사진 단추를 누르면 지금 화면이 사진으로 저장돼요."],
   ["📖 도감과 ✅ 할 일", "처음 잡거나 딴 것은 도감에 기록돼요. 수첩의 할 일을 해내면 코인을 받아요."],
@@ -868,7 +868,8 @@ $("modal-body").addEventListener("click", (e) => {
     state.coins -= h.buy; state.hats.push(d.hat); state.look.hat = d.hat; sfx("good"); bump("bought");
     toast(h.e + " " + h.n + "을(를) 샀어! 바로 써 봤어. 옷장에서 바꿀 수 있어.");
     openShop("wear");
-  } else if (d.give) giveQuest(d.give);
+  } else if (d.chat) { sfx("pop"); openTalk(d.chat); }
+  else if (d.give) giveQuest(d.give);
   else if (d.gift) openGift(d.gift);
   else if (d.giftitem) giveGift(d.to, d.giftitem);
   else if (d.bye) closeModal();
