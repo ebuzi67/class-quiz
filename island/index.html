@@ -60,6 +60,16 @@
   .slot .cnt { position: absolute; right: -4px; bottom: -4px; background: var(--line); color: #fff; font-size: 14px; border-radius: 999px; padding: 1px 7px; }
   #build-tip { position: fixed; left: 50%; top: calc(84px + env(safe-area-inset-top)); transform: translateX(-50%); font-size: 18px; white-space: nowrap; pointer-events: none; background: #ffe9f0; }
 
+  #dpad { position: fixed; left: calc(12px + env(safe-area-inset-left)); bottom: calc(100px + env(safe-area-inset-bottom)); display: grid; grid-template-areas: ". u ." "l . r" ". d ."; gap: 2px; opacity: .85; }
+  #dpad button { width: 52px; height: 52px; border-radius: 14px; border: 3px solid var(--line); background: var(--cream); font-size: 20px; padding: 0; touch-action: none; }
+  #dpad button:active { background: var(--sun); }
+  #flash { position: fixed; inset: 0; background: #fff; pointer-events: none; z-index: 5; animation: flash .35s forwards; }
+  @keyframes flash { from { opacity: .9; } to { opacity: 0; } }
+  .talk { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+  .talk .face { font-size: 84px; line-height: 1; flex: none; }
+  .talk .bubble { flex: 1; background: #fff; border: 3px solid #d9cfe0; border-radius: 20px; padding: 12px 16px; font-size: 21px; }
+  .talk .bubble b { font-size: 24px; } .talk .bubble p { margin: 6px 0 0; line-height: 1.45; }
+  .talk .hearts { font-size: 16px; letter-spacing: 1px; white-space: nowrap; }
   .btn { border: 3px solid var(--line); background: #fff; border-radius: 14px; padding: 8px 16px; font-size: 20px; box-shadow: 0 4px 0 rgba(74,59,82,.35); }
   .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(74,59,82,.35); }
   .btn:disabled { opacity: .4; }
@@ -118,6 +128,7 @@
   <button class="hbtn" data-open="studio">🎨<small>그림판</small></button>
   <button class="hbtn" data-open="dex">📖<small>도감</small></button>
   <button class="hbtn" data-open="note">📝<small>수첩</small><i class="dot" id="note-dot" hidden></i></button>
+  <button class="hbtn" data-open="photo">📷<small>사진</small></button>
   <button class="hbtn" data-open="sky"><span id="sky-icon">🕒</span><small id="sky-name">자동</small></button>
   <button class="hbtn" data-open="set">⚙️<small>설정</small></button>
 </div>
@@ -125,6 +136,11 @@
 <div id="toast" class="hide"></div>
 <div id="card" hidden></div>
 
+<div id="flash" hidden></div>
+<div id="dpad" hidden>
+  <button data-key="ArrowUp" style="grid-area:u">▲</button><button data-key="ArrowLeft" style="grid-area:l">◀</button>
+  <button data-key="ArrowRight" style="grid-area:r">▶</button><button data-key="ArrowDown" style="grid-area:d">▼</button>
+</div>
 <div class="pill" id="build-tip" hidden>🔨 꾸미기 중 · 아래에서 고르고 땅을 눌러요</div>
 <div id="buildbar" hidden>
   <div id="build-items"></div>
@@ -157,6 +173,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/draw.js"></script>
+<script src="js/life.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

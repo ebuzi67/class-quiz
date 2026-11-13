@@ -89,6 +89,73 @@ const ITEMS = {
   xmas:     { n: "반짝 트리", e: "🎄", k: "decor", buy: 1000, season: "winter", block: true, s: 1.15, glow: true },
   gift:     { n: "선물 상자", e: "🎁", k: "decor", buy: 400, season: "winter", block: true, s: 0.7 }
 };
+// ───── 3단계: 곤충, 꽃, 친구 선물 ─────
+// 곤충: fly(날아다님), when(day/night/any), seasons(없으면 사계절), catch(잡힐 확률), w(잘 나오는 정도)
+Object.assign(ITEMS, {
+  butterfly:   { n: "나비", e: "🦋", k: "bug", sell: 150, fly: true, when: "day", seasons: ["spring", "summer", "autumn"], catch: 0.7, w: 30 },
+  bee:         { n: "꿀벌", e: "🐝", k: "bug", sell: 200, fly: true, when: "day", seasons: ["spring", "summer", "autumn"], catch: 0.6, w: 14 },
+  ladybug:     { n: "무당벌레", e: "🐞", k: "bug", sell: 120, when: "day", catch: 0.9, w: 25 },
+  ant:         { n: "개미", e: "🐜", k: "bug", sell: 50, when: "day", catch: 1, w: 22 },
+  caterpillar: { n: "애벌레", e: "🐛", k: "bug", sell: 80, when: "any", seasons: ["spring", "summer", "autumn"], catch: 1, w: 18 },
+  snail:       { n: "달팽이", e: "🐌", k: "bug", sell: 100, when: "any", catch: 1, w: 18 },
+  cricket:     { n: "귀뚜라미", e: "🦗", k: "bug", sell: 250, when: "night", seasons: ["summer", "autumn"], catch: 0.8, w: 25 },
+  spider:      { n: "거미", e: "🕷️", k: "bug", sell: 300, when: "night", catch: 0.8, w: 15 },
+  scorpion:    { n: "전갈", e: "🦂", k: "bug", sell: 1500, when: "night", seasons: ["summer", "autumn"], catch: 0.6, w: 3 },
+
+  seed:     { n: "꽃씨", e: "🌱", k: "seed", buy: 30 },
+  hibiscus: { n: "히비스커스", e: "🌺", k: "decor", sell: 400, s: 0.7 },
+  bouquet:  { n: "무지개 꽃다발", e: "💐", k: "decor", sell: 900, s: 0.75 },
+
+  // 친구가 주는 선물 (상점에서는 안 팔아요)
+  carrot:  { n: "당근 쿠션", e: "🥕", k: "decor", sell: 300, block: true, s: 0.7 },
+  honey:   { n: "꿀단지", e: "🍯", k: "decor", sell: 300, block: true, s: 0.65 },
+  sherbet: { n: "빙수 모형", e: "🍧", k: "decor", sell: 300, block: true, s: 0.7 },
+  crystal: { n: "수정 구슬", e: "🔮", k: "decor", sell: 300, block: true, s: 0.7, glow: true },
+  circus:  { n: "서커스 천막", e: "🎪", k: "decor", sell: 1500, block: true, s: 1.3 },
+  castle:  { n: "작은 성", e: "🏰", k: "decor", sell: 1500, block: true, s: 1.4 },
+  boat:    { n: "돛단배", e: "⛵", k: "decor", sell: 1500, block: true, s: 1.2 },
+  coaster: { n: "롤러코스터", e: "🎢", k: "decor", sell: 1500, block: true, s: 1.4 }
+});
+const BLOOMS = [["tulip", 25], ["daisy", 25], ["sunflower", 20], ["rose", 18], ["hibiscus", 9], ["bouquet", 3]];
+const GROW_MS = 60 * 1000;      // 물을 주고 나서 한 단계 자라는 시간
+const QUEST_MS = 4 * 60 * 1000; // 부탁을 들어준 뒤 다음 부탁까지
+const GIFT_MS = 2 * 60 * 1000;  // 선물을 다시 받을 때까지
+
+// 머리에 쓰는 것. pos: top(머리 위), side(옆머리), face(얼굴), neck(목), ears(직접 그림). buy가 없으면 친구 선물
+const HATS = {
+  pin:     { n: "꽃 머리핀", e: "🌸", buy: 250, pos: "side" },
+  cap:     { n: "야구 모자", e: "🧢", buy: 300, pos: "top", s: 0.52, dy: 0.02 },
+  straw:   { n: "밀짚모자", e: "👒", buy: 400, pos: "top", s: 0.6, dy: 0.04 },
+  shades:  { n: "선글라스", e: "🕶️", buy: 500, pos: "face" },
+  helmet:  { n: "안전모", e: "⛑️", buy: 500, pos: "top", s: 0.56, dy: 0.06 },
+  ears:    { n: "고양이 귀", e: "🐱", buy: 600, pos: "ears" },
+  phones:  { n: "헤드폰", e: "🎧", buy: 700, pos: "top", s: 0.64, dy: 0.17 },
+  grad:    { n: "학사모", e: "🎓", buy: 800, pos: "top", s: 0.6, dy: 0.06 },
+  ribbon:  { n: "토리의 리본", e: "🎀", pos: "top", s: 0.4, dy: 0.02 },
+  tophat:  { n: "곰곰의 신사 모자", e: "🎩", pos: "top", s: 0.56, dy: 0.04 },
+  scarf:   { n: "핑의 목도리", e: "🧣", pos: "neck" },
+  crown:   { n: "루비의 왕관", e: "👑", pos: "top", s: 0.46, dy: 0.0 }
+};
+const PANTS = ["#5c5470", "#3f7fe0", "#ff8fb1", "#7ed07a", "#ffd84d", "#ffffff", "#8a5a35", "#2b2b3a"];
+
+// 섬 친구. fav: 좋아하는 종류(선물하면 우정이 더 올라요), pool: 부탁하는 물건, gifts: 하트 1·3·5개 때 주는 선물("h:"는 모자)
+const FRIENDS = {
+  tori: { n: "토리", e: "🐰", home: [24, 21], fav: ["fruit"], favName: "과일", pool: ["apple", "peach", "orange", "cherry", "pear", "coconut", "daisy"], gifts: { 1: "carrot", 3: "h:ribbon", 5: "circus" },
+    ask: "{item}만 가져다줄 수 있어? 간식으로 먹고 싶다 깡총!", thanks: "우와, 고마워! 역시 최고의 친구다 깡총!",
+    lines: ["오늘도 깡총깡총 산책 중이야!", "나는 과일이 세상에서 제일 좋아 깡총.", "나무를 흔들면 과일이 톡 떨어지는 게 너무 신기해!", "네가 꾸민 섬, 정말 예쁘다 깡총!"] },
+  gom: { n: "곰곰", e: "🐻", home: [9, 16], fav: ["fish"], favName: "물고기", pool: ["crucian", "shrimp", "tropical", "frog", "crab", "squid"], gifts: { 1: "honey", 3: "h:tophat", 5: "castle" },
+    ask: "음… {item}가 필요한데, 좀 구해 줄 수 있겠곰?", thanks: "고맙곰! 덕분에 든든하곰.", 
+    lines: ["낚시는 기다림이 중요하곰.", "찌가 쑥 들어갈 때 딱! 당기는 거곰.", "밤에는 귀한 물고기가 잘 잡힌다곰.", "배가 고프곰… 물고기 생각만 나곰."] },
+  ping: { n: "핑", e: "🐧", home: [20, 26], fav: ["shell", "fish"], favName: "조개와 물고기", pool: ["shell", "star", "shrimp", "crucian", "coconut", "shell"], gifts: { 1: "sherbet", 3: "h:scarf", 5: "boat" },
+    ask: "{item}를 모으고 있어 핑! 찾아 줄래?", thanks: "꺄, 반짝반짝해! 고마워 핑!",
+    lines: ["바닷가에는 조개가 밀려와 핑!", "파도 소리 들으면 잠이 솔솔 와 핑.", "나는 추운 겨울이 제일 좋아 핑!", "불가사리는 별처럼 생겼어 핑!"] },
+  ruby: { n: "루비", e: "🦊", home: [35, 19], fav: ["bug", "flower"], favName: "곤충과 꽃", pool: ["butterfly", "ladybug", "snail", "ant", "caterpillar", "tulip", "daisy", "rose"], gifts: { 1: "crystal", 3: "h:crown", 5: "coaster" },
+    ask: "{item}를 관찰하고 싶어. 구해 줄 수 있어 콩?", thanks: "와, 멋지다! 내 보물로 삼을게 콩!",
+    lines: ["나는 곤충 박사가 될 거야 콩!", "꽃씨를 심고 물을 주면 꽃이 핀대 콩.", "나비는 살금살금 다가가야 해 콩.", "밤에는 귀뚜라미가 노래해 콩."] }
+};
+const FLOWER_IDS = ["daisy", "tulip", "sunflower", "rose", "hibiscus", "bouquet", "blossom"];
+function itemKind(id) { return FLOWER_IDS.includes(id) ? "flower" : ITEMS[id].k; }
+
 const SEASONS = { spring: "🌸 봄", summer: "🌻 여름", autumn: "🍁 가을", winter: "⛄ 겨울" };
 // 상점 진열대: out(바깥 꾸미기), in(가구), season(이번 계절 한정)
 function shopList(tab, season) {
@@ -106,13 +173,15 @@ const DEX_GROUPS = [
   { n: "바다 친구", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fish" && ITEMS[id].where === "sea") },
   { n: "강·연못 친구", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fish" && ITEMS[id].where === "fresh") },
   { n: "과일", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fruit") },
-  { n: "바닷가", ids: ["shell", "star"] }
+  { n: "바닷가", ids: ["shell", "star"] },
+  { n: "곤충", ids: ["butterfly", "bee", "ladybug", "ant", "caterpillar", "snail", "cricket", "spider", "scorpion"] },
+  { n: "내가 키운 꽃", ids: ["tulip", "daisy", "sunflower", "rose", "hibiscus", "bouquet"] }
 ];
 const DEX_TOTAL = DEX_GROUPS.reduce((sum, g) => sum + g.ids.length, 0);
 
 function sellPrice(id) {
   const it = ITEMS[id];
-  return it.sell != null ? it.sell : Math.floor(it.buy / 2);
+  return it.sell != null ? it.sell : Math.floor((it.buy || 0) / 2);
 }
 
 // 그림판 물감 20색
