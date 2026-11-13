@@ -34,19 +34,22 @@ function shadow(g, cx, y, rx) { g.fillStyle = "rgba(40,60,40,.2)"; ell(g, cx, y,
 
 // 내 디자인 8칸을 작은 그림(16x16)으로 만들어 둬요
 const designCv = [];
-function refreshDesign(i, code) {
-  const c = designCv[i] || (designCv[i] = document.createElement("canvas"));
+// 땅·벽·이젤에 그릴 때 쓰는 그림들. 친구 섬에 놀러 가면 그 섬 주인의 그림으로 바뀌어요.
+let worldCv = designCv;
+function paintDesign(c, code) {
   c.width = c.height = 16;
   const g = c.getContext("2d");
   g.clearRect(0, 0, 16, 16);
-  if (!code) return;
+  if (!code) return c;
   for (let p = 0; p < 256; p++) {
     const ch = code.charCodeAt(p) - 97;
     if (ch < 0 || ch >= PALETTE.length) continue;
     g.fillStyle = PALETTE[ch];
     g.fillRect(p % 16, p >> 4, 1, 1);
   }
+  return c;
 }
+function refreshDesign(i, code) { paintDesign(designCv[i] || (designCv[i] = document.createElement("canvas")), code); }
 
 // 지금 계절과 밤낮 (game.js가 채워요)
 const ENV = { season: "summer", night: 0, sunset: 0, label: "" };
@@ -121,8 +124,8 @@ function drawFloor(g, f, x, y) {
   } else if (f === "s" || f === "stone") {
     g.fillStyle = "#c9ced8"; rr(g, x + 0.1, y + 0.14, 0.8, 0.72, 0.28); g.fill();
     g.fillStyle = "#e2e6ee"; rr(g, x + 0.16, y + 0.18, 0.6, 0.45, 0.2); g.fill();
-  } else if (designCv[f]) {
-    g.drawImage(designCv[f], x, y, 1, 1);
+  } else if (worldCv[f]) {
+    g.drawImage(worldCv[f], x, y, 1, 1);
   }
 }
 
@@ -219,7 +222,7 @@ function drawObj(g, o, x, y, objAt) {
     g.strokeStyle = "#a87745"; g.lineWidth = 0.07; g.lineCap = "round";
     g.beginPath(); g.moveTo(cx - 0.3, y + 0.9); g.lineTo(cx - 0.12, y - 0.15); g.moveTo(cx + 0.3, y + 0.9); g.lineTo(cx + 0.12, y - 0.15); g.stroke();
     g.fillStyle = "#fff"; g.fillRect(cx - 0.36, y - 0.12, 0.72, 0.72);
-    if (designCv[o.d]) g.drawImage(designCv[o.d], cx - 0.32, y - 0.08, 0.64, 0.64);
+    if (worldCv[o.d]) g.drawImage(worldCv[o.d], cx - 0.32, y - 0.08, 0.64, 0.64);
     g.strokeStyle = "#8a5a35"; g.lineWidth = 0.05; g.strokeRect(cx - 0.36, y - 0.12, 0.72, 0.72);
     return;
   }
@@ -233,7 +236,8 @@ function drawPerson(g, x, y, look, dir, t, moving) {
   const by = y - bob, hy = by - 0.74;
   const side = dir === "left" ? -1 : dir === "right" ? 1 : 0;
   shadow(g, x, y + 0.03, 0.27);
-  g.fillStyle = "#5c5470";
+  const dress = look.fit === "dress";
+  g.fillStyle = dress ? look.skin : (look.pants || "#5c5470");
   rr(g, x - 0.15, y - 0.2 + Math.max(0, step), 0.12, 0.2 - Math.max(0, step), 0.05); g.fill();
   rr(g, x + 0.03, y - 0.2 + Math.max(0, -step), 0.12, 0.2 - Math.max(0, -step), 0.05); g.fill();
   // 뒷머리
@@ -242,11 +246,28 @@ function drawPerson(g, x, y, look, dir, t, moving) {
   if (look.style === "pig") { ell(g, x - 0.34, hy + 0.12, 0.12, 0.16); ell(g, x + 0.34, hy + 0.12, 0.12, 0.16); }
   // 몸
   g.fillStyle = look.skin; ell(g, x - 0.25, by - 0.34 + step * 0.5, 0.07, 0.09); ell(g, x + 0.25, by - 0.34 - step * 0.5, 0.07, 0.09);
-  g.fillStyle = look.shirt; rr(g, x - 0.22, by - 0.54, 0.44, 0.4, 0.13); g.fill();
-  if (look.design >= 0 && designCv[look.design]) {
-    g.save(); rr(g, x - 0.22, by - 0.54, 0.44, 0.4, 0.13); g.clip();
-    g.drawImage(designCv[look.design], x - 0.22, by - 0.56, 0.44, 0.44);
+  // 티셔츠는 둥근 네모, 원피스는 아래로 퍼지는 치마 모양
+  const bodyPath = () => {
+    if (!dress) { rr(g, x - 0.22, by - 0.54, 0.44, 0.4, 0.13); return; }
+    g.beginPath(); g.moveTo(x - 0.16, by - 0.54); g.lineTo(x + 0.16, by - 0.54);
+    g.quadraticCurveTo(x + 0.24, by - 0.4, x + 0.33, by - 0.1); g.quadraticCurveTo(x, by - 0.02, x - 0.33, by - 0.1);
+    g.quadraticCurveTo(x - 0.24, by - 0.4, x - 0.16, by - 0.54); g.closePath();
+  };
+  g.fillStyle = look.shirt; bodyPath(); g.fill();
+  const dcv = look.cv || (look.design >= 0 && designCv[look.design]);   // look.cv: 같이 노는 친구가 보내 준 옷 그림
+  if (dcv) {
+    g.save(); bodyPath(); g.clip();
+    if (dress) g.drawImage(dcv, x - 0.33, by - 0.6, 0.66, 0.66);
+    else g.drawImage(dcv, x - 0.22, by - 0.56, 0.44, 0.44);
     g.restore();
+  }
+  const hat = look.hat && HATS[look.hat];
+  if (hat && hat.pos === "neck") drawEmo(g, hat.e, x, by - 0.3, 0.36);
+  if (hat && hat.pos === "ears") {
+    for (const sx of [-1, 1]) {
+      g.fillStyle = look.hair; g.beginPath(); g.moveTo(x + sx * 0.26, hy - 0.12); g.lineTo(x + sx * 0.2, hy - 0.42); g.lineTo(x + sx * 0.05, hy - 0.24); g.closePath(); g.fill();
+      g.fillStyle = "#ffb7d0"; g.beginPath(); g.moveTo(x + sx * 0.21, hy - 0.17); g.lineTo(x + sx * 0.19, hy - 0.34); g.lineTo(x + sx * 0.1, hy - 0.24); g.closePath(); g.fill();
+    }
   }
   // 머리
   g.fillStyle = look.skin; ell(g, x, hy, 0.27, 0.26);
@@ -264,6 +285,9 @@ function drawPerson(g, x, y, look, dir, t, moving) {
     if (side) ell(g, x + side * 0.2, hy + 0.15, 0.045, 0.035);
     else { ell(g, x - 0.18, hy + 0.15, 0.05, 0.035); ell(g, x + 0.18, hy + 0.15, 0.05, 0.035); }
   }
+  if (hat && hat.pos === "top") drawEmo(g, hat.e, x, hy - 0.14 + (hat.dy || 0), hat.s || 0.5);
+  if (hat && hat.pos === "side") drawEmo(g, hat.e, x + (side ? -side * 0.1 : 0.2), hy - 0.08, 0.24);
+  if (hat && hat.pos === "face" && dir !== "up") drawEmo(g, hat.e, x + side * 0.1, hy + 0.22, 0.4);
 }
 
 function drawNpc(g, x, y, t) {
@@ -286,12 +310,12 @@ function drawGlow(g, cx, cy, r, n) {
 // ───── 집 안 ─────
 function drawRoomTile(g, home, t, x, y) {
   if (t === T_WALL) {
-    if (typeof home.wall === "number" && designCv[home.wall]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(designCv[home.wall], x, y, 1, 1); }
+    if (typeof home.wall === "number" && worldCv[home.wall]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(worldCv[home.wall], x, y, 1, 1); }
     else { g.fillStyle = home.wall; g.fillRect(x, y, 1, 1); }
     if (y === 0) { g.fillStyle = "rgba(74,59,82,.25)"; g.fillRect(x, y, 1, 0.1); }
     else { g.fillStyle = "#fff"; g.fillRect(x, y + 0.84, 1, 0.16); g.fillStyle = "rgba(74,59,82,.18)"; g.fillRect(x, y + 0.96, 1, 0.04); }
   } else if (t === T_ROOM) {
-    if (typeof home.flr === "number" && designCv[home.flr]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(designCv[home.flr], x, y, 1, 1); }
+    if (typeof home.flr === "number" && worldCv[home.flr]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(worldCv[home.flr], x, y, 1, 1); }
     else {
       const c = FLOORS[home.flr] || FLOORS.wood;
       g.fillStyle = c[(x + y) & 1]; g.fillRect(x, y, 1, 1);
@@ -315,4 +339,32 @@ function drawWardrobe(g, x, y) {
   g.fillStyle = "#d3a56e"; rr(g, x + 0.1, y - 0.68, 0.37, 1.4, 0.06); g.fill(); rr(g, x + 0.53, y - 0.68, 0.37, 1.4, 0.06); g.fill();
   g.fillStyle = "#ffd84d"; ell(g, x + 0.41, y + 0.05, 0.04, 0.04); ell(g, x + 0.59, y + 0.05, 0.04, 0.04);
   drawEmo(g, "👗", x + 0.5, y - 0.72, 0.4);
+}
+
+// ───── 3단계: 친구, 곤충, 꽃 ─────
+function drawPal(g, f, pal, t, bubble) {
+  const hop = pal.moving ? Math.abs(Math.sin(t * 9)) * 0.08 : Math.abs(Math.sin(t * 2 + pal.x)) * 0.03;
+  shadow(g, pal.x, pal.y + 0.02, 0.28);
+  drawEmo(g, f.e, pal.x, pal.y + 0.08 - hop, 0.82);
+  if (bubble) drawEmo(g, bubble, pal.x + 0.3, pal.y - 0.72 - Math.sin(t * 3) * 0.04, 0.36);
+}
+function drawBug(g, b, t) {
+  const it = ITEMS[b.id], up = it.fly ? 0.45 + Math.sin(t * 6 + b.seed) * 0.08 : 0;
+  g.globalAlpha = Math.min(1, b.fade);
+  g.fillStyle = "rgba(40,60,40,.16)"; ell(g, b.x, b.y + 0.02, 0.14, 0.05);
+  drawEmo(g, it.e, b.x, b.y + 0.12 - up - b.rise, it.fly ? 0.42 : 0.34);
+  g.globalAlpha = 1;
+}
+function drawPlant(g, pl, x, y, t) {
+  const cx = x + 0.5;
+  if (pl.s < 2) {
+    g.fillStyle = "#a87745"; ell(g, cx, y + 0.72, 0.26, 0.11);
+    g.fillStyle = "#8a5a35"; ell(g, cx, y + 0.7, 0.18, 0.07);
+    drawEmo(g, "🌱", cx, y + 0.74, pl.s ? 0.55 : 0.3);
+    if (!pl.at) drawEmo(g, "💧", cx + 0.26, y + 0.3 - Math.abs(Math.sin(t * 3)) * 0.06, 0.26);
+  } else {
+    shadow(g, cx, y + 0.86, 0.2);
+    drawEmo(g, ITEMS[pl.kind].e, cx, y + 0.92 + Math.sin(t * 2 + x) * 0.015, 0.72);
+    drawEmo(g, "✨", cx + 0.28, y + 0.36 + Math.sin(t * 4) * 0.04, 0.22);
+  }
 }

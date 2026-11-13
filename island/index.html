@@ -23,7 +23,8 @@
 
   .pill { background: var(--cream); border: 3px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 20px; box-shadow: 0 3px 0 rgba(74,59,82,.35); }
   #hud-left { position: fixed; left: calc(10px + env(safe-area-inset-left)); top: calc(10px + env(safe-area-inset-top)); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; pointer-events: none; }
-  #island-name, #env { font-size: 16px; padding: 4px 12px; }
+  #island-name, #env, #party-pill { font-size: 16px; padding: 4px 12px; }
+  #party-pill { background: var(--sun); }
   #hud-right { position: fixed; right: calc(10px + env(safe-area-inset-right)); top: calc(10px + env(safe-area-inset-top)); display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 70vw; }
   .hbtn { position: relative; width: 62px; height: 62px; border-radius: 18px; border: 3px solid var(--line); background: var(--cream); box-shadow: 0 4px 0 rgba(74,59,82,.4);
     display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; line-height: 1; padding: 0; }
@@ -60,6 +61,29 @@
   .slot .cnt { position: absolute; right: -4px; bottom: -4px; background: var(--line); color: #fff; font-size: 14px; border-radius: 999px; padding: 1px 7px; }
   #build-tip { position: fixed; left: 50%; top: calc(84px + env(safe-area-inset-top)); transform: translateX(-50%); font-size: 18px; white-space: nowrap; pointer-events: none; background: #ffe9f0; }
 
+  #dpad { position: fixed; left: calc(12px + env(safe-area-inset-left)); bottom: calc(100px + env(safe-area-inset-bottom)); display: grid; grid-template-areas: ". u ." "l . r" ". d ."; gap: 2px; opacity: .85; }
+  #dpad button { width: 52px; height: 52px; border-radius: 14px; border: 3px solid var(--line); background: var(--cream); font-size: 20px; padding: 0; touch-action: none; }
+  #dpad button:active { background: var(--sun); }
+  #flash { position: fixed; inset: 0; background: #fff; pointer-events: none; z-index: 5; animation: flash .35s forwards; }
+  @keyframes flash { from { opacity: .9; } to { opacity: 0; } }
+  .hbtn.hint { border-color: #ff5f7a; box-shadow: 0 0 0 5px #ffd0da, 0 4px 0 rgba(74,59,82,.4); z-index: 1; }
+  .hbtn.hint::after { content: "👆 수첩을 클릭해 봐!"; position: absolute; top: calc(100% + 14px); right: -10px; white-space: nowrap; background: #ff5f7a; color: #fff; font-size: 20px; padding: 8px 16px; border-radius: 16px; box-shadow: 0 4px 0 rgba(74,59,82,.35); pointer-events: none; animation: nudge .5s infinite alternate; }
+  @keyframes nudge { to { transform: translateY(6px); } }
+  .guide { background: #fff; border: 3px solid #d9cfe0; border-radius: 16px; padding: 10px 14px; margin-bottom: 8px; font-size: 18px; }
+  .guide b { font-size: 21px; } .guide p { margin: 4px 0 0; line-height: 1.5; color: #5d4d68; } .guide p b { font-size: inherit; }
+  .codebox { display: flex; gap: 10px; justify-content: center; margin: 6px 0 14px; }
+  .codebox span { width: 64px; height: 78px; border: 4px solid var(--line); border-radius: 16px; background: #fff; font-size: 46px; display: flex; align-items: center; justify-content: center; }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 330px; margin: 0 auto; }
+  .pad .btn { font-size: 28px; padding: 8px 0; }
+  .pad .btn.go { font-size: 20px; }
+  .msg { min-height: 26px; text-align: center; color: #c0392b; font-size: 19px; margin: 10px 0 4px; }
+  .bigbtn { flex: 1; min-width: 220px; display: flex; flex-direction: column; align-items: center; font-size: 46px; padding: 16px 10px; }
+  .bigbtn b { font-size: 24px; } .bigbtn small { font-size: 16px; opacity: .85; }
+  .talk { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+  .talk .face { font-size: 84px; line-height: 1; flex: none; }
+  .talk .bubble { flex: 1; background: #fff; border: 3px solid #d9cfe0; border-radius: 20px; padding: 12px 16px; font-size: 21px; }
+  .talk .bubble b { font-size: 24px; } .talk .bubble p { margin: 6px 0 0; line-height: 1.45; }
+  .talk .hearts { font-size: 16px; letter-spacing: 1px; white-space: nowrap; }
   .btn { border: 3px solid var(--line); background: #fff; border-radius: 14px; padding: 8px 16px; font-size: 20px; box-shadow: 0 4px 0 rgba(74,59,82,.35); }
   .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(74,59,82,.35); }
   .btn:disabled { opacity: .4; }
@@ -68,7 +92,17 @@
 
   #modal { z-index: 2; }
   #modal, #intro { position: fixed; inset: 0; background: rgba(60,45,70,.45); display: flex; align-items: center; justify-content: center; padding: 12px; }
-  #intro { background: linear-gradient(#8fd6f5, #c9f0dc); }
+  #intro, #who { background: linear-gradient(#8fd6f5, #c9f0dc); }
+  #who { position: fixed; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 12px; }
+  #who .panel { overflow-y: auto; }
+  #who-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .who-card { border: 4px solid #d9cfe0; background: #fff; border-radius: 20px; padding: 8px 6px 12px; display: flex; flex-direction: column; align-items: center; font-size: 15px; min-height: 200px; }
+  .who-card canvas { width: 96px; height: 104px; }
+  .who-card b { font-size: 22px; } .who-card small { color: #8a7a94; line-height: 1.4; }
+  .who-card.on { border-color: var(--pink); background: #fff3f6; }
+  .who-card.new { border-style: dashed; justify-content: center; background: #f8fff9; }
+  .who-card .plus { font-size: 44px; margin-bottom: 8px; }
+  .who-card:active { transform: translateY(3px); }
   .panel { background: var(--cream); border: 4px solid var(--line); border-radius: 26px; width: 100%; max-width: 760px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 8px 0 rgba(74,59,82,.4); overflow: hidden; }
   .panel header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #ffe9f0; border-bottom: 3px solid var(--line); font-size: 26px; }
   .panel header .sp { flex: 1; }
@@ -111,13 +145,17 @@
   <div class="pill" id="coins">💰 0</div>
   <div class="pill" id="island-name"></div>
   <div class="pill" id="env"></div>
+  <div class="pill" id="party-pill" hidden></div>
 </div>
 <div id="hud-right">
   <button class="hbtn" data-open="bag">🎒<small>가방</small></button>
   <button class="hbtn" data-open="build">🔨<small>꾸미기</small></button>
   <button class="hbtn" data-open="studio">🎨<small>그림판</small></button>
   <button class="hbtn" data-open="dex">📖<small>도감</small></button>
-  <button class="hbtn" data-open="note">📝<small>수첩</small><i class="dot" id="note-dot" hidden></i></button>
+  <button class="hbtn" data-open="note" id="note-btn">📝<small>수첩</small><i class="dot" id="note-dot" hidden></i></button>
+  <button class="hbtn" data-open="party">👥<small>같이</small></button>
+  <button class="hbtn" data-open="hi" id="hi-btn" hidden>👋<small>인사</small></button>
+  <button class="hbtn" data-open="photo">📷<small>사진</small></button>
   <button class="hbtn" data-open="sky"><span id="sky-icon">🕒</span><small id="sky-name">자동</small></button>
   <button class="hbtn" data-open="set">⚙️<small>설정</small></button>
 </div>
@@ -125,6 +163,11 @@
 <div id="toast" class="hide"></div>
 <div id="card" hidden></div>
 
+<div id="flash" hidden></div>
+<div id="dpad" hidden>
+  <button data-key="ArrowUp" style="grid-area:u">▲</button><button data-key="ArrowLeft" style="grid-area:l">◀</button>
+  <button data-key="ArrowRight" style="grid-area:r">▶</button><button data-key="ArrowDown" style="grid-area:d">▼</button>
+</div>
 <div class="pill" id="build-tip" hidden>🔨 꾸미기 중 · 아래에서 고르고 땅을 눌러요</div>
 <div id="buildbar" hidden>
   <div id="build-items"></div>
@@ -151,12 +194,24 @@
       🎣 물가에서 낚시, 🌳 나무를 흔들어 과일 따기, 🛍️ 상점에서 팔고 사기
     </div>
     <button class="btn go" id="intro-go" style="font-size:28px;padding:12px 34px">섬으로 출발! ⛵</button>
-    <p style="margin:14px 0 0"><button class="btn small" id="intro-install" hidden>📲 앱으로 설치하기</button></p>
+    <p style="margin:14px 0 0"><button class="btn small" id="intro-who" hidden>👥 다른 사람 섬 고르기</button> <button class="btn small" id="intro-install" hidden>📲 앱으로 설치하기</button></p>
+  </div>
+</div>
+
+<div id="who" hidden>
+  <div class="panel intro-card">
+    <h1 style="font-size:36px">🏝️ 누구의 섬에 갈까?</h1>
+    <p class="note">내 이름을 눌러요. 섬은 한 사람에 하나씩, 따로 저장돼요.</p>
+    <div id="who-list"></div>
   </div>
 </div>
 
 <script src="js/data.js"></script>
 <script src="js/draw.js"></script>
+<script src="js/life.js"></script>
+<script src="lib/peerjs.min.js"></script>
+<script src="js/net.js"></script>
+<script src="js/party.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
