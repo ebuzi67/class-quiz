@@ -204,6 +204,7 @@ function catchBug(b) {
 // ───────── 꽃 키우기 ─────────
 // plants["x,y"] = { s: 0 씨앗 / 1 새싹 / 2 꽃, at: 물 준 시각(0이면 물이 필요), kind: 핀 꽃 }
 function growPlants() {
+  if (!state.plants) return;
   const now = Date.now();
   for (const k in state.plants) {
     const pl = state.plants[k];
@@ -218,11 +219,14 @@ function growPlants() {
   }
 }
 function plantAction(k) {
-  const pl = state.plants[k];
+  const plants = W().plants, pl = plants[k];
+  // 친구 섬에서는 주인이 허락해야 꽃을 돌볼 수 있어요
+  if (isGuest() && !W().allow) return { label: "🔒 주인의 꽃", fn: () => toast("섬 주인의 꽃이야. 주인이 꾸미기를 허락하면 돌볼 수 있어!") };
   if (pl.s === 2) {
     return { label: ITEMS[pl.kind].e + " 꽃 따기", fn: () => {
       if (!addItem(pl.kind)) { toast("가방이 꽉 찼어! 🎒"); return; }
-      delete state.plants[k];
+      delete plants[k];
+      partySend({ t: "act", a: "plant", k, op: "pick" });
       const it = ITEMS[pl.kind], isNew = found(pl.kind), [x, y] = k.split(",").map(Number);
       float(it.e, x, y); sfx("good");
       toast(it.e + " " + it.n + "을(를) 땄어!" + (isNew ? " (도감에 새로 등록 ✨)" : "") + (pl.kind === "bouquet" || pl.kind === "hibiscus" ? " 아주 귀한 꽃이야!" : ""));
@@ -232,11 +236,13 @@ function plantAction(k) {
   if (!pl.at) {
     return { label: "💧 물 주기", fn: () => {
       pl.at = Date.now(); touch(); sfx("splash");
+      partySend({ t: "act", a: "plant", k, op: "water" });
       const [x, y] = k.split(",").map(Number);
       float("💧", x, y);
       toast(pl.s ? "쑥쑥! 1분쯤 뒤에 꽃이 필 거야 🌸" : "촉촉해졌어! 1분쯤 뒤에 싹이 틀 거야 🌱");
     } };
   }
+  if (isGuest()) return { label: "🌱 자라는 중", fn: () => toast("쑥쑥 자라는 중이야!") };
   return { label: "🌱 자라는 중", fn: () => toast("쑥쑥 자라는 중이야. " + Math.max(1, Math.ceil((GROW_MS - (Date.now() - pl.at)) / 1000)) + "초쯤 남았어!") };
 }
 

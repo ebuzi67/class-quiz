@@ -34,19 +34,22 @@ function shadow(g, cx, y, rx) { g.fillStyle = "rgba(40,60,40,.2)"; ell(g, cx, y,
 
 // 내 디자인 8칸을 작은 그림(16x16)으로 만들어 둬요
 const designCv = [];
-function refreshDesign(i, code) {
-  const c = designCv[i] || (designCv[i] = document.createElement("canvas"));
+// 땅·벽·이젤에 그릴 때 쓰는 그림들. 친구 섬에 놀러 가면 그 섬 주인의 그림으로 바뀌어요.
+let worldCv = designCv;
+function paintDesign(c, code) {
   c.width = c.height = 16;
   const g = c.getContext("2d");
   g.clearRect(0, 0, 16, 16);
-  if (!code) return;
+  if (!code) return c;
   for (let p = 0; p < 256; p++) {
     const ch = code.charCodeAt(p) - 97;
     if (ch < 0 || ch >= PALETTE.length) continue;
     g.fillStyle = PALETTE[ch];
     g.fillRect(p % 16, p >> 4, 1, 1);
   }
+  return c;
 }
+function refreshDesign(i, code) { paintDesign(designCv[i] || (designCv[i] = document.createElement("canvas")), code); }
 
 // 지금 계절과 밤낮 (game.js가 채워요)
 const ENV = { season: "summer", night: 0, sunset: 0, label: "" };
@@ -121,8 +124,8 @@ function drawFloor(g, f, x, y) {
   } else if (f === "s" || f === "stone") {
     g.fillStyle = "#c9ced8"; rr(g, x + 0.1, y + 0.14, 0.8, 0.72, 0.28); g.fill();
     g.fillStyle = "#e2e6ee"; rr(g, x + 0.16, y + 0.18, 0.6, 0.45, 0.2); g.fill();
-  } else if (designCv[f]) {
-    g.drawImage(designCv[f], x, y, 1, 1);
+  } else if (worldCv[f]) {
+    g.drawImage(worldCv[f], x, y, 1, 1);
   }
 }
 
@@ -219,7 +222,7 @@ function drawObj(g, o, x, y, objAt) {
     g.strokeStyle = "#a87745"; g.lineWidth = 0.07; g.lineCap = "round";
     g.beginPath(); g.moveTo(cx - 0.3, y + 0.9); g.lineTo(cx - 0.12, y - 0.15); g.moveTo(cx + 0.3, y + 0.9); g.lineTo(cx + 0.12, y - 0.15); g.stroke();
     g.fillStyle = "#fff"; g.fillRect(cx - 0.36, y - 0.12, 0.72, 0.72);
-    if (designCv[o.d]) g.drawImage(designCv[o.d], cx - 0.32, y - 0.08, 0.64, 0.64);
+    if (worldCv[o.d]) g.drawImage(worldCv[o.d], cx - 0.32, y - 0.08, 0.64, 0.64);
     g.strokeStyle = "#8a5a35"; g.lineWidth = 0.05; g.strokeRect(cx - 0.36, y - 0.12, 0.72, 0.72);
     return;
   }
@@ -251,10 +254,11 @@ function drawPerson(g, x, y, look, dir, t, moving) {
     g.quadraticCurveTo(x - 0.24, by - 0.4, x - 0.16, by - 0.54); g.closePath();
   };
   g.fillStyle = look.shirt; bodyPath(); g.fill();
-  if (look.design >= 0 && designCv[look.design]) {
+  const dcv = look.cv || (look.design >= 0 && designCv[look.design]);   // look.cv: 같이 노는 친구가 보내 준 옷 그림
+  if (dcv) {
     g.save(); bodyPath(); g.clip();
-    if (dress) g.drawImage(designCv[look.design], x - 0.33, by - 0.6, 0.66, 0.66);
-    else g.drawImage(designCv[look.design], x - 0.22, by - 0.56, 0.44, 0.44);
+    if (dress) g.drawImage(dcv, x - 0.33, by - 0.6, 0.66, 0.66);
+    else g.drawImage(dcv, x - 0.22, by - 0.56, 0.44, 0.44);
     g.restore();
   }
   const hat = look.hat && HATS[look.hat];
@@ -306,12 +310,12 @@ function drawGlow(g, cx, cy, r, n) {
 // ───── 집 안 ─────
 function drawRoomTile(g, home, t, x, y) {
   if (t === T_WALL) {
-    if (typeof home.wall === "number" && designCv[home.wall]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(designCv[home.wall], x, y, 1, 1); }
+    if (typeof home.wall === "number" && worldCv[home.wall]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(worldCv[home.wall], x, y, 1, 1); }
     else { g.fillStyle = home.wall; g.fillRect(x, y, 1, 1); }
     if (y === 0) { g.fillStyle = "rgba(74,59,82,.25)"; g.fillRect(x, y, 1, 0.1); }
     else { g.fillStyle = "#fff"; g.fillRect(x, y + 0.84, 1, 0.16); g.fillStyle = "rgba(74,59,82,.18)"; g.fillRect(x, y + 0.96, 1, 0.04); }
   } else if (t === T_ROOM) {
-    if (typeof home.flr === "number" && designCv[home.flr]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(designCv[home.flr], x, y, 1, 1); }
+    if (typeof home.flr === "number" && worldCv[home.flr]) { g.fillStyle = "#fff"; g.fillRect(x, y, 1, 1); g.drawImage(worldCv[home.flr], x, y, 1, 1); }
     else {
       const c = FLOORS[home.flr] || FLOORS.wood;
       g.fillStyle = c[(x + y) & 1]; g.fillRect(x, y, 1, 1);
