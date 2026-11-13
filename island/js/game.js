@@ -1,7 +1,19 @@
 "use strict";
 // 몽글몽글 섬: 게임이 움직이는 곳 (걷기, 낚시, 상점, 꾸미기, 그림판, 저장)
 
-const SAVE_KEY = "island-save-v1";
+// 한 기기에서 여러 명이 각자 섬을 가져요. 섬마다 저장 이름이 달라요 (첫 번째 섬은 예전 이름 그대로).
+const PROFILES_KEY = "island-profiles-v1", PROFILE_MAX = 8;
+function loadProfiles() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROFILES_KEY));
+    if (p && Array.isArray(p.list) && p.list.length) { if (!p.list.includes(p.cur)) p.cur = p.list[0]; return p; }
+  } catch (e) { /* 목록이 깨졌으면 첫 번째 섬만 */ }
+  return { cur: "p1", list: ["p1"] };
+}
+const profiles = loadProfiles();
+function profileKey(id) { return id === "p1" ? "island-save-v1" : "island-save-" + id; }
+function saveProfiles() { try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch (e) { /* 넘어가요 */ } }
+const SAVE_KEY = profileKey(profiles.cur);
 const $ = (id) => document.getElementById(id);
 const world = buildMap(), room = buildRoom();
 const ZOOM = +new URLSearchParams(location.search).get("zoom") || 16;   // 화면 가로에 보이는 칸 수
@@ -37,8 +49,9 @@ function loadState() {
   return base;
 }
 let state = loadState();
-let dirty = false;
+let dirty = false, noSave = false;   // noSave: 섬을 지우거나 버리는 중이라 다시 저장하면 안 될 때
 function save() {
+  if (noSave) return;
   dirty = false;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* 저장 공간이 없으면 넘어가요 */ }
 }
@@ -338,7 +351,7 @@ function doAction() {
 // ───────── 입력 ─────────
 const keys = {};
 let ptr = null;
-function modalOpen() { return !$("modal").hidden || !$("intro").hidden; }
+function modalOpen() { return !$("modal").hidden || !$("intro").hidden || !$("who").hidden; }
 addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return;
   if (e.code === "Escape") { if (!$("modal").hidden) closeModal(); else if (build) endBuild(); return; }
@@ -673,7 +686,7 @@ $("modal-close").addEventListener("click", closeModal);
 $("modal").addEventListener("pointerdown", (e) => { if (e.target === $("modal")) closeModal(); });
 $("hud-right").addEventListener("click", (e) => {
   const b = e.target.closest("[data-open]");
-  if (!b || !$("intro").hidden) return;
+  if (!b || !$("intro").hidden || !$("who").hidden) return;
   if (b.dataset.open === "sky") { nextSky(); return; }
   if (b.dataset.open === "photo") { takePhoto(); return; }
   if (build) endBuild();
@@ -776,7 +789,8 @@ function openSet() {
     "🎣 <b>낚시</b>: 물가를 보고 행동 → 찌가 쑥 들어가고 ❗가 뜨면 얼른 한 번 더!<br>🌳 과일은 " + (REGROW_MS / 60000) + "분마다 다시 열려요.<br>" +
     "🔨 <b>꾸미기</b>: 아래에서 물건을 고르고 땅을 눌러요. 🧽는 도로 줍기.<br>🏠 보라 지붕 집에 들어가면 가구를 놓고 벽지·바닥을 바꿀 수 있어요. 옷장도 집 안에 있어요.<br>🌙 위쪽 하늘 단추를 누르면 낮 → 저녁 → 밤 → 자동(실제 시각)으로 바뀌어요. 밤에는 귀한 물고기가 더 잘 잡혀요.<br>🐰 섬 친구에게 다가가 말을 걸어 봐요. 부탁을 들어주면 코인과 하트를 받아요.<br>🦋 곤충에게 다가가면 잡기 단추가 나와요. 밤에는 다른 곤충이 나와요.<br>🌱 꽃씨는 🔨 꾸미기로 풀밭에 심고, 물을 두 번 주면 꽃이 펴요.<br>📷 사진 단추로 내 섬을 사진으로 남겨요.<br>🍁 계절마다 풍경과 상점의 한정 물건이 바뀌어요.<br>💾 놀던 내용은 이 기기에 저절로 저장돼요.</div>" +
     (isStandalone() ? "" : '<div class="field"><button class="btn go" data-install="1">📲 몽글몽글 섬을 앱으로 설치하기</button></div>') +
-    '<div class="field"><button class="btn small" data-reset="1">🗑️ 섬을 처음부터 다시 시작</button></div>');
+    '<div class="field"><button class="btn" data-who="1">👥 다른 사람 섬으로 바꾸기 · 새 섬 만들기</button></div>' +
+    '<div class="field"><button class="btn small" data-reset="1">🗑️ ' + (profiles.list.length > 1 ? "이 섬(" + esc(state.name) + ") 지우기" : "섬을 처음부터 다시 시작") + "</button></div>");
 }
 
 $("modal-body").addEventListener("click", (e) => {
@@ -816,8 +830,14 @@ $("modal-body").addEventListener("click", (e) => {
     state.claimed[m.id] = 1; state.coins += m.r; sfx("good"); touch(); refreshHud(); openNote();
   } else if (d.mute) { state.mute = !state.mute; touch(); sfx("pop"); openSet(); }
   else if (d.install) installApp();
+  else if (d.who) { closeModal(); openWho(); }
   else if (d.reset) {
-    if (confirm("정말 처음부터 다시 시작할까요?\n모은 물건과 꾸민 섬이 모두 사라져요.")) { localStorage.removeItem(SAVE_KEY); dirty = false; removeEventListener("pagehide", save); state = newState(); location.reload(); }
+    const many = profiles.list.length > 1;
+    if (confirm(many ? state.name + "의 섬을 정말 지울까요?\n모은 물건과 꾸민 섬이 모두 사라져요. 다른 사람의 섬은 그대로 있어요." : "정말 처음부터 다시 시작할까요?\n모은 물건과 꾸민 섬이 모두 사라져요.")) {
+      localStorage.removeItem(SAVE_KEY); noSave = true;
+      if (many) { profiles.list = profiles.list.filter((id) => id !== profiles.cur); profiles.cur = profiles.list[0]; saveProfiles(); }
+      location.reload();
+    }
   }
 });
 
@@ -834,6 +854,52 @@ async function installApp() {
     ? "1. <b>사파리</b>에서 이 페이지를 열어요.<br>2. 위쪽의 <b>공유 단추</b>(□↑)를 눌러요.<br>3. <b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요."
     : "1. 크롬 오른쪽 위 <b>⋮</b> 메뉴(노트북은 주소창 오른쪽 설치 그림)를 눌러요.<br>2. <b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.<br>3. 메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요.") + "</div>");
 }
+
+// ───────── 누구의 섬? (섬 고르기) ─────────
+function switchProfile(id) {
+  if (state.started) save();
+  else {   // 시작도 안 한 빈 섬은 목록에 남기지 않아요
+    localStorage.removeItem(SAVE_KEY);
+    profiles.list = profiles.list.filter((p) => p !== profiles.cur);
+  }
+  noSave = true;
+  profiles.cur = id;
+  if (!profiles.list.includes(id)) profiles.list.push(id);
+  saveProfiles();
+  location.reload();
+}
+function openWho() {
+  ptr = null;
+  for (const k in keys) keys[k] = false;
+  if (state.started) save();
+  const saves = profiles.list.map((id) => {
+    let sv = null;
+    try { sv = JSON.parse(localStorage.getItem(profileKey(id))); } catch (e) { /* 없는 셈 쳐요 */ }
+    return { id, sv: sv && sv.started ? sv : null };
+  });
+  let html = "";
+  for (const { id, sv } of saves) {
+    html += '<button class="who-card' + (id === profiles.cur ? " on" : "") + '" data-id="' + id + '"><canvas width="120" height="130" data-cv="' + id + '"></canvas><b>' +
+      (sv ? esc(sv.name) : "새 친구") + "</b><small>" + (sv ? "🏝️ " + esc(sv.island) + " 섬<br>💰 " + (sv.coins || 0).toLocaleString() : "아직 시작 전이에요") + "</small></button>";
+  }
+  if (profiles.list.length < PROFILE_MAX) html += '<button class="who-card new" data-id="new"><span class="plus">➕</span><b>새 섬 만들기</b><small>새 친구가 놀러 왔어요</small></button>';
+  $("who-list").innerHTML = html;
+  for (const { id, sv } of saves) {
+    const g = $("who-list").querySelector('[data-cv="' + id + '"]').getContext("2d");
+    const look = Object.assign(newState().look, sv && sv.look);
+    if (id !== profiles.cur) look.design = -1;   // 다른 섬의 그림은 아직 불러오지 않았어요
+    g.setTransform(105, 0, 0, 105, 60, 122);
+    if (sv) drawPerson(g, 0, 0, look, "down", 0, false); else drawEmo(g, "🌱", 0, -0.1, 0.7);
+  }
+  $("who").hidden = false;
+}
+$("who-list").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-id]");
+  if (!b) return;
+  if (b.dataset.id === "new") switchProfile("p" + Date.now().toString(36));
+  else if (b.dataset.id === profiles.cur) { $("who").hidden = true; sfx("pop"); }
+  else switchProfile(b.dataset.id);
+});
 
 // ───────── 그림판 ─────────
 function openStudio() {
@@ -971,8 +1037,11 @@ document.querySelectorAll("#dpad button").forEach((b) => {
 spawnShells();
 setInterval(spawnShells, 5000);
 refreshHud();
+if (state.started && profiles.list.length > 1) openWho();
 if (!state.started) {
   $("intro").hidden = false;
+  $("intro-who").hidden = profiles.list.length < 2;
+  $("intro-who").addEventListener("click", openWho);
   $("intro-install").hidden = isStandalone();
   $("intro-install").addEventListener("click", installApp);
   $("intro-go").addEventListener("click", () => {
