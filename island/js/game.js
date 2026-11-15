@@ -15,7 +15,7 @@ function profileKey(id) { return id === "p1" ? "island-save-v1" : "island-save-"
 function saveProfiles() { try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch (e) { /* 넘어가요 */ } }
 const SAVE_KEY = profileKey(profiles.cur);
 const $ = (id) => document.getElementById(id);
-const world = buildMap(), room = buildRoom();
+const world = buildMap(), room = buildRoom(), castle = buildCastle();
 const ZOOM = +new URLSearchParams(location.search).get("zoom") || 16;   // 화면 가로에 보이는 칸 수
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
@@ -196,18 +196,67 @@ function nextSky() {
 // ───────── 지도 살피기 ─────────
 // 지금 있는 곳: 섬 또는 집 안
 function A(scene) {
-  return (scene || state.scene) === "home"
-    ? { home: true, W: RW, H: RH, at: room.at, statics: room.statics, obj: W().home.obj, floor: W().home.floor, buildings: [], start: room.start }
-    : { home: false, W: MW, H: MH, at: world.at, statics: world.statics, obj: W().obj, floor: W().floor, buildings: world.buildings, start: world.start };
+  scene = scene || state.scene;
+  if (scene === "castle") return { home: false, indoor: true, castle: true, W: RW, H: RH, at: castle.at, statics: castle.statics, obj: {}, floor: {}, buildings: [], start: castle.start };
+  return scene === "home"
+    ? { home: true, indoor: true, W: RW, H: RH, at: room.at, statics: room.statics, obj: W().home.obj, floor: W().home.floor, buildings: [], start: room.start }
+    : { home: false, indoor: false, W: MW, H: MH, at: world.at, statics: world.statics, obj: W().obj, floor: W().floor, buildings: world.buildings, start: world.start };
 }
 function enterHome() {
+  pose = null;
   state.scene = "home"; state.x = room.start[0]; state.y = room.start[1]; state.dir = "up";
   ptr = null; sfx("pop"); touch();
   toast(isGuest() ? "🏠 " + W().name + "의 집에 놀러 왔어!" : "🏠 우리 집! 🔨 꾸미기로 가구를 놓고 벽지와 바닥도 바꿔 봐.");
 }
 function leaveHome() {
+  pose = null;
   state.scene = "island"; state.x = 14.5; state.y = 13.4; state.dir = "down";
   ptr = null; sfx("pop"); touch();
+}
+// 성 안으로: 나올 때는 들어가기 전에 서 있던 자리로 돌아와요
+function enterCastle() {
+  pose = null;
+  state.backPos = { x: state.x, y: state.y };
+  state.scene = "castle"; state.x = castle.start[0]; state.y = castle.start[1]; state.dir = "up";
+  ptr = null; sfx("good"); touch();
+  toast("🏰 성 안이야! 왕좌에 앉아 보고, 보물 상자도 열어 봐.");
+}
+function leaveCastle() {
+  pose = null;
+  const b = state.backPos || { x: world.start[0], y: world.start[1] };
+  state.scene = "island"; state.x = b.x; state.y = b.y; state.dir = "down";
+  if (boxSolid(state.x, state.y)) { state.x = world.start[0]; state.y = world.start[1]; }
+  ptr = null; sfx("pop"); touch();
+}
+function openChest() {
+  const day = new Date().toDateString();
+  if (state.chestDay === day) { toast("오늘은 이미 열었어. 내일 또 와 봐! 🎁"); return; }
+  const coins = 200 + Math.floor(Math.random() * 31) * 10;
+  state.chestDay = day; state.coins += coins; touch(); refreshHud(); sfx("good");
+  showCard('<div class="big">💰</div><b>보물 상자를 열었다!</b><span>코인 ' + coins + '개를 찾았어.</span><i class="new">내일 또 열 수 있어</i>');
+}
+
+// ───────── 가구와 놀이기구 쓰기 ─────────
+// pose: 지금 쓰고 있는 것 { kind, id, x, y(칸), t }. 움직이면 그만둬요.
+let pose = null;
+function startUse(k, id) {
+  const u = USES[id], [x, y] = k.split(",").map(Number);
+  if (u.k === "enter") { enterCastle(); return; }
+  if (fishing) fishing = null;
+  pose = { kind: u.k, id, x, y, t: 0 };
+  ptr = null; sfx("pop");
+}
+function endPose() { if (pose) { pose = null; sfx("put"); } }
+const NOTES = [523, 587, 659, 784, 880, 1047];
+// 쓰는 동안 그림이 떠올라요 (loud: 내가 쓸 때만 소리)
+function poseFx(p, dt, loud) {
+  const u = USES[p.id];
+  if (!u || !u.fx) return;
+  p.fxT = (p.fxT || 0) - dt;
+  if (p.fxT > 0) return;
+  p.fxT = p.kind === "lie" || p.kind === "hide" ? 1.5 : 0.75;
+  float(u.fx, p.x + (p.id === "throne" ? 0.5 : 0) + (Math.random() - 0.5) * 0.6, p.y - (p.kind === "ride" ? 1.0 : 0.6));
+  if (loud && u.notes) { SOUNDS.note = [[NOTES[Math.floor(Math.random() * NOTES.length)], 0, 0.3]]; sfx("note"); }
 }
 function isWater(t) { return t === T_SEA || t === T_SHALLOW || t === T_WATER; }
 function solid(tx, ty, area) {
@@ -265,6 +314,7 @@ function shake(k, st) {
   const it = ITEMS[st.fruit], [tx, ty] = k.split(",").map(Number);
   const isNew = found(st.fruit);
   for (let i = 0; i < got; i++) setTimeout(() => { float(it.e, tx + 0.2 + i * 0.3, ty); sfx("pop"); }, i * 130);
+  sendFx(["shake", k, st.fruit]);
   toast(it.e + " " + it.n + " " + got + "개를 땄어!" + (isNew ? " (도감에 새로 등록 ✨)" : ""));
   bump("fruit", got);
 }
@@ -312,6 +362,7 @@ function hook() {
   const id = fishing.id, it = ITEMS[id];
   fishing = null;
   addItem(id);
+  sendFx(["got", id]);
   sfx("good");
   if (it.k === "trash") {
     showCard('<div class="big">' + it.e + "</div><b>" + it.n + '…?</b><span>누가 버린 걸까? 그래도 ' + it.sell + "코인에 팔 수 있어.</span>");
@@ -325,6 +376,7 @@ function hook() {
 }
 
 function context() {
+  if (pose) return { label: "🙆 그만하기", fn: endPose };
   if (fishing) return fishing.phase === "bite" ? { label: "❗ 당겨!", hot: true, fn: hook } : { label: "🎣 기다려…", fn: hook };
   const a = A(), [fx, fy] = facing(), k = fx + "," + fy, st = a.statics.get(k);
   if (!a.home) {
@@ -338,10 +390,16 @@ function context() {
   if (st) {
     if (st.t === "wardrobe") return { label: "👗 옷장", fn: openLook };
     if (st.t === "bld" || st.t === "npc") return st.b === "home" ? { label: "🏠 들어가기", fn: enterHome } : { label: "🛍️ 상점", fn: () => openShop("sell") };
-    if (st.t === "rock") return null;
+    if (st.t === "throne") return { label: USES.throne.label, fn: () => startUse("5,2", "throne") };
+    if (st.t === "chest") return { label: "🎁 보물 상자", fn: openChest };
+    if (st.t === "rock" || st.t === "vase") return null;
     return { label: "🌳 흔들기", fn: () => shake(k, st) };
   }
-  if (a.obj[k]) return isGuest() ? null : { label: "✋ 줍기", fn: () => pickObj(k) };
+  if (a.obj[k]) {
+    const id = a.obj[k].id;   // 쓸 수 있는 가구는 쓰기가 먼저예요. 도로 넣으려면 🔨 꾸미기의 🧽를 써요.
+    if (USES[id]) return { label: USES[id].label, fn: () => startUse(k, id) };
+    return isGuest() ? null : { label: "✋ 줍기", fn: () => pickObj(k) };
+  }
   const tt = a.at(fx, fy);
   if (isWater(tt)) return { label: "🎣 낚시", fn: () => cast(tt) };
   return null;
@@ -393,6 +451,8 @@ $("act").addEventListener("pointerdown", (e) => { e.preventDefault(); doAction()
 let build = null;
 function startBuild(sel) {
   closeModal();
+  if (state.scene === "castle") { toast("성 안은 꾸밀 수 없어. 구경만 해요! 🏰"); return; }
+  pose = null;
   if (isGuest() && sel && sel[0] === "d" && !ITEMS[sel]) { toast("내 디자인 바닥은 내 섬에서만 깔 수 있어."); sel = null; }
   if (isGuest() && !W().allow) toast("🔒 섬 주인이 허락해야 꾸밀 수 있어. 주인에게 부탁해 봐!");
   $("dpad").hidden = false;
@@ -505,12 +565,21 @@ function update(dt) {
   moving = false;
   if (modalOpen()) return;
   if (state.scene === "island") { updatePals(dt); updateBugs(dt); }
+  if (pose) {   // 쓰던 가구가 치워졌거나 다른 곳으로 가면 그만둬요
+    const o = A().obj[pose.x + "," + pose.y];
+    if (pose.id === "throne" ? state.scene !== "castle" : (!o || o.id !== pose.id)) pose = null;
+  }
 
   let vx = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0);
   let vy = (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0);
   if (!vx && !vy && ptr && !build) {
     const [wx, wy] = toWorld(ptr.e), dx = wx - state.x, dy = wy - (state.y - 0.3);
     if (Math.hypot(dx, dy) > 0.3) { vx = dx; vy = dy; }
+  }
+  if (pose) {
+    pose.t += dt;
+    if ((vx || vy) && pose.t > 0.4) endPose(); else poseFx(pose, dt, true);
+    return;
   }
   if (fishing) {
     if (vx || vy) { if (fishing.t > 0.5) fishing = null; return; }
@@ -534,9 +603,9 @@ function update(dt) {
     if (stuck || !boxSolid(state.x + vx, state.y)) state.x = Math.max(0.5, Math.min(A().W - 0.5, state.x + vx));
     if (stuck || !boxSolid(state.x, state.y + vy)) state.y = Math.max(0.5, Math.min(A().H - 0.5, state.y + vy));
     moving = ox !== state.x || oy !== state.y;
-    if (moving && state.scene === "home") {
+    if (moving && state.scene !== "island") {
       touch();
-      if (room.at(Math.floor(state.x), Math.floor(state.y)) === T_EXIT && state.y > 8.25 && !build) leaveHome();
+      if (room.at(Math.floor(state.x), Math.floor(state.y)) === T_EXIT && state.y > 8.25 && !build) { if (state.scene === "castle") leaveCastle(); else leaveHome(); }
     } else if (moving) {
       touch();
       const k = Math.floor(state.x) + "," + Math.floor(state.y), sh = W().shells[k];
@@ -545,6 +614,7 @@ function update(dt) {
         if (isGuest()) { party.mine.shells[k] = Date.now() + 4000; partySend({ t: "act", a: "shell", k }); }
         const isNew = found(sh);
         float(ITEMS[sh].e, state.x - 0.2, state.y - 1); sfx("pop");
+        sendFx(["got", sh]);
         toast(ITEMS[sh].e + " " + ITEMS[sh].n + "을(를) 주웠어!" + (isNew ? " (도감에 새로 등록 ✨)" : ""));
         bump("shell");
       }
@@ -560,42 +630,55 @@ function render() {
   cy = vh >= a.H ? a.H / 2 : Math.max(vh / 2, Math.min(a.H - vh / 2, cy));
   offX = Math.round(viewW / 2 - cx * T); offY = Math.round(viewH / 2 - cy * T);
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = a.home ? "#3a2f45" : "#49a6e0"; g.fillRect(0, 0, viewW, viewH);
+  g.fillStyle = a.indoor ? (a.castle ? "#2b2636" : "#3a2f45") : "#49a6e0"; g.fillRect(0, 0, viewW, viewH);
   g.setTransform(T, 0, 0, T, offX, offY);
   g.imageSmoothingEnabled = false;
   const x0 = Math.max(0, Math.floor(cx - vw / 2)), x1 = Math.min(a.W - 1, Math.ceil(cx + vw / 2));
   const y0 = Math.max(0, Math.floor(cy - vh / 2)), y1 = Math.min(a.H - 1, Math.ceil(cy + vh / 2) + 2);
   const things = [], lights = [], wd = W();
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    if (a.home) drawRoomTile(g, wd.home, a.at(x, y), x, y); else drawTile(g, world, x, y, time);
+    if (a.castle) drawCastleTile(g, a.at(x, y), x, y);
+    else if (a.home) drawRoomTile(g, wd.home, a.at(x, y), x, y);
+    else drawTile(g, world, x, y, time);
     const k = x + "," + y;
     if (a.floor[k] != null) drawFloor(g, a.floor[k], x, y);
     const st = a.statics.get(k);
-    if (st && st.t !== "bld") things.push({ y: y + 0.9, st, x, ty: y, k });
+    if (st && st.t !== "bld" && !st.part) things.push({ y: y + 0.9, st, x, ty: y, k });
     const o = a.obj[k];
     if (o && ITEMS[o.id]) {
       things.push({ y: y + (ITEMS[o.id].block ? 0.9 : 0.3), o, x, ty: y });
       if (ITEMS[o.id].glow) lights.push([x, y]);
     }
-    if (!a.home && wd.shells[k]) things.push({ y: y + 0.2, sh: wd.shells[k], x, ty: y });
-    if (!a.home && wd.plants[k]) things.push({ y: y + 0.35, pl: wd.plants[k], x, ty: y });
+    if (!a.indoor && wd.shells[k]) things.push({ y: y + 0.2, sh: wd.shells[k], x, ty: y });
+    if (!a.indoor && wd.plants[k]) things.push({ y: y + 0.35, pl: wd.plants[k], x, ty: y });
   }
-  if (!a.home) {
+  if (!a.indoor) {
     for (const id in pals) things.push({ y: pals[id].y, pal: pals[id] });
     for (const b of bugs) things.push({ y: b.y, bug: b });
   }
   g.imageSmoothingEnabled = true;
-  if (a.home) drawRoomWindow(g, 7, 0.3);
+  if (a.indoor) drawRoomWindow(g, 7, 0.3);
+  if (a.castle) drawCastleWall(g);
   for (const b of a.buildings) things.push({ y: b.y + 1.95, b });
-  things.push({ y: state.y, me: true });
-  party.others.forEach((o) => { if (o.scene === state.scene) things.push({ y: o.y, other: o }); });
+  // 화면에 보이는 사람들(나와 같이 노는 친구들)과, 누가 어떤 가구를 쓰고 있는지
+  const people = [{ look: state.look, x: state.x, y: state.y, dir: state.dir, moving, pose, fish: fishing }];
+  party.others.forEach((o) => { if (o.scene === state.scene) people.push({ look: o.look, x: o.x, y: o.y, dir: o.dir, moving: o.moving, pose: o.act && o.act.pose, fish: o.act && o.act.fish }); });
+  const uses = {};
+  for (const w of people) {
+    const p = w.pose;
+    if (p) { const u = uses[p.x + "," + p.y] || (uses[p.x + "," + p.y] = { t: time, busy: true, riders: [] }); if (p.kind === "ride") u.riders.push(w.look); }
+    if (!p || (p.kind !== "ride" && p.kind !== "hide")) things.push({ y: p && p.kind !== "play" ? p.y + (p.kind === "bath" ? 0.85 : 0.96) : w.y, who: w });
+  }
+  const idle = { t: time, riders: [] };
   things.sort((p, q) => p.y - q.y);
   const objAt = (x, y) => { const o = a.obj[x + "," + y]; return o && o.id; };
   for (const th of things) {
-    if (th.me) {
-      drawPerson(g, state.x, state.y, state.look, state.dir, time, moving);
-      if (fishing) drawFishing(g);
-    } else if (th.other) drawPerson(g, th.other.x, th.other.y, th.other.look, th.other.dir, time, th.other.moving);
+    if (th.who) {
+      const w = th.who;
+      if (w.pose && w.pose.kind !== "play") drawPosed(g, w.look, w.pose, time);
+      else drawPerson(g, w.x, w.y, w.look, w.dir, time, w.moving);
+      if (w.fish) drawFishing(g, w.x, w.y, w.dir, w.fish);
+    }
     else if (th.pal) {
       const ps = state.pals[th.pal.id];
       drawPal(g, FRIENDS[th.pal.id], th.pal, time, !ps || ps.req || Date.now() >= ps.reqAt ? "💌" : "💬");
@@ -605,11 +688,14 @@ function render() {
     else if (th.sh) drawEmo(g, ITEMS[th.sh].e, th.x + 0.5, th.ty + 0.78, 0.5);
     else if (th.o) {
       if (th.o.id === "easel") g.imageSmoothingEnabled = false;
-      drawObj(g, th.o, th.x, th.ty, objAt);
+      drawObj(g, th.o, th.x, th.ty, objAt, uses[th.x + "," + th.ty] || idle);
       g.imageSmoothingEnabled = true;
     } else if (th.st.t === "npc") drawNpc(g, th.x, th.ty, time);
     else if (th.st.t === "rock") drawRock(g, th.x, th.ty);
     else if (th.st.t === "wardrobe") drawWardrobe(g, th.x, th.ty);
+    else if (th.st.t === "throne") drawThrone(g, th.x, th.ty);
+    else if (th.st.t === "chest") drawChest(g, th.x, th.ty, state.chestDay === new Date().toDateString(), time);
+    else if (th.st.t === "vase") drawVase(g, th.x, th.ty);
     else drawTree(g, th.st, th.x, th.ty, th.st.fruit && treeReady(th.k), shakes[th.k] || 0);
   }
   for (const f of floaters) {
@@ -617,7 +703,7 @@ function render() {
     drawEmo(g, f.text, f.x + 0.5, f.y + 0.6 - f.t * 0.9, 0.5);
   }
   g.globalAlpha = 1;
-  if (!a.home) drawSky(g, lights);
+  if (!a.indoor) drawSky(g, lights);
   else if (ENV.night > 0.2) { g.globalCompositeOperation = "lighter"; for (const [x, y] of lights) drawGlow(g, x + 0.5, y + 0.3, 1.1, ENV.night * 0.5); g.globalCompositeOperation = "source-over"; }
   drawPartyLabels(g);
   g.setTransform(T, 0, 0, T, offX, offY);
@@ -668,10 +754,11 @@ function drawSky(g, lights) {
     }
   }
 }
-function drawFishing(g) {
-  const f = fishing, [dx] = DIRS[state.dir];
+// 낚시하는 모습. (px, py): 낚시하는 사람의 발밑, f: { x, y, phase, dip, bt }
+function drawFishing(g, px, py, dir, f) {
+  const [dx] = DIRS[dir] || [0];
   const sink = f.phase === "bite" ? 0.16 : f.dip * 0.08, bx = f.x, by = f.y + sink + Math.sin(time * 3) * 0.02;
-  const hx = state.x + (dx || 0.2) * 0.3, hy = state.y - 0.45, tipX = state.x + (f.x - state.x) * 0.35, tipY = state.y - 1.15;
+  const hx = px + (dx || 0.2) * 0.3, hy = py - 0.45, tipX = px + (f.x - px) * 0.35, tipY = py - 1.15;
   g.strokeStyle = "#8a5a35"; g.lineWidth = 0.06; g.lineCap = "round";
   g.beginPath(); g.moveTo(hx, hy); g.lineTo(tipX, tipY); g.stroke();
   g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 0.025;
@@ -681,7 +768,7 @@ function drawFishing(g) {
   g.beginPath(); g.ellipse(f.x, f.y + 0.06, ring, ring * 0.4, 0, 0, Math.PI * 2); g.stroke();
   g.fillStyle = "#fff"; ell(g, bx, by, 0.09, 0.09);
   g.fillStyle = "#ff5f7a"; g.beginPath(); g.arc(bx, by, 0.09, Math.PI, Math.PI * 2); g.fill();
-  if (f.phase === "bite") drawEmo(g, "❗", state.x, state.y - 1.15, 0.6);
+  if (f.phase === "bite") drawEmo(g, "❗", px, py - 1.15, 0.6);
 }
 
 // ───────── 창 열기 ─────────
@@ -821,13 +908,15 @@ const GUIDE = [
   ["🎒 가방", "물건을 " + BAG_MAX + "개까지 담아요. 꽉 차면 상점에서 팔아요. 꾸미기 물건을 누르면 바로 놓으러 가요."],
   ["🔨 꾸미기", "아래 줄에서 물건을 고르고 땅을 눌러서 놓아요. 🧽는 놓은 것을 도로 가방에 넣어요. 왼쪽 아래 화살표로 움직일 수 있어요."],
   ["🎨 그림판", "점을 찍어 내 그림을 그려요(8장). 그린 그림은 옷으로 입거나, 바닥에 깔거나, 벽지·이젤에 쓸 수 있어요."],
+  ["🛋️ 가구와 🎡 놀이기구 쓰기", "놓아 둔 가구 앞에서 행동 단추를 눌러요. 침대에 눕고, 소파에 앉고, 욕조에서 목욕하고, 피아노를 쳐요. 관람차와 회전목마는 타면 빙글빙글 돌아요. 움직이면 그만둬요. 쓸 수 있는 가구를 도로 가방에 넣으려면 🔨 꾸미기의 🧽를 써요."],
+  ["🏰 성 안 구경", "작은 성(곰곰과 하트 5개가 되면 받는 선물)을 섬에 놓고 앞에서 행동 단추를 누르면 안으로 들어가요. 왕좌에 앉으면 왕관을 쓰고, 보물 상자는 하루에 한 번 열 수 있어요."],
   ["🏠 우리 집과 👗 옷장", "보라 지붕 집에 들어가면 내 방이에요. 꾸미기에서 가구를 놓고 벽지·바닥을 바꿔요. 방 안 옷장에서 머리·옷·바지·모자와 이름을 바꿔요. 아래쪽 문으로 나가요."],
   ["🐰 섬 친구", "토리·곰곰·핑·루비에게 다가가 말을 걸어요. 몇 번이든 이야기할 수 있고, \"더 이야기하기\"를 누르면 다른 말을 해요. 머리 위에 💌가 보이면 부탁이 있어요. 부탁을 들어주면 코인과 하트를 받고, 선물도 줄 수 있어요. 하트가 1·3·5개가 되면 특별한 선물을 받아요."],
   ["☀️ 하늘과 🍁 계절", "위쪽 하늘 단추를 누르면 낮 → 저녁 → 밤 → 자동(실제 시각)으로 바뀌어요. 밤에는 귀한 물고기가 잘 잡혀요. 계절은 실제 달을 따라 바뀌고, 상점의 계절 한정 물건도 달라져요."],
   ["📷 사진", "사진 단추를 누르면 지금 화면이 사진으로 저장돼요."],
   ["📖 도감과 ✅ 할 일", "처음 잡거나 딴 것은 도감에 기록돼요. 수첩의 할 일을 해내면 코인을 받아요."],
   ["👫 같이 놀기", "👥 같이 단추를 눌러요. <b>내 섬에 초대하기</b>를 누르면 입장 코드(숫자 4개)가 나오고, 친구는 <b>친구 섬에 놀러 가기</b>에서 그 코드를 넣어요. 한 섬에 " + PARTY_MAX + "명까지 모여요. 모두 인터넷이 되어야 해요."],
-  ["👋 인사와 🔒 꾸미기 허락", "같이 놀 때는 👋 인사 단추로 인사 그림을 골라 보여 줘요(글자로 말하기는 없어요). 손님은 섬 주인이 \"손님도 꾸미기\"를 허락할 때만 꾸밀 수 있어요. 친구 섬에서 얻은 물고기·과일·곤충은 내 가방에 담겨요."],
+  ["👋 인사와 🔒 꾸미기 허락", "같이 놀 때는 👋 인사 단추로 인사 그림을 골라 보여 줘요(글자로 말하기는 없어요). 손님은 섬 주인이 \"손님도 꾸미기\"를 허락할 때만 꾸밀 수 있어요. 친구 섬에서 얻은 물고기·과일·곤충은 내 가방에 담겨요. 친구가 낚시하거나, 나무를 흔들거나, 가구를 쓰는 모습도 서로 보여요."],
   ["👥 한 기기를 여럿이 쓸 때", "⚙️ 설정 → \"다른 사람 섬으로 바꾸기 · 새 섬 만들기\"에서 각자 섬을 만들어요(8개까지). 게임을 켤 때 자기 이름을 눌러요."],
   ["💾 저장과 📲 설치", "놀던 내용은 이 기기에 저절로 저장돼요. 다른 기기와는 따로예요. ⚙️ 설정에서 앱으로 설치하면 홈 화면에서 바로 열 수 있어요."]
 ];

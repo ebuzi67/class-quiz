@@ -215,6 +215,7 @@ function catchBug(b) {
   }
   bugs.splice(bugs.indexOf(b), 1);
   addItem(b.id);
+  sendFx(["got", b.id]);
   const isNew = found(b.id);
   sfx("good");
   showCard('<div class="big">' + it.e + "</div><b>" + it.n + "를 잡았다!</b><span>💰 " + it.sell.toLocaleString() + "</span>" + (isNew ? '<i class="new">✨ 도감에 새로 등록!</i>' : ""));
@@ -247,6 +248,7 @@ function plantAction(k) {
       if (!addItem(pl.kind)) { toast("가방이 꽉 찼어! 🎒"); return; }
       delete plants[k];
       partySend({ t: "act", a: "plant", k, op: "pick" });
+      sendFx(["got", pl.kind]);
       const it = ITEMS[pl.kind], isNew = found(pl.kind), [x, y] = k.split(",").map(Number);
       float(it.e, x, y); sfx("good");
       toast(it.e + " " + it.n + "을(를) 땄어!" + (isNew ? " (도감에 새로 등록 ✨)" : "") + (pl.kind === "bouquet" || pl.kind === "hibiscus" ? " 아주 귀한 꽃이야!" : ""));
@@ -257,6 +259,7 @@ function plantAction(k) {
     return { label: "💧 물 주기", fn: () => {
       pl.at = Date.now(); touch(); sfx("splash");
       partySend({ t: "act", a: "plant", k, op: "water" });
+      sendFx(["water", k]);
       const [x, y] = k.split(",").map(Number);
       float("💧", x, y);
       toast(pl.s ? "쑥쑥! 1분쯤 뒤에 꽃이 필 거야 🌸" : "촉촉해졌어! 1분쯤 뒤에 싹이 틀 거야 🌱");

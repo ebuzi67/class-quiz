@@ -66,15 +66,45 @@ function sendWhos() {
 }
 
 // ───────── 위치 주고받기 ─────────
+// 지금 하고 있는 일을 짧은 글로: 낚시 "F|찌x|찌y|입질", 가구 쓰기 "P|종류|물건|칸x|칸y", 꾸미기 "B"
+function myAct() {
+  if (fishing) return "F|" + fishing.x.toFixed(2) + "|" + fishing.y.toFixed(2) + "|" + (fishing.phase === "bite" ? 1 : 0);
+  if (pose) return "P|" + pose.kind + "|" + pose.id + "|" + pose.x + "|" + pose.y;
+  return build ? "B" : "";
+}
+function parseAct(s) {
+  if (typeof s !== "string" || !s || s.length > 60) return null;
+  const a = s.split("|");
+  if (a[0] === "F") { const x = +a[1], y = +a[2]; return Number.isFinite(x) && Number.isFinite(y) ? { raw: s, fish: { x, y, phase: a[3] === "1" ? "bite" : "wait", dip: 0, bt: 0 } } : null; }
+  if (a[0] === "P") return POSE_KINDS.includes(a[1]) && USES[a[2]] && Number.isFinite(+a[3]) && Number.isFinite(+a[4]) ? { raw: s, pose: { kind: a[1], id: a[2], x: +a[3] | 0, y: +a[4] | 0 } } : null;
+  return a[0] === "B" ? { raw: s, build: true } : null;
+}
 function myPos() {
-  return [Math.round(state.x * 100) / 100, Math.round(state.y * 100) / 100, DIR_NAMES.indexOf(state.dir), state.scene === "home" ? 1 : 0, moving ? 1 : 0, party.emo, party.emoN];
+  return [Math.round(state.x * 100) / 100, Math.round(state.y * 100) / 100, DIR_NAMES.indexOf(state.dir), Math.max(0, SCENES.indexOf(state.scene)), moving ? 1 : 0, party.emo, party.emoN, myAct()];
+}
+// 한 번 일어난 일 알리기: ["shake", 나무 칸, 과일], ["got", 얻은 물건], ["water", 꽃 칸]
+function sendFx(f) {
+  if (party.role === "host") broadcast({ t: "fx", id: "host", f });
+  else partySend({ t: "fx", f });
+}
+function showFx(id, f) {
+  const o = party.others.get(id);
+  if (!o || !Array.isArray(f)) return;
+  const tile = /^\d{1,2},\d{1,2}$/, k = String(f[1] || ""), here = o.scene === "island" && state.scene === "island";
+  if (f[0] === "shake" && here && tile.test(k) && world.statics.has(k)) {
+    shakes[k] = 0.45;
+    const it = ITEMS[f[2]], [tx, ty] = k.split(",").map(Number);
+    if (it && it.k === "fruit") for (let i = 0; i < 3; i++) setTimeout(() => float(it.e, tx + 0.2 + i * 0.3, ty), i * 130);
+  } else if (f[0] === "got" && ITEMS[f[1]]) { o.got = ITEMS[f[1]].e; o.gotUntil = performance.now() + 2600; }
+  else if (f[0] === "water" && here && tile.test(k)) { const [tx, ty] = k.split(",").map(Number); float("💧", tx, ty); }
 }
 function applyPos(id, p) {
   const o = party.others.get(id);
   if (!o || !Array.isArray(p) || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) return;
   o.tx = Math.max(0, Math.min(MW, p[0])); o.ty = Math.max(0, Math.min(MH, p[1]));
   o.dir = DIR_NAMES[p[2]] || "down";
-  const scene = p[3] ? "home" : "island";
+  const scene = SCENES[p[3]] || "island";
+  if (!o.act || o.act.raw !== p[7]) o.act = parseAct(p[7]);
   if (o.fresh || scene !== o.scene || Math.hypot(o.tx - o.x, o.ty - o.y) > 4) { o.x = o.tx; o.y = o.ty; o.fresh = false; }
   o.scene = scene; o.moving = !!p[4];
   if (p[6] !== o.emoN) { o.emoN = p[6]; if (EMOTES.some((e) => e[0] === p[5])) { o.emo = p[5]; o.emoUntil = performance.now() + 3500; } }
@@ -84,6 +114,8 @@ function partyUpdate(dt) {
   party.others.forEach((o) => {
     const k = Math.min(1, dt * 12);
     o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k;
+    if (o.act && o.act.fish) o.act.fish.bt += dt;
+    if (o.act && o.act.pose && o.scene === state.scene) poseFx(o.act.pose, dt, false);
   });
 }
 function sayEmote(e) {
@@ -155,6 +187,7 @@ function hostConn(conn) {
     if (m.t === "pos") applyPos(id, m.p);
     else if (m.t === "who") { setWho(id, m.who); sendWhos(); partyChanged(); }
     else if (m.t === "act") hostAct(conn, m);
+    else if (m.t === "fx" && Array.isArray(m.f)) { const f = m.f.slice(0, 3).map((v) => String(v).slice(0, 20)); showFx(id, f); broadcast({ t: "fx", id, f }); }
   };
   conn.onclose = () => { if (id && party.guests.get(id) && party.guests.get(id).conn === conn) dropGuest(id); };
 }
@@ -169,7 +202,7 @@ function hostTick() {
   party.guests.forEach((g, id) => { if (now - g.last > 15000) { g.conn.close(); dropGuest(id); } });
   const add = (id, p) => { const key = p.join(); if (all || party.sent[id] !== key) { party.sent[id] = key; list.push([id].concat(p)); } };
   add("host", myPos());
-  party.others.forEach((o, id) => add(id, [Math.round(o.tx * 100) / 100, Math.round(o.ty * 100) / 100, DIR_NAMES.indexOf(o.dir), o.scene === "home" ? 1 : 0, o.moving ? 1 : 0, o.emo, o.emoN]));
+  party.others.forEach((o, id) => add(id, [Math.round(o.tx * 100) / 100, Math.round(o.ty * 100) / 100, DIR_NAMES.indexOf(o.dir), Math.max(0, SCENES.indexOf(o.scene)), o.moving ? 1 : 0, o.emo, o.emoN, o.act ? o.act.raw : ""]));
   broadcast({ t: "snap", p: list });
 }
 // 손님이 한 일을 주인 섬에 반영해요
@@ -293,7 +326,8 @@ function guestMsg(m) {
   } else if (m.t === "snap") {
     party.lastSnap = Date.now();
     if (Array.isArray(m.p)) for (const e of m.p) if (Array.isArray(e) && e[0] !== party.myId) applyPos(e[0], e.slice(1));
-  } else if (m.t === "built") guestBuilt(m);
+  } else if (m.t === "fx") { if (m.id !== party.myId) showFx(String(m.id), m.f); }
+  else if (m.t === "built") guestBuilt(m);
   else if (m.t === "bye") partyLost("섬 주인이 모임을 끝냈어. 내 섬으로 돌아왔어.");
 }
 function enterVisit() {
@@ -372,7 +406,11 @@ function drawPartyLabels(g) {
   const now = performance.now(), fs = Math.max(11, Math.round(T * 0.2));
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.font = fs + "px Jua, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-  const tag = (name, x, y, face, until, me) => {
+  const tag = (name, x, y, face, until, me, o) => {
+    if (o && o.got && o.gotUntil > now) { face = o.got; until = o.gotUntil; }   // 방금 얻은 것을 자랑해요
+    if (o && o.act && o.act.build) name = "🔨 " + name;
+    const p = o && o.act && o.act.pose;
+    if (p && p.kind !== "play") { x = p.x + (p.id === "throne" ? 1 : 0.5); y = p.y + (p.kind === "ride" ? 0.2 : p.kind === "sit" ? 0.62 : 0.9); }
     const sx = offX + x * T, sy = offY + (y - 1.32) * T, w = g.measureText(name).width + fs;
     g.fillStyle = me ? "rgba(255,224,138,.92)" : "rgba(255,255,255,.88)"; rr(g, sx - w / 2, sy - fs * 0.75, w, fs * 1.5, fs * 0.7); g.fill();
     g.fillStyle = "#4a3b52"; g.fillText(name, sx, sy + 1);
@@ -383,8 +421,8 @@ function drawPartyLabels(g) {
       g.drawImage(emo(face), sx - r * 0.8, by - r * 0.8, r * 1.6, r * 1.6);
     }
   };
-  party.others.forEach((o) => { if (o.scene === state.scene) tag(o.name, o.x, o.y, o.emo, o.emoUntil, false); });
-  tag(state.name, state.x, state.y, party.emo, party.emoUntil, true);
+  party.others.forEach((o) => { if (o.scene === state.scene) tag(o.name, o.x, o.y, o.emo, o.emoUntil, false, o); });
+  tag(state.name, state.x, state.y, party.emo, party.emoUntil, true, pose ? { act: { pose } } : null);
 }
 
 // ───────── 화면: 같이 놀기 창 ─────────
