@@ -194,8 +194,11 @@ function drawBuilding(g, b, x, y) {
   drawEmo(g, shop ? "🛍️" : "👗", x + 1.5, y + 0.07, 0.62);
 }
 
-function drawObj(g, o, x, y, objAt) {
+// use: 누가 쓰고 있을 때 { t: 시간, riders: 타고 있는 사람들의 모습 }
+function drawObj(g, o, x, y, objAt, use) {
   const it = ITEMS[o.id], cx = x + 0.5;
+  if (it.draw === "wheel") { drawWheel(g, cx, y, use); return; }
+  if (it.draw === "carousel") { drawCarousel(g, cx, y, use); return; }
   if (it.draw === "fence") {
     g.fillStyle = "#b98a55";
     g.fillRect(x, y + 0.42, 1, 0.09); g.fillRect(x, y + 0.66, 1, 0.09);
@@ -226,8 +229,123 @@ function drawObj(g, o, x, y, objAt) {
     g.strokeStyle = "#8a5a35"; g.lineWidth = 0.05; g.strokeRect(cx - 0.36, y - 0.12, 0.72, 0.72);
     return;
   }
-  drawEmo(g, it.e, cx, y + 0.95, it.s || 0.8);
+  // 누가 가지고 놀고 있으면 통통 튀어요
+  const s = it.s || 0.8, hop = use && use.busy ? Math.abs(Math.sin(use.t * 7)) * 0.05 : 0;
+  drawEmo(g, it.e, cx, y + 0.95 - hop, s * (1 + hop * 0.6));
 }
+
+// 얼굴만 작게 (놀이기구에 탄 사람)
+function drawRider(g, x, y, look, s) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  drawPerson(g, 0, 0.45, Object.assign({}, look, { noShadow: true }), "down", 0, false);
+  g.restore();
+}
+// 관람차: 바퀴가 돌고 칸은 늘 똑바로 매달려 있어요. 누가 타면 더 빨리 돌아요.
+function drawWheel(g, cx, y, use) {
+  const riders = use.riders || [], a0 = use.t * (riders.length ? 0.7 : 0.18), wy = y - 0.5, R = 0.66;
+  shadow(g, cx, y + 0.92, 0.6);
+  g.strokeStyle = "#8a93a8"; g.lineWidth = 0.08; g.lineCap = "round";
+  g.beginPath(); g.moveTo(cx, wy); g.lineTo(cx - 0.42, y + 0.9); g.moveTo(cx, wy); g.lineTo(cx + 0.42, y + 0.9); g.stroke();
+  g.strokeStyle = "#ff8fb1"; g.lineWidth = 0.06; g.beginPath(); g.arc(cx, wy, R, 0, Math.PI * 2); g.stroke();
+  g.strokeStyle = "#ffd0da"; g.lineWidth = 0.03; g.beginPath();
+  for (let i = 0; i < 6; i++) { const a = a0 + i * Math.PI / 3; g.moveTo(cx, wy); g.lineTo(cx + Math.cos(a) * R, wy + Math.sin(a) * R); }
+  g.stroke();
+  const cols = ["#ff7f8f", "#ffb347", "#ffe066", "#7ed07a", "#6ec6f0", "#9b8cf0"];
+  for (let i = 0; i < 6; i++) {
+    const a = a0 + i * Math.PI / 3, px = cx + Math.cos(a) * R, py = wy + Math.sin(a) * R;
+    if (riders[i]) drawRider(g, px, py + 0.02, riders[i], 0.34);
+    g.fillStyle = cols[i]; rr(g, px - 0.14, py + 0.04, 0.28, 0.2, 0.06); g.fill();
+    g.fillStyle = "#fff"; g.fillRect(px - 0.14, py + 0.02, 0.28, 0.04);
+  }
+  g.fillStyle = "#ffd84d"; ell(g, cx, wy, 0.09, 0.09);
+}
+// 회전목마: 말들이 오르내리며 빙글빙글 돌아요
+function drawCarousel(g, cx, y, use) {
+  const riders = use.riders || [], a0 = use.t * (riders.length ? 1.6 : 0.5);
+  shadow(g, cx, y + 0.92, 0.55);
+  g.fillStyle = "#ffd0da"; ell(g, cx, y + 0.84, 0.56, 0.13);
+  g.fillStyle = "#ff8fb1"; ell(g, cx, y + 0.8, 0.56, 0.11);
+  const horses = [];
+  for (let i = 0; i < 4; i++) { const a = a0 + i * Math.PI / 2; horses.push({ i, x: cx + Math.sin(a) * 0.4, z: Math.cos(a), y: y + 0.62 + Math.sin(use.t * 4 + i * 1.7) * 0.05 }); }
+  horses.sort((p, q) => p.z - q.z);
+  const pole = () => { g.fillStyle = "#ffe9a8"; g.fillRect(cx - 0.05, y - 0.25, 0.1, 1.05); };
+  let poled = false;
+  for (const h of horses) {
+    if (h.z > 0 && !poled) { pole(); poled = true; }
+    const sc = 0.36 + h.z * 0.06;
+    g.strokeStyle = "#ffe9a8"; g.lineWidth = 0.025; g.beginPath(); g.moveTo(h.x, y - 0.2); g.lineTo(h.x, h.y + 0.12); g.stroke();
+    if (riders[h.i]) drawRider(g, h.x, h.y - sc * 0.55, riders[h.i], 0.36);
+    drawEmo(g, "🐎", h.x, h.y + 0.14, sc);
+  }
+  if (!poled) pole();
+  for (let i = 0; i < 6; i++) {
+    g.fillStyle = i % 2 ? "#fff" : "#ff6f7d";
+    g.beginPath(); g.moveTo(cx, y - 0.78); g.lineTo(cx - 0.6 + i * 0.2, y - 0.2); g.lineTo(cx - 0.4 + i * 0.2, y - 0.2); g.closePath(); g.fill();
+  }
+  g.fillStyle = "#ffd84d"; rr(g, cx - 0.62, y - 0.24, 1.24, 0.1, 0.05); g.fill(); ell(g, cx, y - 0.8, 0.07, 0.07);
+}
+
+// 가구를 쓰는 모습. pose: { kind, id, x, y }(칸), t: 시간
+function drawPosed(g, look, pose, t) {
+  const cx = pose.x + 0.5, y = pose.y;
+  if (pose.kind === "lie") {
+    // 베개 쪽에 머리만 보여요. 몸은 침대 이불 속에 있는 셈이에요.
+    const hx = pose.x + 0.3, feet = y + 0.9, sc = 0.62;
+    g.save(); g.beginPath(); g.rect(pose.x - 0.2, y - 0.4, 1, feet - 0.5 * sc - (y - 0.4)); g.clip();
+    g.translate(hx, feet); g.scale(sc, sc);
+    drawPerson(g, 0, 0, Object.assign({}, look, { noShadow: true, sleep: true }), "down", 0, false);
+    g.restore();
+  } else if (pose.kind === "sit") {
+    const throne = pose.id === "throne";
+    drawPerson(g, throne ? pose.x + 1 : cx, y + (throne ? 0.82 : 0.74), Object.assign({}, look, { noShadow: true }, throne ? { hat: "crown" } : null), "down", 0, false);
+  } else if (pose.kind === "bath") {
+    drawPerson(g, cx, y + 0.42, Object.assign({}, look, { noShadow: true, sleep: true, hat: null }), "down", 0, false);
+    g.fillStyle = "rgba(255,255,255,.9)";
+    for (let i = 0; i < 4; i++) { const p = (t * 0.5 + i * 0.25) % 1; ell(g, cx - 0.3 + i * 0.2 + Math.sin(t * 2 + i) * 0.03, y - 0.1 - p * 0.5, 0.05 + (i % 2) * 0.02, 0.05 + (i % 2) * 0.02); }
+  }
+}
+
+// ───── 성 안 ─────
+const CASTLE_STYLE = { wall: "#c3c8d4", flr: "gray" };
+function drawCastleTile(g, t, x, y) {
+  drawRoomTile(g, CASTLE_STYLE, t, x, y);
+  if (t === T_WALL) {   // 돌벽 무늬
+    g.fillStyle = "rgba(74,59,82,.14)";
+    g.fillRect(x, y + 0.3, 1, 0.03); g.fillRect(x, y + 0.6, 1, 0.03);
+    g.fillRect(x + 0.5, y, 0.03, 0.3); g.fillRect(x + 0.2, y + 0.3, 0.03, 0.3); g.fillRect(x + 0.75, y + 0.3, 0.03, 0.3); g.fillRect(x + 0.5, y + 0.6, 0.03, 0.24);
+  } else if (t === T_ROOM && (x === 5 || x === 6)) {   // 빨간 양탄자
+    g.fillStyle = "#d9475a"; g.fillRect(x, y, 1, 1);
+    g.fillStyle = "#ffd84d"; g.fillRect(x === 5 ? x + 0.06 : x + 0.88, y, 0.06, 1);
+  }
+}
+function drawCastleWall(g) {
+  drawEmo(g, "🛡️", 2.5, 1.5, 0.7); drawEmo(g, "⚔️", 3.6, 1.5, 0.7); drawEmo(g, "👑", 6, 0.95, 0.6);
+  for (const x of [1.5, 4.5, 10.5]) drawEmo(g, "🔥", x, 1.35, 0.42);
+}
+function drawThrone(g, x, y) {   // 두 칸(x, x+1)을 차지해요
+  const cx = x + 1;
+  g.fillStyle = "rgba(40,30,50,.2)"; ell(g, cx, y + 0.94, 0.62, 0.1);
+  g.fillStyle = "#b8862c"; rr(g, cx - 0.5, y - 0.75, 1.0, 1.65, 0.16); g.fill();
+  g.fillStyle = "#d9475a"; rr(g, cx - 0.4, y - 0.62, 0.8, 1.2, 0.12); g.fill();
+  g.fillStyle = "#ffd84d"; ell(g, cx - 0.5, y - 0.75, 0.09, 0.09); ell(g, cx + 0.5, y - 0.75, 0.09, 0.09);
+  g.fillStyle = "#b8862c"; rr(g, cx - 0.6, y + 0.3, 0.2, 0.6, 0.06); g.fill(); rr(g, cx + 0.4, y + 0.3, 0.2, 0.6, 0.06); g.fill();
+  g.fillStyle = "#e85f72"; rr(g, cx - 0.42, y + 0.5, 0.84, 0.3, 0.1); g.fill();
+}
+function drawChest(g, x, y, open, t) {
+  const cx = x + 0.5;
+  shadow(g, cx, y + 0.9, 0.36);
+  g.fillStyle = "#8a5a35"; rr(g, cx - 0.36, y + 0.42, 0.72, 0.46, 0.06); g.fill();
+  g.fillStyle = "#ffd84d"; g.fillRect(cx - 0.36, y + 0.56, 0.72, 0.06); rr(g, cx - 0.07, y + 0.52, 0.14, 0.16, 0.03); g.fill();
+  if (open) {
+    g.fillStyle = "#6b4226"; rr(g, cx - 0.36, y + 0.12, 0.72, 0.18, 0.06); g.fill();
+    g.fillStyle = "#3a2a22"; g.fillRect(cx - 0.32, y + 0.3, 0.64, 0.14);
+  } else {
+    g.fillStyle = "#a87745"; rr(g, cx - 0.38, y + 0.2, 0.76, 0.28, 0.12); g.fill();
+    g.fillStyle = "#ffd84d"; g.fillRect(cx - 0.38, y + 0.4, 0.76, 0.05);
+    drawEmo(g, "✨", cx + 0.3, y + 0.24 + Math.sin(t * 4) * 0.04, 0.26);
+  }
+}
+function drawVase(g, x, y) { shadow(g, x + 0.5, y + 0.9, 0.24); drawEmo(g, "🏺", x + 0.5, y + 0.95, 0.72); }
 
 // 사람 그리기. (x, y)는 발밑 가운데
 function drawPerson(g, x, y, look, dir, t, moving) {
@@ -235,7 +353,7 @@ function drawPerson(g, x, y, look, dir, t, moving) {
   const step = moving ? Math.sin(t * 12) * 0.06 : 0;
   const by = y - bob, hy = by - 0.74;
   const side = dir === "left" ? -1 : dir === "right" ? 1 : 0;
-  shadow(g, x, y + 0.03, 0.27);
+  if (!look.noShadow) shadow(g, x, y + 0.03, 0.27);
   const dress = look.fit === "dress";
   g.fillStyle = dress ? look.skin : (look.pants || "#5c5470");
   rr(g, x - 0.15, y - 0.2 + Math.max(0, step), 0.12, 0.2 - Math.max(0, step), 0.05); g.fill();
@@ -279,7 +397,8 @@ function drawPerson(g, x, y, look, dir, t, moving) {
     g.beginPath(); g.ellipse(x - side * 0.05, hy - 0.04, 0.27, 0.13, 0, 0, Math.PI); g.fill();
     if (side) { g.beginPath(); g.ellipse(x - side * 0.1, hy, 0.2, 0.27, 0, 0, Math.PI * 2); g.fill(); }
     g.fillStyle = "#3a2a22";
-    if (side) ell(g, x + side * 0.16, hy + 0.07, 0.035, 0.045);
+    if (look.sleep) { g.fillRect(x - 0.14, hy + 0.08, 0.09, 0.022); g.fillRect(x + 0.05, hy + 0.08, 0.09, 0.022); }   // 감은 눈
+    else if (side) ell(g, x + side * 0.16, hy + 0.07, 0.035, 0.045);
     else { ell(g, x - 0.1, hy + 0.08, 0.035, 0.045); ell(g, x + 0.1, hy + 0.08, 0.035, 0.045); }
     g.fillStyle = "rgba(255,120,140,.45)";
     if (side) ell(g, x + side * 0.2, hy + 0.15, 0.045, 0.035);

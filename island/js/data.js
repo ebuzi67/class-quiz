@@ -52,8 +52,8 @@ const ITEMS = {
   moai:      { n: "돌 조각상", e: "🗿", k: "decor", buy: 1200, block: true, s: 0.95 },
   tent:      { n: "텐트", e: "⛺", k: "decor", buy: 1500, block: true, s: 1.1 },
   fountain:  { n: "분수", e: "⛲", k: "decor", buy: 2000, block: true, s: 1.1 },
-  carousel:  { n: "회전목마", e: "🎠", k: "decor", buy: 5000, block: true, s: 1.2 },
-  wheel:     { n: "관람차", e: "🎡", k: "decor", buy: 8000, block: true, s: 1.5 },
+  carousel:  { n: "회전목마", e: "🎠", k: "decor", buy: 5000, block: true, s: 1.2, draw: "carousel" },
+  wheel:     { n: "관람차", e: "🎡", k: "decor", buy: 8000, block: true, s: 1.5, draw: "wheel" },
 
   // 가구 (cat: "in")
   candle:   { n: "양초", e: "🕯️", k: "decor", buy: 200, cat: "in", s: 0.6, glow: true },
@@ -156,6 +156,34 @@ const FRIENDS = {
 const FLOWER_IDS = ["daisy", "tulip", "sunflower", "rose", "hibiscus", "bouquet", "blossom"];
 function itemKind(id) { return FLOWER_IDS.includes(id) ? "flower" : ITEMS[id].k; }
 
+// ───── 가구와 놀이기구 쓰기 ─────
+// k: lie(눕기), sit(앉기), bath(목욕), hide(안에 들어가기), ride(타기), play(가지고 놀기), enter(안으로 들어가기)
+// fx: 쓰는 동안 떠오르는 그림
+const USES = {
+  bed:      { k: "lie", label: "🛏️ 눕기", fx: "💤" },
+  sofa:     { k: "sit", label: "🛋️ 앉기" },
+  parasol:  { k: "sit", label: "⛱️ 쉬기" },
+  bath:     { k: "bath", label: "🛁 목욕하기", fx: "🧼" },
+  tent:     { k: "hide", label: "⛺ 들어가기", fx: "💤" },
+  carousel: { k: "ride", label: "🎠 타기", fx: "🎵" },
+  wheel:    { k: "ride", label: "🎡 타기", fx: "✨" },
+  coaster:  { k: "play", label: "🎢 타기", fx: "😆" },
+  circus:   { k: "play", label: "🎪 구경하기", fx: "🎉" },
+  fountain: { k: "play", label: "⛲ 물장구", fx: "💦" },
+  piano:    { k: "play", label: "🎹 연주하기", fx: "🎵", notes: true },
+  guitar:   { k: "play", label: "🎸 연주하기", fx: "🎶", notes: true },
+  mic:      { k: "play", label: "🎤 노래하기", fx: "🎶", notes: true },
+  tv:       { k: "play", label: "📺 보기", fx: "✨" },
+  computer: { k: "play", label: "🖥️ 컴퓨터 하기", fx: "💡" },
+  gamepad:  { k: "play", label: "🎮 게임하기", fx: "⭐" },
+  camera:   { k: "play", label: "🎥 촬영하기", fx: "🔴" },
+  bear:     { k: "play", label: "🧸 안아 주기", fx: "❤️" },
+  castle:   { k: "enter", label: "🏰 들어가기" },
+  throne:   { k: "sit", label: "👑 왕좌에 앉기", fx: "✨" }
+};
+const POSE_KINDS = ["lie", "sit", "bath", "hide", "ride", "play"];
+const SCENES = ["island", "home", "castle"];
+
 const SEASONS = { spring: "🌸 봄", summer: "🌻 여름", autumn: "🍁 가을", winter: "⛄ 겨울" };
 // 상점 진열대: out(바깥 꾸미기), in(가구), season(이번 계절 한정)
 function shopList(tab, season) {
@@ -205,6 +233,12 @@ function buildRoom() {
     return (x === 5 || x === 6) ? T_EXIT : T_VOID;
   };
   return { at, statics: new Map([["2,2", { t: "wardrobe" }]]), start: [6, 7.4] };
+}
+
+// 성 안: 왕좌(두 칸), 보물 상자, 항아리가 있어요. 꾸밀 수는 없어요.
+function buildCastle() {
+  return { at: buildRoom().at, start: [6, 7.4],
+    statics: new Map([["5,2", { t: "throne" }], ["6,2", { t: "throne", part: true }], ["9,3", { t: "chest" }], ["1,2", { t: "vase" }], ["10,2", { t: "vase" }], ["1,7", { t: "vase" }], ["10,7", { t: "vase" }]]) };
 }
 
 function buildMap() {
