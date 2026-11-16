@@ -487,3 +487,17 @@ function drawPlant(g, pl, x, y, t) {
     drawEmo(g, "✨", cx + 0.28, y + 0.36 + Math.sin(t * 4) * 0.04, 0.22);
   }
 }
+
+// 섬 친구네 작은 집 (두 칸: x, x+1)
+function drawPalHouse(g, id, x, y) {
+  const r = PAL_ROOMS[id], cx = x + 1;
+  g.fillStyle = "rgba(40,60,40,.18)"; ell(g, cx, y + 0.95, 0.95, 0.12);
+  g.fillStyle = r.wall; rr(g, x + 0.12, y - 0.05, 1.76, 1.0, 0.1); g.fill();
+  g.fillStyle = r.roof; g.beginPath(); g.moveTo(x - 0.08, y + 0.08); g.lineTo(cx, y - 0.95); g.lineTo(x + 2.08, y + 0.08); g.closePath(); g.fill();
+  g.fillStyle = "#8a5a35"; rr(g, cx - 0.2, y + 0.35, 0.4, 0.6, 0.08); g.fill();
+  g.fillStyle = "#ffd84d"; ell(g, cx + 0.11, y + 0.68, 0.035, 0.035);
+  g.fillStyle = "#bfe8ff"; rr(g, x + 0.3, y + 0.3, 0.36, 0.34, 0.06); g.fill(); rr(g, x + 1.34, y + 0.3, 0.36, 0.34, 0.06); g.fill();
+  g.fillStyle = "#fff"; ell(g, cx, y - 0.32, 0.27, 0.27);
+  drawEmo(g, FRIENDS[id].e, cx, y - 0.1, 0.44);
+}
+function drawDeco(g, st, x, y) { shadow(g, x + 0.5, y + 0.9, 0.26); drawEmo(g, st.e, x + 0.5, y + 0.95, st.s || 0.7); }

@@ -29,6 +29,14 @@ function updatePals(dt) {
   for (const id in pals) {
     const p = pals[id];
     p.moving = false;
+    if (palSolid(p.x, p.y)) {   // 서 있던 자리가 물이나 물건으로 바뀌면 가까운 빈 땅으로 옮겨요
+      const isle = A("island");
+      find: for (let r = 1; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const x = Math.floor(p.hx) + dx, y = Math.floor(p.hy) + dy;
+        if (!solid(x, y, isle)) { p.x = p.hx = x + 0.5; p.y = p.hy = y + 0.5; p.tx = null; break find; }
+      }
+      continue;
+    }
     if (Math.hypot(p.x - state.x, p.y - state.y) < 0.9) { p.wait = Math.max(p.wait, 0.6); continue; }   // 내가 가까이 오면 멈춰서 기다려요
     if (p.wait > 0) { p.wait -= dt; continue; }
     if (p.tx == null) { p.tx = p.hx + rand(-3.5, 3.5); p.ty = p.hy + rand(-2.5, 2.5); }

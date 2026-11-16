@@ -125,7 +125,7 @@ function sayEmote(e) {
 
 // ───────── 주인: 섬에 초대하기 ─────────
 function worldSnap() {
-  return { name: state.name, island: state.island, obj: state.obj, floor: state.floor, plants: state.plants, shells: state.shells, trees: state.trees,
+  return { name: state.name, island: state.island, obj: state.obj, floor: state.floor, plants: state.plants, shells: state.shells, trees: state.trees, terra: state.terra,
     home: state.home, designs: state.designs, cur: state.cur, env: { season: ENV.season, night: ENV.night, sunset: ENV.sunset, label: ENV.label }, allow: party.allow };
 }
 // 나무 열매 시각은 기기마다 시계가 다를 수 있어서 "남은 시간"으로 바꿔 보내요
@@ -291,7 +291,8 @@ function cleanWorld(w) {
   const tile = /^\d{1,2},\d{1,2}$/, now = Date.now();
   const objs = (src) => { const out = {}; for (const k in obj(src)) { const o = src[k]; if (tile.test(k) && o && ITEMS[o.id]) out[k] = { id: o.id, d: o.d | 0 }; } return out; };
   const floors = (src) => { const out = {}; for (const k in obj(src)) { const f = src[k]; if (tile.test(k) && (typeof f === "number" || f === "s" || (ITEMS[f] && ITEMS[f].k === "floor"))) out[k] = f; } return out; };
-  const plants = {}, shells = {}, trees = {};
+  const plants = {}, shells = {}, trees = {}, terra = {};
+  for (const k in obj(w.terra)) if (tile.test(k) && [T_GRASS, T_WATER, T_BRIDGE, T_PATH].includes(w.terra[k])) terra[k] = w.terra[k];
   for (const k in obj(w.plants)) { const p = w.plants[k]; if (tile.test(k) && p) plants[k] = { s: Math.max(0, Math.min(2, p.s | 0)), at: p.at ? 1 : 0, kind: ITEMS[p.kind] ? p.kind : "daisy" }; }
   for (const k in obj(w.shells)) if (tile.test(k) && (w.shells[k] === "shell" || w.shells[k] === "star")) shells[k] = w.shells[k];
   for (const k in obj(w.trees)) if (tile.test(k) && w.trees[k] > 0) trees[k] = now + Math.min(REGROW_MS, +w.trees[k] || 0);
@@ -299,7 +300,7 @@ function cleanWorld(w) {
   for (const k in party.mine.trees) { if (party.mine.trees[k] > now) trees[k] = Math.max(trees[k] || 0, party.mine.trees[k]); else delete party.mine.trees[k]; }
   for (const k in party.mine.shells) { if (party.mine.shells[k] > now) delete shells[k]; else delete party.mine.shells[k]; }
   const h = obj(w.home), env = obj(w.env), style = (v, d) => typeof v === "number" || typeof v === "string" ? v : d;
-  return { name: String(w.name || "친구").slice(0, 8), island: String(w.island || "").slice(0, 8), obj: objs(w.obj), floor: floors(w.floor), plants, shells, trees,
+  return { name: String(w.name || "친구").slice(0, 8), island: String(w.island || "").slice(0, 8), obj: objs(w.obj), floor: floors(w.floor), plants, shells, trees, terra,
     home: { obj: objs(h.obj), floor: floors(h.floor), wall: style(h.wall, WALLS[0]), flr: style(h.flr, "wood") },
     designs: (Array.isArray(w.designs) ? w.designs : []).slice(0, 8).map(validDesign), cur: w.cur | 0,
     env: { season: SEASONS[env.season] ? env.season : "summer", night: Math.max(0, Math.min(1, +env.night || 0)), sunset: Math.max(0, Math.min(1, +env.sunset || 0)), label: String(env.label || "").slice(0, 30) },
