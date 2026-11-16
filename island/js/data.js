@@ -102,6 +102,11 @@ Object.assign(ITEMS, {
   spider:      { n: "거미", e: "🕷️", k: "bug", sell: 300, when: "night", catch: 0.8, w: 15 },
   scorpion:    { n: "전갈", e: "🦂", k: "bug", sell: 1500, when: "night", seasons: ["summer", "autumn"], catch: 0.6, w: 3 },
 
+  // 날씨에 따라 나오는 동물 (weather: rain 비, rainbow 무지개)
+  croc:   { n: "아기 악어", e: "🐊", k: "fish", sell: 1200, w: 8, win: 0.65, size: [40, 90], where: "fresh", weather: "rain" },
+  whale:  { n: "고래", e: "🐳", k: "fish", sell: 4000, w: 3, win: 0.5, size: [300, 900], where: "sea", weather: "rain" },
+  parrot: { n: "무지개 앵무새", e: "🦜", k: "bug", sell: 2000, fly: true, when: "any", catch: 0.5, w: 14, weather: "rainbow" },
+
   seed:     { n: "꽃씨", e: "🌱", k: "seed", buy: 30 },
   hibiscus: { n: "히비스커스", e: "🌺", k: "decor", sell: 400, s: 0.7 },
   bouquet:  { n: "무지개 꽃다발", e: "💐", k: "decor", sell: 900, s: 0.75 },
@@ -215,7 +220,7 @@ const DEX_GROUPS = [
   { n: "강·연못 친구", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fish" && ITEMS[id].where === "fresh") },
   { n: "과일", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fruit") },
   { n: "바닷가", ids: ["shell", "star"] },
-  { n: "곤충", ids: ["butterfly", "bee", "ladybug", "ant", "caterpillar", "snail", "cricket", "spider", "scorpion"] },
+  { n: "곤충과 작은 동물", ids: ["butterfly", "bee", "ladybug", "ant", "caterpillar", "snail", "cricket", "spider", "scorpion", "parrot"] },
   { n: "내가 키운 꽃", ids: ["tulip", "daisy", "sunflower", "rose", "hibiscus", "bouquet"] }
 ];
 const DEX_TOTAL = DEX_GROUPS.reduce((sum, g) => sum + g.ids.length, 0);

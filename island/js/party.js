@@ -96,6 +96,7 @@ function showFx(id, f) {
     const it = ITEMS[f[2]], [tx, ty] = k.split(",").map(Number);
     if (it && it.k === "fruit") for (let i = 0; i < 3; i++) setTimeout(() => float(it.e, tx + 0.2 + i * 0.3, ty), i * 130);
   } else if (f[0] === "got" && ITEMS[f[1]]) { o.got = ITEMS[f[1]].e; o.gotUntil = performance.now() + 2600; }
+  else if (f[0] === "jump") toast("🏁 " + o.name + " 님이 점프맵을 " + String(f[1]).replace(/[^0-9.]/g, "") + "초에 깼어!");
   else if (f[0] === "water" && here && tile.test(k)) { const [tx, ty] = k.split(",").map(Number); float("💧", tx, ty); }
 }
 function applyPos(id, p) {
@@ -125,8 +126,8 @@ function sayEmote(e) {
 
 // ───────── 주인: 섬에 초대하기 ─────────
 function worldSnap() {
-  return { name: state.name, island: state.island, obj: state.obj, floor: state.floor, plants: state.plants, shells: state.shells, trees: state.trees, terra: state.terra,
-    home: state.home, designs: state.designs, cur: state.cur, env: { season: ENV.season, night: ENV.night, sunset: ENV.sunset, label: ENV.label }, allow: party.allow };
+  return { name: state.name, island: state.island, obj: state.obj, floor: state.floor, plants: state.plants, shells: state.shells, trees: state.trees, terra: state.terra, jump: state.jump && state.jump.rows,
+    home: state.home, designs: state.designs, cur: state.cur, env: { season: ENV.season, night: ENV.night, sunset: ENV.sunset, label: ENV.label, weather: ENV.weather }, allow: party.allow };
 }
 // 나무 열매 시각은 기기마다 시계가 다를 수 있어서 "남은 시간"으로 바꿔 보내요
 function worldOut() {
@@ -177,6 +178,7 @@ function hostConn(conn) {
       const o = setWho(id, m.who);
       conn.send({ t: "welcome", you: id });
       conn.send({ t: "world", w: worldOut() });
+      playOnJoin(conn);
       sendWhos(); partyChanged(); sfx("pop");
       toast("⛵ " + o.name + " 님이 놀러 왔어!");
       return;
@@ -187,6 +189,7 @@ function hostConn(conn) {
     if (m.t === "pos") applyPos(id, m.p);
     else if (m.t === "who") { setWho(id, m.who); sendWhos(); partyChanged(); }
     else if (m.t === "act") hostAct(conn, m);
+    else if (m.t === "score" || m.t === "dig") playHostMsg(id, m);
     else if (m.t === "fx" && Array.isArray(m.f)) { const f = m.f.slice(0, 3).map((v) => String(v).slice(0, 20)); showFx(id, f); broadcast({ t: "fx", id, f }); }
   };
   conn.onclose = () => { if (id && party.guests.get(id) && party.guests.get(id).conn === conn) dropGuest(id); };
@@ -265,6 +268,7 @@ function checkWho() {
 // ───────── 손님: 친구 섬에 놀러 가기 ─────────
 function startJoin(code) {
   if (inParty() || party.busy) return;
+  playReset();
   party.busy = true; party.msg = "섬을 찾는 중…"; partyChanged();
   party.handle = Net.join(code, {
     onOpen: (conn) => {
@@ -300,10 +304,10 @@ function cleanWorld(w) {
   for (const k in party.mine.trees) { if (party.mine.trees[k] > now) trees[k] = Math.max(trees[k] || 0, party.mine.trees[k]); else delete party.mine.trees[k]; }
   for (const k in party.mine.shells) { if (party.mine.shells[k] > now) delete shells[k]; else delete party.mine.shells[k]; }
   const h = obj(w.home), env = obj(w.env), style = (v, d) => typeof v === "number" || typeof v === "string" ? v : d;
-  return { name: String(w.name || "친구").slice(0, 8), island: String(w.island || "").slice(0, 8), obj: objs(w.obj), floor: floors(w.floor), plants, shells, trees, terra,
+  return { name: String(w.name || "친구").slice(0, 8), island: String(w.island || "").slice(0, 8), obj: objs(w.obj), floor: floors(w.floor), plants, shells, trees, terra, jump: validJump(w.jump) ? w.jump : null,
     home: { obj: objs(h.obj), floor: floors(h.floor), wall: style(h.wall, WALLS[0]), flr: style(h.flr, "wood") },
     designs: (Array.isArray(w.designs) ? w.designs : []).slice(0, 8).map(validDesign), cur: w.cur | 0,
-    env: { season: SEASONS[env.season] ? env.season : "summer", night: Math.max(0, Math.min(1, +env.night || 0)), sunset: Math.max(0, Math.min(1, +env.sunset || 0)), label: String(env.label || "").slice(0, 30) },
+    env: { season: SEASONS[env.season] ? env.season : "summer", night: Math.max(0, Math.min(1, +env.night || 0)), sunset: Math.max(0, Math.min(1, +env.sunset || 0)), label: String(env.label || "").slice(0, 40), weather: ["rain", "rainbow"].includes(env.weather) ? env.weather : "clear" },
     allow: !!w.allow };
 }
 function guestMsg(m) {
@@ -329,6 +333,7 @@ function guestMsg(m) {
     if (Array.isArray(m.p)) for (const e of m.p) if (Array.isArray(e) && e[0] !== party.myId) applyPos(e[0], e.slice(1));
   } else if (m.t === "fx") { if (m.id !== party.myId) showFx(String(m.id), m.f); }
   else if (m.t === "built") guestBuilt(m);
+  else if (m.t === "game" || m.t === "rank" || m.t === "dug" || m.t === "gameEnd") playGuestMsg(m);
   else if (m.t === "bye") partyLost("섬 주인이 모임을 끝냈어. 내 섬으로 돌아왔어.");
 }
 function enterVisit() {
@@ -358,7 +363,7 @@ function guestTick() {
 function leaveParty(msg) {
   if (!inParty() && !party.busy) return;
   const wasGuest = party.role === "guest";
-  if (party.role === "host") broadcast({ t: "bye" });
+  if (party.role === "host") { stopGame(); broadcast({ t: "bye" }); } else playReset();
   party.timers.forEach(clearInterval); party.timers = [];
   const handle = party.handle;
   setTimeout(() => { if (handle) handle.close(); }, party.role === "host" ? 300 : 0);
@@ -448,12 +453,12 @@ function openParty(view) {
       '<p class="note">지금 ' + partyCount() + "명 (최대 " + PARTY_MAX + "명) · 손님: " + namesHtml() + "</p>" +
       '<div class="tabs"><button class="btn' + (party.allow ? " go" : "") + '" data-party="allow">' + (party.allow ? "🔨 손님도 꾸미기: 허락함" : "🔒 손님도 꾸미기: 안 됨") + "</button>" +
       '<button class="btn" data-party="leave">🚪 모임 끝내기</button></div>' +
-      '<p class="note">허락하면 손님이 자기 가방 물건을 내 섬에 놓거나, 놓인 것을 치울 수 있어요(치운 것은 내 가방으로 와요).</p>';
+      '<p class="note">허락하면 손님이 자기 가방 물건을 내 섬에 놓거나, 놓인 것을 치울 수 있어요(치운 것은 내 가방으로 와요).</p>' + playMenuHtml();
   } else if (party.role === "guest") {
     html = '<p class="note">지금 <b>' + esc(party.world.name) + "의 " + esc(party.world.island) + " 섬</b>에 놀러 와 있어요. (" + partyCount() + "명)</p>" +
       '<p class="note">같이 있는 사람: ' + namesHtml() + "</p>" +
       '<p class="note">' + (party.world.allow ? "🔨 주인이 꾸미기를 허락했어요. 내 가방 물건을 놓을 수 있어요." : "🔒 꾸미기는 주인이 허락할 때만 할 수 있어요.") + " 낚시·곤충·과일로 얻은 것은 내 가방에 담겨서 내 섬으로 가져가요.</p>" +
-      '<div class="tabs"><button class="btn go" data-party="leave">🏝️ 내 섬으로 돌아가기</button></div>';
+      '<div class="tabs"><button class="btn go" data-party="leave">🏝️ 내 섬으로 돌아가기</button></div>' + playMenuHtml();
   } else if (party.view === "join") {
     const d = party.input.padEnd(4, " ").split("");
     html = '<p class="note">친구가 알려 준 입장 코드(숫자 4개)를 넣어요.</p><div class="codebox">' + d.map((c) => "<span>" + (c === " " ? "" : c) + "</span>").join("") + "</div>" +
@@ -463,9 +468,9 @@ function openParty(view) {
   } else {
     html = '<p class="note">친구나 선생님과 한 섬에서 만나요. 모두 인터넷이 되어야 하고, 한 섬에 ' + PARTY_MAX + "명까지 모일 수 있어요.</p>" +
       '<div class="two"><button class="btn go bigbtn" data-party="host"' + (party.busy ? " disabled" : "") + '>🏝️<b>내 섬에 초대하기</b><small>입장 코드를 만들어요</small></button>' +
-      '<button class="btn pink bigbtn" data-party="join"' + (party.busy ? " disabled" : "") + '>⛵<b>친구 섬에 놀러 가기</b><small>입장 코드를 넣어요</small></button></div><p class="msg">' + esc(party.msg) + "</p>";
+      '<button class="btn pink bigbtn" data-party="join"' + (party.busy ? " disabled" : "") + '>⛵<b>친구 섬에 놀러 가기</b><small>입장 코드를 넣어요</small></button></div><p class="msg">' + esc(party.msg) + "</p>" + playMenuHtml();
   }
-  openModal("party", "👥 같이 놀기", html);
+  openModal("party", "👥 같이 놀기 · 🎮 놀이", html);
 }
 function partyClick(d) {
   if (d.pad) {

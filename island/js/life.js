@@ -159,7 +159,7 @@ function bugPool() {
   const night = ENV.night > 0.5;
   return Object.keys(ITEMS).filter((id) => {
     const it = ITEMS[id];
-    return it.k === "bug" && (it.when === "any" || (it.when === "night") === night) && (!it.seasons || it.seasons.includes(ENV.season));
+    return it.k === "bug" && (it.when === "any" || (it.when === "night") === night) && (!it.seasons || it.seasons.includes(ENV.season)) && (!it.weather || it.weather === ENV.weather);
   });
 }
 function spawnBug() {
@@ -178,7 +178,7 @@ function spawnBug() {
   }
 }
 function updateBugs(dt) {
-  if ((bugTimer -= dt) <= 0) { bugTimer = rand(4, 9); if (bugs.length < 6) spawnBug(); }
+  if ((bugTimer -= dt) <= 0) { const fast = game && game.kind === "bug"; bugTimer = fast ? rand(1.2, 2.5) : rand(4, 9); if (bugs.length < (fast ? 10 : 6)) spawnBug(); }
   const isle = A("island");
   for (let i = bugs.length - 1; i >= 0; i--) {
     const b = bugs[i], it = ITEMS[b.id], far = Math.hypot(b.x - state.x, b.y - state.y);
@@ -224,6 +224,7 @@ function catchBug(b) {
   bugs.splice(bugs.indexOf(b), 1);
   addItem(b.id);
   sendFx(["got", b.id]);
+  gameScore("bug", Math.round(it.sell / 10));
   const isNew = found(b.id);
   sfx("good");
   showCard('<div class="big">' + it.e + "</div><b>" + it.n + "를 잡았다!</b><span>💰 " + it.sell.toLocaleString() + "</span>" + (isNew ? '<i class="new">✨ 도감에 새로 등록!</i>' : ""));

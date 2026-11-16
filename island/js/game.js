@@ -35,7 +35,7 @@ function newState() {
     pals: {}, plants: {}, hats: [],
     bag: { daisy: 2, fence: 4 }, trees: {}, obj: {}, floor: {}, shells: {}, shellAt: 0,
     designs: [HEART, null, null, null, null, null, null, null], cur: 0, dex: {},
-    stats: { fruit: 0, fish: 0, sold: 0, design: 0, placed: 0, shell: 0, bought: 0, home: 0, quest: 0, bug: 0, flower: 0, photo: 0, terra: 0 }, claimed: {}, mute: false,
+    stats: { fruit: 0, fish: 0, sold: 0, design: 0, placed: 0, shell: 0, bought: 0, home: 0, quest: 0, bug: 0, flower: 0, photo: 0, terra: 0, game: 0, rainfish: 0, jump: 0 }, claimed: {}, mute: false,
     terra: {}, scene: "island", home: { obj: {}, floor: {}, wall: WALLS[0], flr: "wood" }, sky: "auto"
   };
 }
@@ -133,6 +133,9 @@ const MISSIONS = [
   { id: "home", e: "🏠", n: "우리 집 안에 가구 5개 놓기", need: 5, r: 800 },
   { id: "bought", e: "🎁", n: "상점에서 물건 3개 사기", need: 3, r: 300 },
   { id: "terra", e: "⛏️", n: "섬 땅 10칸 바꾸기 (연못·길·다리)", need: 10, r: 500 },
+  { id: "game", e: "🏆", n: "대회나 보물찾기 1번 끝내기", need: 1, r: 300 },
+  { id: "jump", e: "🏁", n: "점프맵 1번 깨기", need: 1, r: 300 },
+  { id: "rainfish", e: "🌧️", n: "비 오는 날 물고기 3마리 낚기", need: 3, r: 800 },
   { id: "bug", e: "🦋", n: "곤충 5마리 잡기", need: 5, r: 500 },
   { id: "flower", e: "🌷", n: "꽃씨를 심어 꽃 3송이 피우기", need: 3, r: 500 },
   { id: "quest", e: "💌", n: "섬 친구의 부탁 3번 들어주기", need: 3, r: 800 },
@@ -187,7 +190,11 @@ function updateEnv() {
   else if (state.sky === "sunset") { n = 0; s = 1; }
   else if (state.sky === "night") { n = 1; s = 0; }
   ENV.night = n; ENV.sunset = s;
+  // 날씨: 10분마다 바뀌어요. 비가 그친 다음 10분은 무지개가 떠요.
+  const blk = Math.floor(Date.now() / 600000), rainy = (b) => tileHash(b, 77) % 100 < 28;
+  ENV.weather = ["rain", "rainbow", "clear"].includes(q.get("weather")) ? q.get("weather") : rainy(blk) ? "rain" : rainy(blk - 1) ? "rainbow" : "clear";
   ENV.label = SEASONS[ENV.season] + " · " + (n > 0.5 ? "🌙 밤" : s > 0.3 ? "🌇 저녁" : h < 7 && state.sky === "auto" ? "🌅 새벽" : "☀️ 낮");
+  ENV.label += ENV.weather === "rain" ? (ENV.season === "winter" ? " · 🌨️ 눈" : " · 🌧️ 비") : ENV.weather === "rainbow" ? " · 🌈 무지개" : "";
   const sk = SKIES[state.sky] || SKIES.auto;
   $("sky-icon").textContent = sk[0]; $("sky-name").textContent = sk[1];
 }
@@ -340,7 +347,7 @@ function pickObj(k) {
 
 let fishing = null;
 function pickFish(where) {
-  const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].where === where);
+  const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].where === where && (!ITEMS[id].weather || ITEMS[id].weather === ENV.weather));
   // 밤에는 귀한 물고기가 두 배로 잘 나와요
   const w = (id) => ITEMS[id].w * (ENV.night > 0.5 && ITEMS[id].w <= 12 ? 2 : 1);
   let r = Math.random() * pool.reduce((s, id) => s + w(id), 0);
@@ -379,6 +386,8 @@ function hook() {
     showCard('<div class="big">' + it.e + "</div><b>" + it.n + '…?</b><span>누가 버린 걸까? 그래도 ' + it.sell + "코인에 팔 수 있어.</span>");
     return;
   }
+  gameScore("fish", Math.round(it.sell / 10));
+  if (ENV.weather === "rain") bump("rainfish");
   const size = Math.round(it.size[0] + Math.pow(Math.random(), 1.6) * (it.size[1] - it.size[0]));
   const best = (state.dex[id] || 0) < size, isNew = found(id, size);
   showCard('<div class="big">' + it.e + "</div><b>" + it.n + "를 낚았다!</b><span>" + size + "cm · 💰 " + it.sell.toLocaleString() + "</span>" +
@@ -388,6 +397,8 @@ function hook() {
 
 function context() {
   if (pose) return { label: "🙆 그만하기", fn: endPose };
+  const tre = nearestTreasure();
+  if (tre && tre.d < 1.2 && !fishing) return { label: "⛏️ 파기", hot: true, fn: () => digTreasure(tre.i) };
   if (fishing) return fishing.phase === "bite" ? { label: "❗ 당겨!", hot: true, fn: hook } : { label: "🎣 기다려…", fn: hook };
   const a = A(), [fx, fy] = facing(), k = fx + "," + fy, st = a.statics.get(k);
   if (!a.home) {
@@ -428,7 +439,7 @@ function doAction() {
 // ───────── 입력 ─────────
 const keys = {};
 let ptr = null;
-function modalOpen() { return !$("modal").hidden || !$("intro").hidden || !$("who").hidden; }
+function modalOpen() { return !$("modal").hidden || !$("intro").hidden || !$("who").hidden || jumpOpen(); }
 addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return;
   if (partyKey(e)) { e.preventDefault(); return; }
@@ -694,6 +705,9 @@ function render() {
     if (!a.indoor && wd.shells[k]) things.push({ y: y + 0.2, sh: wd.shells[k], x, ty: y });
     if (!a.indoor && wd.plants[k]) things.push({ y: y + 0.35, pl: wd.plants[k], x, ty: y });
   }
+  if (!a.indoor && game && game.kind === "hunt") for (const t of game.tr) {
+    if (!t.f && Math.hypot(t.x + 0.5 - state.x, t.y + 0.5 - state.y) < 2.6) things.push({ y: t.y + 0.5, spark: t });
+  }
   if (!a.indoor) {
     for (const id in pals) things.push({ y: pals[id].y, pal: pals[id] });
     for (const b of bugs) things.push({ y: b.y, bug: b });
@@ -721,6 +735,7 @@ function render() {
       else drawPerson(g, w.x, w.y, w.look, w.dir, time, w.moving);
       if (w.fish) drawFishing(g, w.x, w.y, w.dir, w.fish);
     }
+    else if (th.spark) drawEmo(g, "✨", th.spark.x + 0.5, th.spark.y + 0.8 + Math.sin(time * 5) * 0.06, 0.5);
     else if (th.pal) {
       const ps = state.pals[th.pal.id];
       drawPal(g, FRIENDS[th.pal.id], th.pal, time, !ps || ps.req || Date.now() >= ps.reqAt ? "💌" : "💬");
@@ -769,7 +784,28 @@ function render() {
 }
 // 섬 위의 하늘빛: 저녁노을, 밤, 불빛, 반딧불이, 계절에 따라 날리는 꽃잎·낙엽·눈
 function drawSky(g, lights) {
-  const n = ENV.night, s = ENV.sunset, se = ENV.season;
+  const n = ENV.night, s = ENV.sunset, se = ENV.season, rain = ENV.weather === "rain";
+  if (ENV.weather === "rainbow" && n < 0.5) {   // 하늘에 걸린 무지개
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    const cols = ["#ff5f6d", "#ffa24c", "#ffe066", "#7ed07a", "#6ec6f0", "#9b8cf0"], R = viewW * 0.62, w = viewH * 0.022;
+    g.globalAlpha = 0.42 * (1 - n); g.lineWidth = w;
+    cols.forEach((c, i) => { g.strokeStyle = c; g.beginPath(); g.arc(viewW / 2, viewH * 1.0, R - i * w, Math.PI, Math.PI * 2); g.stroke(); });
+    g.globalAlpha = 1;
+    g.setTransform(T, 0, 0, T, offX, offY);
+  }
+  if (rain) {
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = "rgba(70,90,120,.2)"; g.fillRect(0, 0, viewW, viewH);
+    if (se !== "winter") {
+      g.strokeStyle = "rgba(210,235,255,.75)"; g.lineWidth = 2 * dpr; g.beginPath();
+      for (let i = 0; i < 70; i++) {
+        const px = (i * 173.3 * dpr + time * 120 * dpr) % viewW, py = ((i * 97.7 + time * (520 + (i % 7) * 40)) * dpr) % viewH;
+        g.moveTo(px, py); g.lineTo(px - 5 * dpr, py + 16 * dpr);
+      }
+      g.stroke();
+    }
+    g.setTransform(T, 0, 0, T, offX, offY);
+  }
   if (n > 0 || s > 0) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     if (s > 0) { g.fillStyle = "rgba(255,140,60," + 0.2 * s + ")"; g.fillRect(0, 0, viewW, viewH); }
@@ -788,7 +824,7 @@ function drawSky(g, lights) {
   }
   if (se === "summer") return;
   g.setTransform(1, 0, 0, 1, 0, 0);
-  const count = se === "winter" ? 34 : 14;
+  const count = se === "winter" ? (rain ? 90 : 34) : 14;
   for (let i = 0; i < count; i++) {
     const px = (((i * 197.3 + time * (se === "winter" ? 10 : 22) + Math.sin(time * 0.8 + i) * 26) * dpr) % viewW + viewW) % viewW;
     const py = ((i * 131.7 + time * (28 + (i % 5) * 9)) * dpr) % viewH;
@@ -960,6 +996,10 @@ const GUIDE = [
   ["🏠 우리 집과 👗 옷장", "보라 지붕 집에 들어가면 내 방이에요. 꾸미기에서 가구를 놓고 벽지·바닥을 바꿔요. 방 안 옷장에서 머리·옷·바지·모자와 이름을 바꿔요. 아래쪽 문으로 나가요."],
   ["🐰 섬 친구", "토리·곰곰·핑·루비에게 다가가 말을 걸어요. 몇 번이든 이야기할 수 있고, \"더 이야기하기\"를 누르면 다른 말을 해요. 머리 위에 💌가 보이면 부탁이 있어요. 부탁을 들어주면 코인과 하트를 받고, 선물도 줄 수 있어요. 하트가 1·3·5개가 되면 특별한 선물을 받아요."],
   ["☀️ 하늘과 🍁 계절", "위쪽 하늘 단추를 누르면 낮 → 저녁 → 밤 → 자동(실제 시각)으로 바뀌어요. 밤에는 귀한 물고기가 잘 잡혀요. 계절은 실제 달을 따라 바뀌고, 상점의 계절 한정 물건도 달라져요."],
+  ["🏆 대회와 🗺️ 보물찾기", "👥 같이·놀이 단추에서 시작해요. 낚시 대회와 곤충 대회는 3분 동안 점수를 모으고, 보물찾기는 섬에 숨은 보물 6개를 찾아요(가까울수록 🔥 뜨거워져요). 혼자 하면 기록 도전, 친구를 초대하면 순위를 겨뤄요. 같이 놀 때는 섬 주인이 시작해요."],
+  ["🏁 점프맵", "👥 같이·놀이 → 점프맵에서 발판을 뛰어넘어 깃발까지 가요. \"만들기\"에서 발판·가시·용수철·별을 놓아 나만의 코스를 만들 수 있어요. 친구가 놀러 오면 내 코스에 도전해요."],
+  ["🌧️ 날씨", "날씨는 10분마다 바뀌어요. 비가 오면 아기 악어(강)와 고래(바다)가 낚이고, 비가 그치면 무지개가 뜨면서 무지개 앵무새가 날아와요."],
+  ["🎁 매일 선물", "하루에 한 번, 게임을 켜면 모카가 출석 선물을 줘요. 매일 오면 7일째에 가장 큰 선물을 받아요."],
   ["📷 사진", "사진 단추를 누르면 지금 화면이 사진으로 저장돼요."],
   ["📖 도감과 ✅ 할 일", "처음 잡거나 딴 것은 도감에 기록돼요. 수첩의 할 일을 해내면 코인을 받아요."],
   ["👫 같이 놀기", "👥 같이 단추를 눌러요. <b>내 섬에 초대하기</b>를 누르면 입장 코드(숫자 4개)가 나오고, 친구는 <b>친구 섬에 놀러 가기</b>에서 그 코드를 넣어요. 한 섬에 " + PARTY_MAX + "명까지 모여요. 모두 인터넷이 되어야 해요."],
@@ -994,6 +1034,11 @@ $("modal-body").addEventListener("click", (e) => {
     if (state.coins < it.buy) { toast("코인이 모자라! 낚시랑 과일로 모아 보자 💰"); return; }
     if (!addItem(d.buy)) { toast("가방이 꽉 찼어! 🎒"); return; }
     state.coins -= it.buy; sfx("coin"); bump("bought"); openShop(shopTab);
+  } else if (d.jump) jumpClick(d.jump);
+  else if (d.game) {
+    if (d.game === "stop") { stopGame(); return; }
+    if (d.game === "jump") { closeModal(); openJump(); return; }
+    startGame(d.game);
   } else if (d.party || d.pad) partyClick(d);
   else if (d.emo) { sayEmote(d.emo); closeModal(); }
   else if (d.notetab) openNote(d.notetab);
@@ -1230,6 +1275,8 @@ setInterval(() => { updateEnv(); refreshHud(); }, 30000);
 initPals();
 growPlants();
 setInterval(growPlants, 1000);
+setInterval(playTick, 500);
+setInterval(checkDaily, 2000);
 document.querySelectorAll("#dpad button").forEach((b) => {
   const set = (on) => (e) => { e.preventDefault(); keys[b.dataset.key] = on; };
   b.addEventListener("pointerdown", set(true));
