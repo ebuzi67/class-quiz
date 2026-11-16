@@ -102,6 +102,11 @@ Object.assign(ITEMS, {
   spider:      { n: "거미", e: "🕷️", k: "bug", sell: 300, when: "night", catch: 0.8, w: 15 },
   scorpion:    { n: "전갈", e: "🦂", k: "bug", sell: 1500, when: "night", seasons: ["summer", "autumn"], catch: 0.6, w: 3 },
 
+  // 날씨에 따라 나오는 동물 (weather: rain 비, rainbow 무지개)
+  croc:   { n: "아기 악어", e: "🐊", k: "fish", sell: 1200, w: 8, win: 0.65, size: [40, 90], where: "fresh", weather: "rain" },
+  whale:  { n: "고래", e: "🐳", k: "fish", sell: 4000, w: 3, win: 0.5, size: [300, 900], where: "sea", weather: "rain" },
+  parrot: { n: "무지개 앵무새", e: "🦜", k: "bug", sell: 2000, fly: true, when: "any", catch: 0.5, w: 14, weather: "rainbow" },
+
   seed:     { n: "꽃씨", e: "🌱", k: "seed", buy: 30 },
   hibiscus: { n: "히비스커스", e: "🌺", k: "decor", sell: 400, s: 0.7 },
   bouquet:  { n: "무지개 꽃다발", e: "💐", k: "decor", sell: 900, s: 0.75 },
@@ -182,7 +187,20 @@ const USES = {
   throne:   { k: "sit", label: "👑 왕좌에 앉기", fx: "✨" }
 };
 const POSE_KINDS = ["lie", "sit", "bath", "hide", "ride", "play"];
-const SCENES = ["island", "home", "castle"];
+const SCENES = ["island", "home", "castle", "tori", "gom", "ping", "ruby"];
+// 섬 친구네 집 안: 벽·바닥 색, 놓여 있는 것들 [칸, 그림, 크기], 친구가 서 있는 칸
+const PAL_ROOMS = {
+  tori: { wall: "#ffe3c4", flr: "cream", roof: "#ff9a5c", npc: "6,3", deco: [["2,2", "🛏️", 1.05], ["4,2", "🥕", 0.7], ["8,2", "🍎", 0.6], ["9,2", "🍊", 0.6], ["10,2", "🍒", 0.6], ["2,6", "🥕", 0.7], ["9,6", "🌼", 0.65], ["3,4", "🎀", 0.55], ["8,5", "🍐", 0.6]] },
+  gom:  { wall: "#e9d7b8", flr: "wood", roof: "#a8733f", npc: "5,3", deco: [["9,2", "🛏️", 1.05], ["2,2", "🍯", 0.7], ["3,2", "🍯", 0.6], ["7,2", "🎣", 0.8], ["2,6", "🐟", 0.6], ["3,6", "🐠", 0.6], ["9,6", "🎩", 0.6], ["8,4", "🛋️", 0.9], ["10,7", "🌵", 0.7]] },
+  ping: { wall: "#d6efff", flr: "sky", roof: "#5aa9e6", npc: "6,3", deco: [["2,2", "🛏️", 1.05], ["4,2", "🍧", 0.7], ["9,2", "⛵", 0.9], ["10,2", "🐚", 0.55], ["2,6", "⭐", 0.55], ["3,6", "🐚", 0.55], ["9,6", "🧣", 0.6], ["8,4", "⛄", 0.9], ["10,7", "🎿", 0.7]] },
+  ruby: { wall: "#e7dcff", flr: "mint", roof: "#9b6fe0", npc: "5,3", deco: [["10,2", "🛏️", 1.05], ["2,2", "📚", 0.7], ["3,2", "🔮", 0.7], ["8,2", "🔬", 0.75], ["2,6", "🦋", 0.55], ["3,6", "🐞", 0.5], ["9,6", "🌹", 0.65], ["10,6", "🌷", 0.65], ["8,4", "👑", 0.55], ["2,4", "🌻", 0.7]] }
+};
+function buildPalRoom(id) {
+  const r = PAL_ROOMS[id], statics = new Map();
+  for (const [k, e, sz] of r.deco) statics.set(k, { t: "deco", e, s: sz });
+  statics.set(r.npc, { t: "palnpc", pal: id });
+  return { at: buildRoom().at, statics, start: [6, 7.4] };
+}
 
 const SEASONS = { spring: "🌸 봄", summer: "🌻 여름", autumn: "🍁 가을", winter: "⛄ 겨울" };
 // 상점 진열대: out(바깥 꾸미기), in(가구), season(이번 계절 한정)
@@ -202,7 +220,7 @@ const DEX_GROUPS = [
   { n: "강·연못 친구", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fish" && ITEMS[id].where === "fresh") },
   { n: "과일", ids: Object.keys(ITEMS).filter((id) => ITEMS[id].k === "fruit") },
   { n: "바닷가", ids: ["shell", "star"] },
-  { n: "곤충", ids: ["butterfly", "bee", "ladybug", "ant", "caterpillar", "snail", "cricket", "spider", "scorpion"] },
+  { n: "곤충과 작은 동물", ids: ["butterfly", "bee", "ladybug", "ant", "caterpillar", "snail", "cricket", "spider", "scorpion", "parrot"] },
   { n: "내가 키운 꽃", ids: ["tulip", "daisy", "sunflower", "rose", "hibiscus", "bouquet"] }
 ];
 const DEX_TOTAL = DEX_GROUPS.reduce((sum, g) => sum + g.ids.length, 0);
@@ -301,7 +319,20 @@ function buildMap() {
       if (at(x, y) === T_SEA || at(x, y) === T_SHALLOW) break;
     }
   }
+  // 섬 친구네 집: 친구가 사는 자리 근처의 빈 풀밭 두 칸 (지도가 같으니 모든 기기에서 같은 자리예요)
+  const houses = {};
+  for (const id in FRIENDS) {
+    const [hx, hy] = FRIENDS[id].home, free = (x, y) => at(x, y) === T_GRASS && !statics.has(x + "," + y);
+    find: for (const dy of [-1, -2, 1, 2, -3, 3]) for (const dx of [0, -1, 1, -2, 2, -3, 3]) {
+      const x = hx + dx, y = hy + dy;
+      if (free(x, y) && free(x + 1, y) && free(x, y + 1) && free(x + 1, y + 1)) {
+        put(x, y, { t: "house", pal: id }); put(x + 1, y, { t: "house", pal: id, part: true });
+        houses[id] = [x, y];
+        break find;
+      }
+    }
+  }
   const sand = [];
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === T_SAND && !statics.has(x + "," + y)) sand.push([x, y]);
-  return { tile, at, statics, buildings, sand, start: [17.5, 14.6] };
+  return { tile, at, statics, buildings, sand, houses, start: [17.5, 14.6] };
 }

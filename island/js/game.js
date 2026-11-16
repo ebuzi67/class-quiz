@@ -16,6 +16,11 @@ function saveProfiles() { try { localStorage.setItem(PROFILES_KEY, JSON.stringif
 const SAVE_KEY = profileKey(profiles.cur);
 const $ = (id) => document.getElementById(id);
 const world = buildMap(), room = buildRoom(), castle = buildCastle();
+const palRooms = {};
+for (const id in PAL_ROOMS) palRooms[id] = buildPalRoom(id);
+// 섬의 땅: 내가 바꾼 칸(terra)이 있으면 그것이 먼저예요
+function tileAt(x, y) { const tr = W().terra, t = tr && tr[x + "," + y]; return t != null ? t : world.at(x, y); }
+const isle = { at: tileAt };
 const ZOOM = +new URLSearchParams(location.search).get("zoom") || 16;   // 화면 가로에 보이는 칸 수
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
@@ -30,8 +35,8 @@ function newState() {
     pals: {}, plants: {}, hats: [],
     bag: { daisy: 2, fence: 4 }, trees: {}, obj: {}, floor: {}, shells: {}, shellAt: 0,
     designs: [HEART, null, null, null, null, null, null, null], cur: 0, dex: {},
-    stats: { fruit: 0, fish: 0, sold: 0, design: 0, placed: 0, shell: 0, bought: 0, home: 0, quest: 0, bug: 0, flower: 0, photo: 0 }, claimed: {}, mute: false,
-    scene: "island", home: { obj: {}, floor: {}, wall: WALLS[0], flr: "wood" }, sky: "auto"
+    stats: { fruit: 0, fish: 0, sold: 0, design: 0, placed: 0, shell: 0, bought: 0, home: 0, quest: 0, bug: 0, flower: 0, photo: 0, terra: 0, game: 0, rainfish: 0, jump: 0 }, claimed: {}, mute: false,
+    terra: {}, scene: "island", home: { obj: {}, floor: {}, wall: WALLS[0], flr: "wood" }, sky: "auto"
   };
 }
 function loadState() {
@@ -127,6 +132,10 @@ const MISSIONS = [
   { id: "placed", e: "🔨", n: "꾸미기로 섬에 10개 놓기", need: 10, r: 500 },
   { id: "home", e: "🏠", n: "우리 집 안에 가구 5개 놓기", need: 5, r: 800 },
   { id: "bought", e: "🎁", n: "상점에서 물건 3개 사기", need: 3, r: 300 },
+  { id: "terra", e: "⛏️", n: "섬 땅 10칸 바꾸기 (연못·길·다리)", need: 10, r: 500 },
+  { id: "game", e: "🏆", n: "대회나 보물찾기 1번 끝내기", need: 1, r: 300 },
+  { id: "jump", e: "🏁", n: "점프맵 1번 깨기", need: 1, r: 300 },
+  { id: "rainfish", e: "🌧️", n: "비 오는 날 물고기 3마리 낚기", need: 3, r: 800 },
   { id: "bug", e: "🦋", n: "곤충 5마리 잡기", need: 5, r: 500 },
   { id: "flower", e: "🌷", n: "꽃씨를 심어 꽃 3송이 피우기", need: 3, r: 500 },
   { id: "quest", e: "💌", n: "섬 친구의 부탁 3번 들어주기", need: 3, r: 800 },
@@ -181,7 +190,11 @@ function updateEnv() {
   else if (state.sky === "sunset") { n = 0; s = 1; }
   else if (state.sky === "night") { n = 1; s = 0; }
   ENV.night = n; ENV.sunset = s;
+  // 날씨: 10분마다 바뀌어요. 비가 그친 다음 10분은 무지개가 떠요.
+  const blk = Math.floor(Date.now() / 600000), rainy = (b) => tileHash(b, 77) % 100 < 28;
+  ENV.weather = ["rain", "rainbow", "clear"].includes(q.get("weather")) ? q.get("weather") : rainy(blk) ? "rain" : rainy(blk - 1) ? "rainbow" : "clear";
   ENV.label = SEASONS[ENV.season] + " · " + (n > 0.5 ? "🌙 밤" : s > 0.3 ? "🌇 저녁" : h < 7 && state.sky === "auto" ? "🌅 새벽" : "☀️ 낮");
+  ENV.label += ENV.weather === "rain" ? (ENV.season === "winter" ? " · 🌨️ 눈" : " · 🌧️ 비") : ENV.weather === "rainbow" ? " · 🌈 무지개" : "";
   const sk = SKIES[state.sky] || SKIES.auto;
   $("sky-icon").textContent = sk[0]; $("sky-name").textContent = sk[1];
 }
@@ -197,10 +210,11 @@ function nextSky() {
 // 지금 있는 곳: 섬 또는 집 안
 function A(scene) {
   scene = scene || state.scene;
-  if (scene === "castle") return { home: false, indoor: true, castle: true, W: RW, H: RH, at: castle.at, statics: castle.statics, obj: {}, floor: {}, buildings: [], start: castle.start };
+  if (palRooms[scene]) return { home: false, indoor: true, fixed: true, pal: scene, W: RW, H: RH, at: room.at, statics: palRooms[scene].statics, obj: {}, floor: {}, buildings: [], start: palRooms[scene].start };
+  if (scene === "castle") return { home: false, indoor: true, fixed: true, castle: true, W: RW, H: RH, at: castle.at, statics: castle.statics, obj: {}, floor: {}, buildings: [], start: castle.start };
   return scene === "home"
     ? { home: true, indoor: true, W: RW, H: RH, at: room.at, statics: room.statics, obj: W().home.obj, floor: W().home.floor, buildings: [], start: room.start }
-    : { home: false, indoor: false, W: MW, H: MH, at: world.at, statics: world.statics, obj: W().obj, floor: W().floor, buildings: world.buildings, start: world.start };
+    : { home: false, indoor: false, W: MW, H: MH, at: tileAt, statics: world.statics, obj: W().obj, floor: W().floor, buildings: world.buildings, start: world.start };
 }
 function enterHome() {
   pose = null;
@@ -214,12 +228,16 @@ function leaveHome() {
   ptr = null; sfx("pop"); touch();
 }
 // 성 안으로: 나올 때는 들어가기 전에 서 있던 자리로 돌아와요
-function enterCastle() {
+function enterCastle(scene) {
   pose = null;
   state.backPos = { x: state.x, y: state.y };
-  state.scene = "castle"; state.x = castle.start[0]; state.y = castle.start[1]; state.dir = "up";
+  state.scene = scene || "castle"; state.x = castle.start[0]; state.y = castle.start[1]; state.dir = "up";
   ptr = null; sfx("good"); touch();
-  toast("🏰 성 안이야! 왕좌에 앉아 보고, 보물 상자도 열어 봐.");
+  if (!scene) { toast("🏰 성 안이야! 왕좌에 앉아 보고, 보물 상자도 열어 봐."); return; }
+  // 친구네 집: 하루에 한 번, 놀러 가면 우정이 조금 올라요
+  const f = FRIENDS[scene], ps = palState(scene), day = new Date().toDateString(), before = palHearts(scene);
+  if (ps.visit !== day) { ps.visit = day; ps.p += 1; toast("🏠 " + f.n + "네 집이야! " + f.n + ": \"놀러 와 줘서 고마워!\" (우정이 올랐어 ❤️)"); palLevelUp(scene, before); }
+  else toast("🏠 " + f.n + "네 집이야! 안에 있는 " + f.n + "에게 말을 걸어 봐.");
 }
 function leaveCastle() {
   pose = null;
@@ -288,7 +306,7 @@ function spawnShells() {
     if (Object.keys(state.shells).length >= SHELL_MAX) continue;
     for (let tries = 0; tries < 20; tries++) {
       const [x, y] = world.sand[Math.floor(Math.random() * world.sand.length)], k = x + "," + y;
-      if (state.shells[k] || state.obj[k] || state.floor[k] != null) continue;
+      if (state.shells[k] || state.obj[k] || state.floor[k] != null || (state.terra[k] != null && state.terra[k] !== T_SAND)) continue;
       state.shells[k] = Math.random() < 0.25 ? "star" : "shell";
       touch();
       break;
@@ -329,7 +347,7 @@ function pickObj(k) {
 
 let fishing = null;
 function pickFish(where) {
-  const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].where === where);
+  const pool = Object.keys(ITEMS).filter((id) => ITEMS[id].where === where && (!ITEMS[id].weather || ITEMS[id].weather === ENV.weather));
   // 밤에는 귀한 물고기가 두 배로 잘 나와요
   const w = (id) => ITEMS[id].w * (ENV.night > 0.5 && ITEMS[id].w <= 12 ? 2 : 1);
   let r = Math.random() * pool.reduce((s, id) => s + w(id), 0);
@@ -339,7 +357,7 @@ function pickFish(where) {
 function cast(tt) {
   if (bagCount() >= BAG_MAX) { toast("가방이 꽉 찼어! 상점에서 팔고 오자 🎒"); return; }
   const [dx, dy] = DIRS[state.dir];
-  const far = isWater(world.at(Math.floor(state.x + dx * 1.9), Math.floor(state.y + dy * 1.9))) ? 1.9 : 1.15;
+  const far = isWater(tileAt(Math.floor(state.x + dx * 1.9), Math.floor(state.y + dy * 1.9))) ? 1.9 : 1.15;
   fishing = {
     phase: "wait", t: 0, bt: 0, x: state.x + dx * far, y: state.y + dy * far - 0.1, id: pickFish(tt === T_WATER ? "fresh" : "sea"),
     biteAt: 1.8 + Math.random() * 4, nibs: [], dip: 0
@@ -368,6 +386,8 @@ function hook() {
     showCard('<div class="big">' + it.e + "</div><b>" + it.n + '…?</b><span>누가 버린 걸까? 그래도 ' + it.sell + "코인에 팔 수 있어.</span>");
     return;
   }
+  gameScore("fish", Math.round(it.sell / 10));
+  if (ENV.weather === "rain") bump("rainfish");
   const size = Math.round(it.size[0] + Math.pow(Math.random(), 1.6) * (it.size[1] - it.size[0]));
   const best = (state.dex[id] || 0) < size, isNew = found(id, size);
   showCard('<div class="big">' + it.e + "</div><b>" + it.n + "를 낚았다!</b><span>" + size + "cm · 💰 " + it.sell.toLocaleString() + "</span>" +
@@ -377,6 +397,8 @@ function hook() {
 
 function context() {
   if (pose) return { label: "🙆 그만하기", fn: endPose };
+  const tre = nearestTreasure();
+  if (tre && tre.d < 1.2 && !fishing) return { label: "⛏️ 파기", hot: true, fn: () => digTreasure(tre.i) };
   if (fishing) return fishing.phase === "bite" ? { label: "❗ 당겨!", hot: true, fn: hook } : { label: "🎣 기다려…", fn: hook };
   const a = A(), [fx, fy] = facing(), k = fx + "," + fy, st = a.statics.get(k);
   if (!a.home) {
@@ -392,7 +414,9 @@ function context() {
     if (st.t === "bld" || st.t === "npc") return st.b === "home" ? { label: "🏠 들어가기", fn: enterHome } : { label: "🛍️ 상점", fn: () => openShop("sell") };
     if (st.t === "throne") return { label: USES.throne.label, fn: () => startUse("5,2", "throne") };
     if (st.t === "chest") return { label: "🎁 보물 상자", fn: openChest };
-    if (st.t === "rock" || st.t === "vase") return null;
+    if (st.t === "house") return { label: "🏠 " + FRIENDS[st.pal].n + "네 집", fn: () => enterCastle(st.pal) };
+    if (st.t === "palnpc") return { label: "💬 " + FRIENDS[st.pal].n, fn: () => openTalk(st.pal) };
+    if (st.t === "rock" || st.t === "vase" || st.t === "deco") return null;
     return { label: "🌳 흔들기", fn: () => shake(k, st) };
   }
   if (a.obj[k]) {
@@ -415,7 +439,7 @@ function doAction() {
 // ───────── 입력 ─────────
 const keys = {};
 let ptr = null;
-function modalOpen() { return !$("modal").hidden || !$("intro").hidden || !$("who").hidden; }
+function modalOpen() { return !$("modal").hidden || !$("intro").hidden || !$("who").hidden || jumpOpen(); }
 addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return;
   if (partyKey(e)) { e.preventDefault(); return; }
@@ -451,7 +475,7 @@ $("act").addEventListener("pointerdown", (e) => { e.preventDefault(); doAction()
 let build = null;
 function startBuild(sel) {
   closeModal();
-  if (state.scene === "castle") { toast("성 안은 꾸밀 수 없어. 구경만 해요! 🏰"); return; }
+  if (A().fixed) { toast("여기는 꾸밀 수 없어. 구경만 해요!"); return; }
   pose = null;
   if (isGuest() && sel && sel[0] === "d" && !ITEMS[sel]) { toast("내 디자인 바닥은 내 섬에서만 깔 수 있어."); sel = null; }
   if (isGuest() && !W().allow) toast("🔒 섬 주인이 허락해야 꾸밀 수 있어. 주인에게 부탁해 봐!");
@@ -471,11 +495,37 @@ function endBuild() {
   $("act").hidden = false;
   save();
 }
+// 땅 바꾸기 도구: 물 파기, 메우기, 길, 다리
+const TERRA_TOOLS = [["dig", "⛏️", "물 파기"], ["fill", "🌿", "메우기"], ["path", "👣", "길"], ["bridge", "🌉", "다리"]];
+const TERRA_TIPS = { dig: "⛏️ 땅을 누르면 연못이 돼요 (낚시도 돼요!)", fill: "🌿 물·다리·길을 누르면 도로 땅이 돼요", path: "👣 풀밭이나 모래를 누르면 길이 돼요", bridge: "🌉 물 위를 누르면 다리가 놓여요" };
+function terraAt(tool, tx, ty, k) {
+  if (state.scene !== "island" || isGuest()) return;
+  if (world.statics.has(k) || tx < 2 || ty < 2 || tx > MW - 3 || ty > MH - 3) return;
+  const cur = tileAt(tx, ty), orig = world.at(tx, ty), land = (t) => t === T_GRASS || t === T_SAND || t === T_PATH;
+  const set = (t) => { if (t === orig) delete state.terra[k]; else state.terra[k] = t; };
+  if (tool === "dig") {
+    if (!land(cur)) return;
+    if (state.obj[k] || state.floor[k] != null || state.plants[k]) { toast("물건이나 꽃이 있는 자리는 팔 수 없어. 먼저 🧽로 치워 줘!"); return; }
+    if (Math.floor(state.x) === tx && Math.floor(state.y) === ty) { toast("내가 서 있는 자리는 팔 수 없어!"); return; }
+    set(T_WATER); delete state.shells[k]; sfx("splash");
+  } else if (tool === "fill") {
+    if (cur !== T_WATER && cur !== T_BRIDGE && cur !== T_PATH) return;
+    set(cur !== T_PATH && land(orig) ? orig : T_GRASS); sfx("put");
+  } else if (tool === "path") {
+    if (cur !== T_GRASS && cur !== T_SAND) return;
+    set(T_PATH); sfx("put");
+  } else if (tool === "bridge") {
+    if (cur !== T_WATER && cur !== T_SHALLOW) return;
+    set(T_BRIDGE); sfx("put");
+  } else return;
+  touch(); bump("terra");
+}
 function drawBuildBar() {
   const box = $("build-items");
   const guest = isGuest();
   let html = A().home && !guest ? '<button class="slot txt" data-room="wall">🎨<small>벽지</small></button><button class="slot txt" data-room="flr">🧹<small>바닥</small></button>' : "";
   html += '<button class="slot' + (build.sel === "erase" ? " on" : "") + '" data-sel="erase" title="도로 줍기">🧽</button>';
+  if (state.scene === "island" && !guest) for (const [id, e, n] of TERRA_TOOLS) html += '<button class="slot txt' + (build.sel === "t:" + id ? " on" : "") + '" data-sel="t:' + id + '">' + e + "<small>" + n + "</small></button>";
   state.designs.forEach((d, i) => {
     if (d && !guest) html += '<button class="slot' + (build.sel === "d" + i ? " on" : "") + '" data-sel="d' + i + '"><img src="' + designCv[i].toDataURL() + '" alt="내 디자인"></button>';
   });
@@ -494,6 +544,7 @@ $("build-items").addEventListener("click", (e) => {
   build.sel = b.dataset.sel;
   drawBuildBar();
   const it = ITEMS[build.sel];
+  if (build.sel.startsWith("t:")) { $("build-tip").textContent = TERRA_TIPS[build.sel.slice(2)]; return; }
   $("build-tip").textContent = build.sel === "erase" ? "🧽 놓은 것을 누르면 도로 가방에 넣어요" : build.sel[0] === "d" && !it ? "🎨 내 디자인 바닥은 마음껏 깔 수 있어요" : it.e + " " + it.n + " 놓기 · 땅을 눌러요";
 });
 $("build-done").addEventListener("click", endBuild);
@@ -502,6 +553,7 @@ function buildAt(e) {
   if (ptr.last === k) return;
   ptr.last = k;
   const a = A(), tt = a.at(tx, ty);
+  if (build.sel.startsWith("t:")) { terraAt(build.sel.slice(2), tx, ty, k); return; }
   if (isGuest()) { guestBuild(k, tt); return; }
   if (a.home ? tt !== T_ROOM : (tt !== T_SAND && tt !== T_GRASS && tt !== T_PATH)) return;
   if (a.statics.has(k)) return;
@@ -605,7 +657,7 @@ function update(dt) {
     moving = ox !== state.x || oy !== state.y;
     if (moving && state.scene !== "island") {
       touch();
-      if (room.at(Math.floor(state.x), Math.floor(state.y)) === T_EXIT && state.y > 8.25 && !build) { if (state.scene === "castle") leaveCastle(); else leaveHome(); }
+      if (room.at(Math.floor(state.x), Math.floor(state.y)) === T_EXIT && state.y > 8.25 && !build) { if (state.scene === "home") leaveHome(); else leaveCastle(); }
     } else if (moving) {
       touch();
       const k = Math.floor(state.x) + "," + Math.floor(state.y), sh = W().shells[k];
@@ -638,8 +690,9 @@ function render() {
   const things = [], lights = [], wd = W();
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     if (a.castle) drawCastleTile(g, a.at(x, y), x, y);
+    else if (a.pal) drawRoomTile(g, PAL_ROOMS[a.pal], a.at(x, y), x, y);
     else if (a.home) drawRoomTile(g, wd.home, a.at(x, y), x, y);
-    else drawTile(g, world, x, y, time);
+    else drawTile(g, isle, x, y, time);
     const k = x + "," + y;
     if (a.floor[k] != null) drawFloor(g, a.floor[k], x, y);
     const st = a.statics.get(k);
@@ -651,6 +704,9 @@ function render() {
     }
     if (!a.indoor && wd.shells[k]) things.push({ y: y + 0.2, sh: wd.shells[k], x, ty: y });
     if (!a.indoor && wd.plants[k]) things.push({ y: y + 0.35, pl: wd.plants[k], x, ty: y });
+  }
+  if (!a.indoor && game && game.kind === "hunt") for (const t of game.tr) {
+    if (!t.f && Math.hypot(t.x + 0.5 - state.x, t.y + 0.5 - state.y) < 2.6) things.push({ y: t.y + 0.5, spark: t });
   }
   if (!a.indoor) {
     for (const id in pals) things.push({ y: pals[id].y, pal: pals[id] });
@@ -679,6 +735,7 @@ function render() {
       else drawPerson(g, w.x, w.y, w.look, w.dir, time, w.moving);
       if (w.fish) drawFishing(g, w.x, w.y, w.dir, w.fish);
     }
+    else if (th.spark) drawEmo(g, "✨", th.spark.x + 0.5, th.spark.y + 0.8 + Math.sin(time * 5) * 0.06, 0.5);
     else if (th.pal) {
       const ps = state.pals[th.pal.id];
       drawPal(g, FRIENDS[th.pal.id], th.pal, time, !ps || ps.req || Date.now() >= ps.reqAt ? "💌" : "💬");
@@ -696,6 +753,9 @@ function render() {
     else if (th.st.t === "throne") drawThrone(g, th.x, th.ty);
     else if (th.st.t === "chest") drawChest(g, th.x, th.ty, state.chestDay === new Date().toDateString(), time);
     else if (th.st.t === "vase") drawVase(g, th.x, th.ty);
+    else if (th.st.t === "deco") drawDeco(g, th.st, th.x, th.ty);
+    else if (th.st.t === "house") drawPalHouse(g, th.st.pal, th.x, th.ty);
+    else if (th.st.t === "palnpc") drawPal(g, FRIENDS[th.st.pal], { x: th.x + 0.5, y: th.ty + 0.85, moving: false }, time, "💬");
     else drawTree(g, th.st, th.x, th.ty, th.st.fruit && treeReady(th.k), shakes[th.k] || 0);
   }
   for (const f of floaters) {
@@ -724,7 +784,28 @@ function render() {
 }
 // 섬 위의 하늘빛: 저녁노을, 밤, 불빛, 반딧불이, 계절에 따라 날리는 꽃잎·낙엽·눈
 function drawSky(g, lights) {
-  const n = ENV.night, s = ENV.sunset, se = ENV.season;
+  const n = ENV.night, s = ENV.sunset, se = ENV.season, rain = ENV.weather === "rain";
+  if (ENV.weather === "rainbow" && n < 0.5) {   // 하늘에 걸린 무지개
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    const cols = ["#ff5f6d", "#ffa24c", "#ffe066", "#7ed07a", "#6ec6f0", "#9b8cf0"], R = viewW * 0.62, w = viewH * 0.022;
+    g.globalAlpha = 0.42 * (1 - n); g.lineWidth = w;
+    cols.forEach((c, i) => { g.strokeStyle = c; g.beginPath(); g.arc(viewW / 2, viewH * 1.0, R - i * w, Math.PI, Math.PI * 2); g.stroke(); });
+    g.globalAlpha = 1;
+    g.setTransform(T, 0, 0, T, offX, offY);
+  }
+  if (rain) {
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = "rgba(70,90,120,.2)"; g.fillRect(0, 0, viewW, viewH);
+    if (se !== "winter") {
+      g.strokeStyle = "rgba(210,235,255,.75)"; g.lineWidth = 2 * dpr; g.beginPath();
+      for (let i = 0; i < 70; i++) {
+        const px = (i * 173.3 * dpr + time * 120 * dpr) % viewW, py = ((i * 97.7 + time * (520 + (i % 7) * 40)) * dpr) % viewH;
+        g.moveTo(px, py); g.lineTo(px - 5 * dpr, py + 16 * dpr);
+      }
+      g.stroke();
+    }
+    g.setTransform(T, 0, 0, T, offX, offY);
+  }
   if (n > 0 || s > 0) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     if (s > 0) { g.fillStyle = "rgba(255,140,60," + 0.2 * s + ")"; g.fillRect(0, 0, viewW, viewH); }
@@ -743,7 +824,7 @@ function drawSky(g, lights) {
   }
   if (se === "summer") return;
   g.setTransform(1, 0, 0, 1, 0, 0);
-  const count = se === "winter" ? 34 : 14;
+  const count = se === "winter" ? (rain ? 90 : 34) : 14;
   for (let i = 0; i < count; i++) {
     const px = (((i * 197.3 + time * (se === "winter" ? 10 : 22) + Math.sin(time * 0.8 + i) * 26) * dpr) % viewW + viewW) % viewW;
     const py = ((i * 131.7 + time * (28 + (i % 5) * 9)) * dpr) % viewH;
@@ -909,10 +990,16 @@ const GUIDE = [
   ["🔨 꾸미기", "아래 줄에서 물건을 고르고 땅을 눌러서 놓아요. 🧽는 놓은 것을 도로 가방에 넣어요. 왼쪽 아래 화살표로 움직일 수 있어요."],
   ["🎨 그림판", "점을 찍어 내 그림을 그려요(8장). 그린 그림은 옷으로 입거나, 바닥에 깔거나, 벽지·이젤에 쓸 수 있어요."],
   ["🛋️ 가구와 🎡 놀이기구 쓰기", "놓아 둔 가구 앞에서 행동 단추를 눌러요. 침대에 눕고, 소파에 앉고, 욕조에서 목욕하고, 피아노를 쳐요. 관람차와 회전목마는 타면 빙글빙글 돌아요. 움직이면 그만둬요. 쓸 수 있는 가구를 도로 가방에 넣으려면 🔨 꾸미기의 🧽를 써요."],
+  ["⛏️ 섬 땅 바꾸기", "섬에서 🔨 꾸미기를 열면 땅 도구가 있어요. ⛏️ 물 파기로 연못을 만들고(낚시도 돼요), 🌿 메우기로 물·다리·길을 도로 땅으로 바꾸고, 👣 길을 깔고, 🌉 물 위에 다리를 놓아요."],
+  ["🏠 친구네 집", "토리·곰곰·핑·루비의 작은 집이 섬에 있어요. 문 앞에서 행동 단추를 누르면 들어가요. 하루에 한 번, 놀러 가면 우정이 올라요."],
   ["🏰 성 안 구경", "작은 성(곰곰과 하트 5개가 되면 받는 선물)을 섬에 놓고 앞에서 행동 단추를 누르면 안으로 들어가요. 왕좌에 앉으면 왕관을 쓰고, 보물 상자는 하루에 한 번 열 수 있어요."],
   ["🏠 우리 집과 👗 옷장", "보라 지붕 집에 들어가면 내 방이에요. 꾸미기에서 가구를 놓고 벽지·바닥을 바꿔요. 방 안 옷장에서 머리·옷·바지·모자와 이름을 바꿔요. 아래쪽 문으로 나가요."],
   ["🐰 섬 친구", "토리·곰곰·핑·루비에게 다가가 말을 걸어요. 몇 번이든 이야기할 수 있고, \"더 이야기하기\"를 누르면 다른 말을 해요. 머리 위에 💌가 보이면 부탁이 있어요. 부탁을 들어주면 코인과 하트를 받고, 선물도 줄 수 있어요. 하트가 1·3·5개가 되면 특별한 선물을 받아요."],
   ["☀️ 하늘과 🍁 계절", "위쪽 하늘 단추를 누르면 낮 → 저녁 → 밤 → 자동(실제 시각)으로 바뀌어요. 밤에는 귀한 물고기가 잘 잡혀요. 계절은 실제 달을 따라 바뀌고, 상점의 계절 한정 물건도 달라져요."],
+  ["🏆 대회와 🗺️ 보물찾기", "👥 같이·놀이 단추에서 시작해요. 낚시 대회와 곤충 대회는 3분 동안 점수를 모으고, 보물찾기는 섬에 숨은 보물 6개를 찾아요(가까울수록 🔥 뜨거워져요). 혼자 하면 기록 도전, 친구를 초대하면 순위를 겨뤄요. 같이 놀 때는 섬 주인이 시작해요."],
+  ["🏁 점프맵", "👥 같이·놀이 → 점프맵에서 발판을 뛰어넘어 깃발까지 가요. \"만들기\"에서 발판·가시·용수철·별을 놓아 나만의 코스를 만들 수 있어요. 친구가 놀러 오면 내 코스에 도전해요."],
+  ["🌧️ 날씨", "날씨는 10분마다 바뀌어요. 비가 오면 아기 악어(강)와 고래(바다)가 낚이고, 비가 그치면 무지개가 뜨면서 무지개 앵무새가 날아와요."],
+  ["🎁 매일 선물", "하루에 한 번, 게임을 켜면 모카가 출석 선물을 줘요. 매일 오면 7일째에 가장 큰 선물을 받아요."],
   ["📷 사진", "사진 단추를 누르면 지금 화면이 사진으로 저장돼요."],
   ["📖 도감과 ✅ 할 일", "처음 잡거나 딴 것은 도감에 기록돼요. 수첩의 할 일을 해내면 코인을 받아요."],
   ["👫 같이 놀기", "👥 같이 단추를 눌러요. <b>내 섬에 초대하기</b>를 누르면 입장 코드(숫자 4개)가 나오고, 친구는 <b>친구 섬에 놀러 가기</b>에서 그 코드를 넣어요. 한 섬에 " + PARTY_MAX + "명까지 모여요. 모두 인터넷이 되어야 해요."],
@@ -947,6 +1034,11 @@ $("modal-body").addEventListener("click", (e) => {
     if (state.coins < it.buy) { toast("코인이 모자라! 낚시랑 과일로 모아 보자 💰"); return; }
     if (!addItem(d.buy)) { toast("가방이 꽉 찼어! 🎒"); return; }
     state.coins -= it.buy; sfx("coin"); bump("bought"); openShop(shopTab);
+  } else if (d.jump) jumpClick(d.jump);
+  else if (d.game) {
+    if (d.game === "stop") { stopGame(); return; }
+    if (d.game === "jump") { closeModal(); openJump(); return; }
+    startGame(d.game);
   } else if (d.party || d.pad) partyClick(d);
   else if (d.emo) { sayEmote(d.emo); closeModal(); }
   else if (d.notetab) openNote(d.notetab);
@@ -1170,11 +1262,21 @@ function openLook() {
 // ───────── 시작 ─────────
 state.designs.forEach((d, i) => refreshDesign(i, d));
 if (boxSolid(state.x, state.y)) { const st = A().start; state.x = st[0]; state.y = st[1]; }
+for (const [k, st] of world.statics) {
+  if (st.t !== "house") continue;
+  if (state.obj[k]) { state.bag[state.obj[k].id] = (state.bag[state.obj[k].id] || 0) + 1; delete state.obj[k]; touch(); }
+  const f = state.floor[k];
+  if (typeof f === "string") { const id = f === "s" ? "stone" : f; state.bag[id] = (state.bag[id] || 0) + 1; }
+  if (state.plants[k]) state.bag.seed = (state.bag.seed || 0) + 1;
+  delete state.floor[k]; delete state.plants[k]; delete state.shells[k]; delete state.terra[k];
+}
 updateEnv();
 setInterval(() => { updateEnv(); refreshHud(); }, 30000);
 initPals();
 growPlants();
 setInterval(growPlants, 1000);
+setInterval(playTick, 500);
+setInterval(checkDaily, 2000);
 document.querySelectorAll("#dpad button").forEach((b) => {
   const set = (on) => (e) => { e.preventDefault(); keys[b.dataset.key] = on; };
   b.addEventListener("pointerdown", set(true));

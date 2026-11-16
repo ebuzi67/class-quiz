@@ -79,6 +79,13 @@
   .msg { min-height: 26px; text-align: center; color: #c0392b; font-size: 19px; margin: 10px 0 4px; }
   .bigbtn { flex: 1; min-width: 220px; display: flex; flex-direction: column; align-items: center; font-size: 46px; padding: 16px 10px; }
   .bigbtn b { font-size: 24px; } .bigbtn small { font-size: 16px; opacity: .85; }
+  #game-bar { position: fixed; left: 50%; top: calc(84px + env(safe-area-inset-top)); transform: translateX(-50%); max-width: 94vw; text-align: center; font-size: 18px; background: #fff3c9; pointer-events: none; z-index: 1; border-radius: 18px; }
+  .mission.mine { border-color: var(--pink); background: #fff3f6; }
+  .daily { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 4px 0 12px; }
+  .daily .day { background: #fff; border: 3px solid #d9cfe0; border-radius: 14px; text-align: center; padding: 6px 2px; font-size: 12px; display: flex; flex-direction: column; }
+  .daily .day span { font-size: 30px; line-height: 1.2; }
+  .daily .day.today { border-color: var(--pink); background: #fff3c9; transform: scale(1.06); }
+  .daily .day.done { opacity: .6; }
   .talk { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
   .talk .face { font-size: 84px; line-height: 1; flex: none; }
   .talk .bubble { flex: 1; background: #fff; border: 3px solid #d9cfe0; border-radius: 20px; padding: 12px 16px; font-size: 21px; }
@@ -154,7 +161,7 @@
   <button class="hbtn" data-open="studio">🎨<small>그림판</small></button>
   <button class="hbtn" data-open="dex">📖<small>도감</small></button>
   <button class="hbtn" data-open="note" id="note-btn">📝<small>수첩</small><i class="dot" id="note-dot" hidden></i></button>
-  <button class="hbtn" data-open="party">👥<small>같이</small></button>
+  <button class="hbtn" data-open="party">👥<small>같이·놀이</small></button>
   <button class="hbtn" data-open="hi" id="hi-btn" hidden>👋<small>인사</small></button>
   <button class="hbtn" data-open="photo">📷<small>사진</small></button>
   <button class="hbtn" data-open="sky"><span id="sky-icon">🕒</span><small id="sky-name">자동</small></button>
@@ -164,6 +171,7 @@
 <div id="toast" class="hide"></div>
 <div id="card" hidden></div>
 
+<div class="pill" id="game-bar" hidden></div>
 <div id="flash" hidden></div>
 <div id="dpad" hidden>
   <button data-key="ArrowUp" style="grid-area:u">▲</button><button data-key="ArrowLeft" style="grid-area:l">◀</button>
@@ -213,6 +221,8 @@
 <script src="lib/peerjs.min.js"></script>
 <script src="js/net.js"></script>
 <script src="js/party.js"></script>
+<script src="js/play.js"></script>
+<script src="js/jump.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

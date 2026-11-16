@@ -29,6 +29,14 @@ function updatePals(dt) {
   for (const id in pals) {
     const p = pals[id];
     p.moving = false;
+    if (palSolid(p.x, p.y)) {   // 서 있던 자리가 물이나 물건으로 바뀌면 가까운 빈 땅으로 옮겨요
+      const isle = A("island");
+      find: for (let r = 1; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const x = Math.floor(p.hx) + dx, y = Math.floor(p.hy) + dy;
+        if (!solid(x, y, isle)) { p.x = p.hx = x + 0.5; p.y = p.hy = y + 0.5; p.tx = null; break find; }
+      }
+      continue;
+    }
     if (Math.hypot(p.x - state.x, p.y - state.y) < 0.9) { p.wait = Math.max(p.wait, 0.6); continue; }   // 내가 가까이 오면 멈춰서 기다려요
     if (p.wait > 0) { p.wait -= dt; continue; }
     if (p.tx == null) { p.tx = p.hx + rand(-3.5, 3.5); p.ty = p.hy + rand(-2.5, 2.5); }
@@ -151,7 +159,7 @@ function bugPool() {
   const night = ENV.night > 0.5;
   return Object.keys(ITEMS).filter((id) => {
     const it = ITEMS[id];
-    return it.k === "bug" && (it.when === "any" || (it.when === "night") === night) && (!it.seasons || it.seasons.includes(ENV.season));
+    return it.k === "bug" && (it.when === "any" || (it.when === "night") === night) && (!it.seasons || it.seasons.includes(ENV.season)) && (!it.weather || it.weather === ENV.weather);
   });
 }
 function spawnBug() {
@@ -170,7 +178,7 @@ function spawnBug() {
   }
 }
 function updateBugs(dt) {
-  if ((bugTimer -= dt) <= 0) { bugTimer = rand(4, 9); if (bugs.length < 6) spawnBug(); }
+  if ((bugTimer -= dt) <= 0) { const fast = game && game.kind === "bug"; bugTimer = fast ? rand(1.2, 2.5) : rand(4, 9); if (bugs.length < (fast ? 10 : 6)) spawnBug(); }
   const isle = A("island");
   for (let i = bugs.length - 1; i >= 0; i--) {
     const b = bugs[i], it = ITEMS[b.id], far = Math.hypot(b.x - state.x, b.y - state.y);
@@ -216,6 +224,7 @@ function catchBug(b) {
   bugs.splice(bugs.indexOf(b), 1);
   addItem(b.id);
   sendFx(["got", b.id]);
+  gameScore("bug", Math.round(it.sell / 10));
   const isNew = found(b.id);
   sfx("good");
   showCard('<div class="big">' + it.e + "</div><b>" + it.n + "를 잡았다!</b><span>💰 " + it.sell.toLocaleString() + "</span>" + (isNew ? '<i class="new">✨ 도감에 새로 등록!</i>' : ""));
