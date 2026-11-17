@@ -1,0 +1,17 @@
+{
+  "name": "픽셀 마법사 연구소",
+  "short_name": "픽셀 마법사",
+  "description": "코딩 블록으로 픽셀 그림과 애니메이션을 만드는 코딩 교육 앱",
+  "lang": "ko",
+  "id": "/class-quiz/pixel-lab/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#fbf3e2",
+  "theme_color": "#b9a5ec",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
