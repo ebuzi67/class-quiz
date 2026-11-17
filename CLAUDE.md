@@ -10,7 +10,7 @@ GitHub Pages로 `https://ebuzi67.github.io/class-quiz/`에 올라가는 학습 �
 ├─ europe/              유럽 탐방 모음 → europe/london/ 등 나라 10개
 ├─ pe/                  체육시간 모음 → pe/mugunghwa/ 등 게임 5개
 ├─ numberblocks/        넘버블럭스 모음 → numberblocks/one-chat/(원), numberblocks/two-chat/(투)
-├─ roblox/  village/  motion/  island/   (모음 없이 따로 있는 앱. island/는 집에서 쓰는 섬 생활 게임 "몽글몽글 섬")
+├─ roblox/  village/  motion/  island/  pixel-lab/   (모음 없이 따로 있는 앱. island/는 집에서 쓰는 섬 생활 게임 "몽글몽글 섬", pixel-lab/은 코딩 수업용 "픽셀 마법사 연구소")
 ```
 
 - **새 앱은 주제에 맞는 모음 폴더 안에** 만들어요. 수학 앱은 `math/새앱/`, 유럽 나라는 `europe/나라/`, 몸놀이는 `pe/게임/`.
@@ -29,5 +29,6 @@ GitHub Pages로 `https://ebuzi67.github.io/class-quiz/`에 올라가는 학습 �
 
 ## 고칠 때
 
+- `pixel-lab/`은 `tools/pixel-lab/`(React + TypeScript + Vite)에서 만들어져요. 원본을 고친 뒤 `tools/pixel-lab`에서 `npm install`, `npm test`, `npm run publish-site`를 돌리면 `pixel-lab/` 폴더가 새로 만들어져요. 자세한 내용은 `tools/pixel-lab/README.md`에 있어요.
 - `tools/` 아래에 원본과 만드는 스크립트가 있는 앱이 있어요. `math/math5`, `math/math1`, `math/area5`, 유럽 나라 7개(`tools/walk/`), `roblox`, `pe` 등이에요. 이런 앱은 만들어진 폴더를 직접 고치지 말고 원본을 고친 뒤 스크립트를 다시 돌려요.
 - 바꾼 뒤에는 브라우저(Playwright, Chromium은 `/opt/pw-browsers/chromium`)로 `/class-quiz/` 경로 아래에서 열어서 확인해요. 설치 가능 여부, 서비스 워커 범위, 오프라인 동작을 봐요.
