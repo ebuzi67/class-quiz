@@ -1005,16 +1005,33 @@ const GUIDE = [
   ["👫 같이 놀기", "👥 같이 단추를 눌러요. <b>내 섬에 초대하기</b>를 누르면 입장 코드(숫자 4개)가 나오고, 친구는 <b>친구 섬에 놀러 가기</b>에서 그 코드를 넣어요. 한 섬에 " + PARTY_MAX + "명까지 모여요. 모두 인터넷이 되어야 해요."],
   ["👋 인사와 🔒 꾸미기 허락", "같이 놀 때는 👋 인사 단추로 인사 그림을 골라 보여 줘요(글자로 말하기는 없어요). 손님은 섬 주인이 \"손님도 꾸미기\"를 허락할 때만 꾸밀 수 있어요. 친구 섬에서 얻은 물고기·과일·곤충은 내 가방에 담겨요. 친구가 낚시하거나, 나무를 흔들거나, 가구를 쓰는 모습도 서로 보여요."],
   ["👥 한 기기를 여럿이 쓸 때", "⚙️ 설정 → \"다른 사람 섬으로 바꾸기 · 새 섬 만들기\"에서 각자 섬을 만들어요(8개까지). 게임을 켤 때 자기 이름을 눌러요."],
+  ["✏️ 이름 바꾸기", "⚙️ 설정 맨 위에서 내 이름과 섬 이름을 고치고 \"이름 저장하기\"를 눌러요. 내 이름은 집 안 👗 옷장에서도 바꿀 수 있어요."],
   ["💾 저장과 📲 설치", "놀던 내용은 이 기기에 저절로 저장돼요. 다른 기기와는 따로예요. ⚙️ 설정에서 앱으로 설치하면 홈 화면에서 바로 열 수 있어요."]
 ];
 
+// 내 이름과 섬 이름 바꾸기 (설정 창). 같이 노는 중이면 친구들 화면에도 바로 바뀌어요.
+function renameIsland() {
+  const name = $("set-name").value.trim(), island = $("set-island").value.trim().replace(/섬$/, "").trim();
+  if (!name || !island) { toast("이름을 비워 둘 수는 없어. 한 글자 이상 써 줘!"); return; }
+  if (name === state.name && island === state.island) { toast("바뀐 이름이 없어."); return; }
+  state.name = name; state.island = island;
+  touch(); save(); refreshHud(); sfx("good");
+  if (inParty()) { checkWho(); pushWorld(true); }
+  toast("✏️ 이제 " + island + " 섬의 " + name + "(이)야!");
+  openSet();
+}
 function openSet() {
-  openModal("set", "⚙️ 설정", '<div class="field"><button class="btn" data-mute="1">' + (state.mute ? "🔇 소리 꺼짐" : "🔊 소리 켜짐") + "</button> " +
+  openModal("set", "⚙️ 설정", '<h3 style="margin-top:0">✏️ 이름 바꾸기</h3>' +
+    '<div class="field"><span>내 이름</span><input id="set-name" maxlength="8" value="' + esc(state.name) + '"></div>' +
+    '<div class="field"><span>섬 이름</span><input id="set-island" maxlength="8" value="' + esc(state.island) + '"><span>섬</span></div>' +
+    '<div class="field"><button class="btn go" data-rename="1">💾 이름 저장하기</button></div><h3>⚙️ 설정</h3>' +
+    '<div class="field"><button class="btn" data-mute="1">' + (state.mute ? "🔇 소리 꺼짐" : "🔊 소리 켜짐") + "</button> " +
     '<button class="btn" data-rt="1">하늘: ' + SKIES[state.sky][0] + " " + SKIES[state.sky][1] + "</button></div>" +
     '<div class="field"><button class="btn" data-notetab="guide">📖 사용 설명서 보기 (수첩)</button></div>' +
     (isStandalone() ? "" : '<div class="field"><button class="btn go" data-install="1">📲 몽글몽글 섬을 앱으로 설치하기</button></div>') +
     '<div class="field"><button class="btn" data-who="1">👥 다른 사람 섬으로 바꾸기 · 새 섬 만들기</button></div>' +
     '<div class="field"><button class="btn small" data-reset="1">🗑️ ' + (profiles.list.length > 1 ? "이 섬(" + esc(state.name) + ") 지우기" : "섬을 처음부터 다시 시작") + "</button></div>");
+  for (const id of ["set-name", "set-island"]) $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); renameIsland(); } });
 }
 
 $("modal-body").addEventListener("click", (e) => {
@@ -1061,7 +1078,8 @@ $("modal-body").addEventListener("click", (e) => {
   } else if (d.claim) {
     const m = MISSIONS.find((x) => x.id === d.claim);
     state.claimed[m.id] = 1; state.coins += m.r; sfx("good"); touch(); refreshHud(); openNote();
-  } else if (d.mute) { state.mute = !state.mute; touch(); sfx("pop"); openSet(); }
+  } else if (d.rename) renameIsland();
+  else if (d.mute) { state.mute = !state.mute; touch(); sfx("pop"); openSet(); }
   else if (d.install) installApp();
   else if (d.who) {
     if (inParty()) { toast("같이 놀기를 먼저 끝내고 바꿔 줘."); return; }
