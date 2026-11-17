@@ -164,24 +164,27 @@ const Maps = (() => {
   // 영어 학교 문에 들어가면 학년(1-2, 3-4, 5-6)을 골라요. 울타리 친 빈 땅 두 곳은 나중에 다른 교과 건물 자리예요.
   const SUBJECTS = {
     id: "subjects", name: "교과 언덕", w: 48, h: 32, img: "assets/subjects.webp", backdrop: "#4e8a3a",
-    walk: [[3, 12, 31, 19], [22, 2, 27, 11], [32, 17, 43, 19], [23, 20, 26, 21], [4, 20, 9, 26], [11, 11, 12, 11]],
+    walk: [[3, 12, 31, 19], [22, 2, 27, 11], [32, 17, 43, 19], [23, 20, 26, 21], [4, 20, 9, 26], [11, 11, 12, 11],
+      [11, 21, 39, 28]],                                           // 아래쪽 울타리 땅(미술관)
     solid: [
       [3, 12, 4, 12],                                               // 우체통
       [18, 6, 19, 10], [21, 7, 21, 10], [28, 7, 28, 10],            // 공중전화, 위 가로등
       [20, 11, 21, 12], [28, 11, 29, 12],                           // 위 벤치
       [23, 13, 26, 15], [18, 14, 18, 17], [31, 14, 31, 17],          // 꽃밭, 아래 가로등
       [19, 16, 22, 17], [27, 16, 29, 17],                           // 아래 벤치
-      [31, 12, 31, 13]                                              // 오른쪽 울타리 끝
+      [31, 12, 31, 13],                                             // 오른쪽 울타리 끝
+      [12, 20, 22, 25], [12, 26, 15, 26], [18, 26, 22, 26]          // 미술관 건물(앞문 16~17은 열어 둬요)
     ],
     doors: [
       { id: "engschool", x: 11, y: 11, w: 2, out: { x: 11, y: 13, dir: "down" }, pick: ["eng12", "eng34", "eng56"], name: "영어 학교", emoji: "🔤" },
       { id: "hill", x: 23, y: 2, w: 3, to: "hill", out: { x: 24, y: 4, dir: "down" }, name: "배움 동산", emoji: "📚" },
       // 오른쪽 땅: 음악당(그림은 tools/village/make_art.py가 교과 언덕 그림 위에 올려요)
       { id: "musichall", x: 37, y: 16, w: 2, out: { x: 37, y: 18, dir: "down" }, pick: ["mus12", "mus34", "mus56"], name: "음악당", emoji: "🎵" },
-      // 아래쪽 땅: 미술관 자리. 건물 그림이 오기 전까지는 울타리 입구에서 미술관 창(학년 방, 전시실)이 열려요.
-      { id: "artmuseum", x: 23, y: 21, w: 4, activity: "arthub", out: { x: 24, y: 19, dir: "up" }, name: "미술관", emoji: "🎨" }
+      // 아래쪽 땅: 미술관(울타리 위쪽 틈으로 들어가서 앞문으로). 학년 방 3개와 우리 반 전시실을 골라요.
+      { id: "artmuseum", x: 16, y: 26, w: 2, out: { x: 17, y: 27, dir: "down" }, pick: ["art12", "art34", "art56"], name: "미술관", emoji: "🎨",
+        extra: [{ emoji: "🏛️", name: "우리 반 전시실", activity: "artgallery", sub: () => "친구들 그림 구경 · " + Net.gallery.length + "점" }] }
     ],
-    areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }],
+    areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }, { id: "artmuseum", r: [12, 20, 22, 26] }],
     spawn: { x: 24, y: 4, dir: "down" },
     npcs: [
       { id: "jenny", name: "제니 선생님", x: 15, y: 14, dir: "down",
@@ -220,6 +223,23 @@ const Maps = (() => {
       stations: [{ x: 8, y: 8, w: 9, h: 6, activity: id, label: "📝 미션 탁자" }],
       npcs: [{ id: "lala", name: "라라 선생님", x: 5, y: 10, dir: "right", activity: id, actionLabel: "📝 미션 시작",
         lines: ["안녕! 여기는 " + q.name + "이야.", "가운데 탁자에서 음악 미션을 풀 수 있어. 10문제 중 8문제를 맞히면 통과!", "소리 문제는 🔊 다시 듣기를 눌러 몇 번이든 들어 봐."] }]
+    };
+  });
+
+  // 미술 방: 그림 1536x1024를 24x16칸으로 나눠요. 아래 가운데 문, 가운데 긴 탁자(방석·의자 포함)는 같아요.
+  const ART_ROOMS = {
+    art12: { name: "크레파스 놀이방", emoji: "🖍️", solid: [[9, 7, 15, 9], [7, 8, 8, 8], [15, 8, 16, 8], [10, 6, 13, 6], [10, 10, 13, 10], [2, 6, 4, 11], [19, 6, 21, 6], [17, 11, 21, 11]] },
+    art34: { name: "물감 공방", emoji: "🖌️", solid: [[8, 7, 16, 9], [10, 6, 16, 6], [9, 10, 14, 10], [2, 6, 5, 9], [2, 10, 6, 11], [17, 6, 22, 7], [18, 10, 21, 11]] },
+    art56: { name: "작은 미술관", emoji: "🖼️", solid: [[8, 7, 16, 9], [10, 6, 13, 6], [9, 10, 10, 10], [13, 10, 14, 10], [2, 6, 5, 7], [2, 8, 4, 10], [19, 6, 21, 8], [19, 9, 21, 11]],
+      stations: [{ x: 5, y: 4, w: 3, h: 2, activity: "artgallery", label: "🏛️ 우리 반 전시실" }] }
+  };
+  Object.entries(ART_ROOMS).forEach(([id, q]) => {
+    ROOMS[id] = {
+      name: q.name, emoji: q.emoji, parent: "subjects", w: 24, h: 16, floor: [2, 6, 21, 11], door: { x: 11, y: 12, w: 2 },
+      solid: q.solid,
+      stations: [{ x: q.solid[0][0], y: 7, w: q.solid[0][2] - q.solid[0][0] + 1, h: 3, activity: id, label: "📝 미션 탁자" }].concat(q.stations || []),
+      npcs: [{ id: "allok", name: "알록 선생님", x: 6, y: 8, dir: "right", activity: id, actionLabel: "📝 미션 시작",
+        lines: ["안녕! 여기는 " + q.name + "이야.", "가운데 탁자에서 미술 미션을 풀 수 있어. 퀴즈 10개와 만들기 1개가 있어!", "그린 그림은 우리 반 전시실에 걸어서 친구들에게 보여 줄 수 있어."] }]
     };
   });
 
@@ -265,7 +285,7 @@ const Maps = (() => {
     v.doors.forEach((d) => {
       const room = ROOMS[d.id] || d;
       paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
-      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick || d.activity ? null : d.to || d.id, pick: d.pick, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
+      sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick || d.activity ? null : d.to || d.id, pick: d.pick, extra: d.extra, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
       const edge = d.y === 0 ? "top" : d.y === v.h - 2 || d.y === v.h - 1 || d.id === "hill" ? "bottom" : null;
       const text = room.emoji + " " + room.name + (edge === "top" ? " ▲" : edge === "bottom" ? " ▼" : "");
       const above = d.id === "garden" || edge === "bottom";

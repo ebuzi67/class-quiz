@@ -5,7 +5,7 @@
   // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
   // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
   // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
-  const BUILD = "20";
+  const BUILD = "21";
   try {
     if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
       sessionStorage.setItem("village-rebuild", BUILD);
@@ -489,6 +489,12 @@
         const b = el("button", "qz-mission" + (stamps[id] ? " done" : ""),
           "<span>" + r.emoji + "</span><b>" + st[2].replace(/^\S+ /, "") + "학년</b><small>" + r.name + " · " + (stamps[id] ? "✅ 도장" : "미션 " + p.done.length + "/" + missionCount(id)) + "</small>");
         b.onclick = () => { Activities.close(); goTo(id); };
+        row.append(b);
+      });
+      // 학년 방 말고 바로 여는 곳(미술관의 우리 반 전시실)
+      (door.extra || []).forEach((x) => {
+        const b = el("button", "qz-mission ar-gallery-card", "<span>" + x.emoji + "</span><b>" + x.name + "</b><small>" + x.sub() + "</small>");
+        b.onclick = () => { Sound.sfx("door"); Activities.open(x.activity); };
         row.append(b);
       });
       root.append(row);

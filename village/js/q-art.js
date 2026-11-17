@@ -299,24 +299,5 @@
     ]
   });
 
-  // 🎨 미술관 입구: 학년 방과 우리 반 전시실로 가요.
-  // (미술관 그림이 오기 전까지는 교과 언덕 아래쪽 빈 땅 앞에서 이 창이 열려요)
-  Activities.register("arthub", ({ el, frame, ctx }) => {
-    const root = frame("🎨 미술관: 어디로 갈까요?");
-    root.append(Quiz.npcBanner(el, Quiz.NPCS.art, "안녕! 나는 알록 선생님이야. 색과 모양으로 신나게 놀아 보자!"));
-    const grid = el("div", "qz-missions");
-    Quiz.rooms.filter((r) => r.id.startsWith("art")).forEach((r) => {
-      const p = ctx.getProgress(r.id) || { done: [] };
-      const all = p.done.length === r.missions.length;
-      const b = el("button", "qz-mission" + (all ? " done" : ""), "<span>" + r.e + "</span><b>" + r.grade.replace(/^\S+ /, "") + "</b><small>" + r.title + " · " + (all ? "✅ 도장" : "미션 " + p.done.length + "/" + r.missions.length) + "</small>");
-      b.onclick = () => { ctx.sfx("door"); Activities.open(r.id); };
-      grid.append(b);
-    });
-    const g = el("button", "qz-mission ar-gallery-card", "<span>🏛️</span><b>우리 반 전시실</b><small>친구들 그림 구경 · " + ctx.gallery().length + "점</small>");
-    g.onclick = () => { ctx.sfx("door"); Activities.open("artgallery"); };
-    grid.append(g);
-    root.append(grid);
-    ctx.speak("미술관이에요. 내 학년 방이나 전시실을 골라요.");
-  });
   Activities.register("artgallery", (kit) => ArtTools.gallery(kit));
 })();
