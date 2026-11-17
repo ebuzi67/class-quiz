@@ -5,7 +5,7 @@
   // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
   // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
   // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
-  const BUILD = "19";
+  const BUILD = "20";
   try {
     if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
       sessionStorage.setItem("village-rebuild", BUILD);
@@ -487,7 +487,7 @@
       door.pick.forEach((id) => {
         const r = scenes[id], st = STAMPS.find((x) => x[0] === id), p = progress[id] || { done: [] };
         const b = el("button", "qz-mission" + (stamps[id] ? " done" : ""),
-          "<span>" + r.emoji + "</span><b>" + st[2].replace(/^\S+ /, "") + "학년</b><small>" + r.name + " · " + (stamps[id] ? "✅ 도장" : "미션 " + p.done.length + "/5") + "</small>");
+          "<span>" + r.emoji + "</span><b>" + st[2].replace(/^\S+ /, "") + "학년</b><small>" + r.name + " · " + (stamps[id] ? "✅ 도장" : "미션 " + p.done.length + "/" + missionCount(id)) + "</small>");
         b.onclick = () => { Activities.close(); goTo(id); };
         row.append(b);
       });
@@ -556,9 +556,12 @@
     ["math4", "📐", "수학 4", true], ["math5", "🕵️", "수학 5", true], ["math6", "🔬", "수학 6", true],
     ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true],
     ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true],
-    ["mus12", "🥁", "음악 1-2", true], ["mus34", "🎼", "음악 3-4", true], ["mus56", "🎹", "음악 5-6", true]
+    ["mus12", "🥁", "음악 1-2", true], ["mus34", "🎼", "음악 3-4", true], ["mus56", "🎹", "음악 5-6", true],
+    ["art12", "🖍️", "미술 1-2", true], ["art34", "🖌️", "미술 3-4", true], ["art56", "🖼️", "미술 5-6", true]
   ];
-  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56"];
+  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56", "art12", "art34", "art56"];
+  // 방마다 미션 수가 달라요(미술 방은 11개)
+  const missionCount = (id) => { const r = Quiz.rooms.find((x) => x.id === id); return r ? r.missions.length : 5; };
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
   function award(id) {
     if (stamps[id]) return;
@@ -585,7 +588,7 @@
       if (id === "robot" && !stamps[id] && progress.robot) sub = (progress.robot.cleared || 0) + " / " + Activities.LEVELS.length + "단계";
       if (id === "garden" && !stamps[id] && progress.garden) sub = (progress.garden.cleared || 0) + " / 6단계";
       if (id === "workshop" && !stamps[id] && progress.workshop) sub = progress.workshop.done.length + " / 4 미션";
-      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = "미션 " + progress[id].done.length + " / 5" + ((progress[id].hard || []).length ? " · 🔥" + progress[id].hard.length : "");
+      if (QUIZ_IDS.includes(id) && !stamps[id] && progress[id]) sub = "미션 " + progress[id].done.length + " / " + missionCount(id) + ((progress[id].hard || []).length ? " · 🔥" + progress[id].hard.length : "");
       d.innerHTML = "<div class='e'>" + e + "</div><b>" + name + "</b><small>" + sub + "</small>";
       list.append(d);
     });
@@ -725,7 +728,7 @@
     if (id === "robot" && p.robot) return p.robot.cleared + "/" + Activities.LEVELS.length;
     if (id === "garden" && p.garden) return p.garden.cleared + "/6";
     if (id === "workshop" && p.workshop) return p.workshop.done.length + "/4";
-    if (QUIZ_IDS.includes(id) && p[id]) return p[id].done.length + "/5" + ((p[id].hard || []).length ? "🔥" + p[id].hard.length : "");
+    if (QUIZ_IDS.includes(id) && p[id]) return p[id].done.length + "/" + missionCount(id) + ((p[id].hard || []).length ? "🔥" + p[id].hard.length : "");
     return "";
   }
 
@@ -1123,8 +1126,16 @@
     toast(on ? "❄️ 모두 얼음!" : "🌤️ 땡!");
   };
 
+  // 전시실 그림이 바뀌면 열려 있는 전시실 화면에 알려요(화면이 닫혀 false를 돌려주면 빼요)
+  const galleryListeners = new Set();
+  Net.on("gallery", (list) => galleryListeners.forEach((fn) => { if (fn(list) === false) galleryListeners.delete(fn); }));
+
   Activities.init($("#activity"), {
     speak, speakEn: (t) => speak(t, true), speakThen, playNotes: Sound.notes, sfx: Sound.sfx, award,
+    // 우리 반 전시실
+    exhibit: (img, title) => Net.exhibit(img, title, profile), unexhibit: (id) => Net.unexhibit(id), clearGallery: () => Net.clearGallery(),
+    gallery: () => Net.gallery, isTeacher: () => mode === "host" || mode === "solo",
+    onGallery: (fn) => galleryListeners.add(fn),
     close: () => {},
     getProgress: (id) => progress[id],
     setProgress: (id, v) => { progress[id] = v; store.set("progress", progress); Net.sendRecord({ stamps, progress }); }

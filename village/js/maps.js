@@ -177,7 +177,9 @@ const Maps = (() => {
       { id: "engschool", x: 11, y: 11, w: 2, out: { x: 11, y: 13, dir: "down" }, pick: ["eng12", "eng34", "eng56"], name: "영어 학교", emoji: "🔤" },
       { id: "hill", x: 23, y: 2, w: 3, to: "hill", out: { x: 24, y: 4, dir: "down" }, name: "배움 동산", emoji: "📚" },
       // 오른쪽 땅: 음악당(그림은 tools/village/make_art.py가 교과 언덕 그림 위에 올려요)
-      { id: "musichall", x: 37, y: 16, w: 2, out: { x: 37, y: 18, dir: "down" }, pick: ["mus12", "mus34", "mus56"], name: "음악당", emoji: "🎵" }
+      { id: "musichall", x: 37, y: 16, w: 2, out: { x: 37, y: 18, dir: "down" }, pick: ["mus12", "mus34", "mus56"], name: "음악당", emoji: "🎵" },
+      // 아래쪽 땅: 미술관 자리. 건물 그림이 오기 전까지는 울타리 입구에서 미술관 창(학년 방, 전시실)이 열려요.
+      { id: "artmuseum", x: 23, y: 21, w: 4, activity: "arthub", out: { x: 24, y: 19, dir: "up" }, name: "미술관", emoji: "🎨" }
     ],
     areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }],
     spawn: { x: 24, y: 4, dir: "down" },

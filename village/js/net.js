@@ -96,6 +96,24 @@ const Net = (() => {
   let me = null;                         // 내 상태 {profile, scene, x, y, dir, moving}
   let frozen = false;
 
+  // 우리 반 전시실: 학생 그림 {id, img(데이터 주소), title, by(이름표), cid}
+  // 방장이 목록을 갖고, 새 그림·내린 그림만 하나씩 알려요(그림이 커서 한꺼번에 보내지 않아요).
+  // 그림은 어디에도 저장하지 않아요. 방이 닫히면 사라져요.
+  const GALLERY_MAX = 40, ART_MAX = 120000;
+  let gallery = [];
+  const artOk = (img) => typeof img === "string" && img.startsWith("data:image/") && img.length <= ART_MAX;
+  function galleryAdd(item) {
+    gallery = gallery.filter((g) => g.id !== item.id).concat([item]).slice(-GALLERY_MAX);
+    emit("gallery", gallery);
+  }
+  function galleryRemove(id) { gallery = gallery.filter((g) => g.id !== id); emit("gallery", gallery); }
+  function hostAddArt(cid, profile, img, title) {
+    if (!artOk(img)) return;
+    const item = { id: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), img, title: String(title || "").slice(0, 20), by: profile, cid };
+    galleryAdd(item);
+    broadcast({ t: "art+", item });
+  }
+
   // 방장(선생님) 쪽
   const players = new Map();             // id → {profile, scene, x, y, dir, moving, stamps, progress, last, conn}
   let tickTimer = null;
@@ -115,6 +133,8 @@ const Net = (() => {
         if (old && old.conn && old.conn !== conn) old.conn.close();
         players.set(cid, Object.assign({ scene: "village", x: 0, y: 0, dir: "down", moving: false }, old || {}, m.state || {}, { profile: m.profile, stamps: m.stamps || (old && old.stamps) || {}, progress: m.progress || (old && old.progress) || {}, last: Date.now(), conn }));
         conn.send({ t: "welcome", you: cid, r: roster(), frozen });
+        conn.send({ t: "art0" });
+        gallery.forEach((item) => conn.send({ t: "art+", item }));
         rosterChanged();
         return;
       }
@@ -125,6 +145,7 @@ const Net = (() => {
       else if (m.t === "emote") { broadcast({ t: "emote", id: cid, e: String(m.e).slice(0, 4) }); emit("emote", cid, m.e); }
       else if (m.t === "record") { p.stamps = m.stamps || {}; p.progress = m.progress || {}; rosterChanged(); }
       else if (m.t === "profile") { p.profile = m.profile; rosterChanged(); }
+      else if (m.t === "art") hostAddArt(cid, p.profile, m.img, m.title);
     };
     conn.onclose = () => {
       if (cid && players.get(cid) && players.get(cid).conn === conn) { players.delete(cid); rosterChanged(); }
@@ -145,6 +166,7 @@ const Net = (() => {
   function host(code, profile, stamps, cb) {
     role = "host"; myId = "host"; frozen = false;
     players.clear();
+    gallery = [];
     players.set("host", { profile, stamps, scene: "village", x: 0, y: 0, dir: "down", moving: false, last: Date.now(), conn: null });
     let tries = 0;
     const start = () => {
@@ -210,6 +232,9 @@ const Net = (() => {
     else if (m.t === "snap") emit("snap", m.p.filter((e) => e[0] !== myId));
     else if (m.t === "emote") { if (m.id !== myId) emit("emote", m.id, m.e); }
     else if (m.t === "cmd") emit("cmd", m.c, m.a);
+    else if (m.t === "art+" && m.item && artOk(m.item.img)) galleryAdd(m.item);
+    else if (m.t === "art-") galleryRemove(m.id);
+    else if (m.t === "art0") { gallery = []; emit("gallery", gallery); }
   }
 
   function lost() {
@@ -257,11 +282,30 @@ const Net = (() => {
     if (c === "unfreeze") frozen = false;
     broadcast({ t: "cmd", c, a });
   }
+  // 전시실: 그림 걸기(누구나), 내리기·모두 내리기(선생님). 혼자 둘러보기에서는 내 기기 안에서만 걸려요.
+  function exhibit(img, title, profile) {
+    if (!artOk(img)) return false;
+    if (role === "host") hostAddArt("host", (players.get("host") || {}).profile || profile, img, title);
+    else if (role === "join" && conn) conn.send({ t: "art", img, title });
+    else if (role === "join") return false;
+    else galleryAdd({ id: "a" + Date.now().toString(36), img, title: String(title || "").slice(0, 20), by: profile, cid: "me" });
+    return true;
+  }
+  function unexhibit(id) {
+    if (role === "host") { galleryRemove(id); broadcast({ t: "art-", id }); }
+    else if (role === "solo") galleryRemove(id);
+  }
+  function clearGallery() {
+    if (role === "host") { gallery = []; emit("gallery", gallery); broadcast({ t: "art0" }); }
+    else if (role === "solo") { gallery = []; emit("gallery", gallery); }
+  }
+
   function newCode() { return String(1000 + Math.floor(Math.random() * 9000)); }
   function leave() { clearInterval(sendTimer); clearInterval(tickTimer); clearTimeout(retryTimer); if (handle) handle.close(); handle = null; conn = null; role = "solo"; }
 
   return {
-    on, host, connect, enter, updateMe, emote, sendRecord, command, newCode, leave,
+    on, host, connect, enter, updateMe, emote, sendRecord, command, newCode, leave, exhibit, unexhibit, clearGallery,
+    get gallery() { return gallery; }, ART_MAX,
     get role() { return role; }, get myId() { return myId; }, get local() { return transport === localTransport; }
   };
 })();
