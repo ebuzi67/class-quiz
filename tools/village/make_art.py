@@ -14,8 +14,9 @@ OUT = HERE.parents[1] / "village" / "assets"
 # (그림 파일, 건물 아래 가운데 x, 건물 아래 y, 건물 너비) — 교과 언덕 그림(1536x1024) 픽셀 기준
 BUILDINGS = [
     ("musichall.png", 1222, 560, 400),
+    ("artmuseum.png", 548, 884, 320),
 ]
-GRAY_ROOMS = ["mus12", "mus34", "mus56"]
+GRAY_ROOMS = ["mus12", "mus34", "mus56", "art12", "art34", "art56"]
 
 
 def cutout(path):

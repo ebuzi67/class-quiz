@@ -3,6 +3,8 @@
 // 방에 round·pass를 적으면 그 방만 문제 수와 통과 기준이 달라져요.
 // 방에 levels: true를 적으면 미션마다 난이도(보통·어려움)를 골라요. gen(도구, hard)의 hard가 true면 어려운 문제를 만들어요.
 // 어려움을 통과하면 보통도 통과한 것으로 쳐요. 도장은 미션을 모두 통과하면(어느 난이도든) 받아요.
+// 미션에 gen 대신 make(api)를 적으면 문제 대신 만들기 활동이 열려요(미술 방의 데칼코마니 등).
+//   api: { el, box(그릴 자리), ctx, pass()(미션 통과 처리), back()(미션 고르기로) }
 // 미션을 모두 통과하면 그 방 도장을 받아요.
 // 문제는 미션의 gen()이 만들어요. 돌려주는 모양:
 //   { text: "질문", visual?: "그림 HTML", choices?: ["보기 HTML", ...], answer: 정답(보기 HTML 또는 숫자),
@@ -15,7 +17,7 @@ const Quiz = (() => {
   const ROUND = 10, PASS = 8;
   const sizeOf = (def) => ({ round: def.round || ROUND, pass: def.pass || PASS });
   // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
-  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" }, mus: { id: "lala", name: "라라 선생님" } };
+  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" }, mus: { id: "lala", name: "라라 선생님" }, art: { id: "allok", name: "알록 선생님" } };
   const npcOf = (roomId) => NPCS[roomId.replace(/\d+$/, "")];
   function npcBanner(el, npc, line) {
     const b = el("div", "qz-npc");
@@ -139,12 +141,31 @@ const Quiz = (() => {
         const done = (hard ? p.hard : p.done).includes(m.id), best = p.best[bestKey(m)];
         const desc = hard && m.hardDesc ? m.hardDesc : m.desc;
         const b = el("button", "qz-mission" + (done ? " done" : ""), "<span>" + m.e + "</span><b>" + m.name + "</b><small>" + (done ? (hard ? "⭐ 통과" : "✅ 통과") : best != null ? "최고 " + best + "/" + ROUND : desc) + "</small>");
-        b.onclick = () => { ctx.sfx("tap"); play(m); };
+        b.onclick = () => { ctx.sfx("tap"); (m.make ? make : play)(m); };
         grid.append(b);
       });
       root.append(grid);
       root.append(el("div", "ob-note", "통과한 미션 " + p.done.length + " / " + def.missions.length + (def.levels ? " · 🔥 어려움 " + p.hard.length + " / " + def.missions.length : "") + (p.done.length === def.missions.length ? " · 🎉 도장을 받았어요!" : " · 모두 통과하면 도장을 받아요")));
       ctx.speak(line);
+    }
+
+    function passMission(m) {
+      const p = getP();
+      if (!p.done.includes(m.id)) p.done.push(m.id);
+      ctx.setProgress(def.id, p);
+      if (p.done.length === def.missions.length) ctx.award(def.id);
+    }
+
+    function make(m) {
+      root.innerHTML = "";
+      const top = el("div", "qz-top");
+      const back = el("button", "btn btn-soft qz-listen", "📋 미션 고르기");
+      back.onclick = () => { ctx.sfx("tap"); home(); };
+      top.append(el("div", "rb-level", m.e + " " + m.name), back);
+      const box = el("div", "qz-box");
+      root.append(top, box);
+      let passed = false;
+      m.make({ el, box, ctx, back: home, pass: () => { if (passed) return; passed = true; passMission(m); ctx.sfx("win"); } });
     }
 
     function play(m) {
@@ -209,7 +230,8 @@ const Quiz = (() => {
         };
         if (q.input) box.append(pad(answer, q.unit));
         else {
-          const list = el("div", "qz-choices" + (q.choices.some((c) => String(c).replace(/<[^>]+>/g, "").length > 12) ? " long" : ""));
+          const emojiOnly = q.choices.every((c) => /^[\p{Extended_Pictographic}\uFE0F\u200D\s]+$/u.test(String(c))); // 그림 글자만 있는 보기는 크게
+          const list = el("div", "qz-choices" + (q.choices.some((c) => String(c).replace(/<[^>]+>/g, "").length > 12) ? " long" : "") + (emojiOnly ? " emoji" : ""));
           shuffle(q.choices).forEach((c) => { const b = el("button", "qz-choice", c); b.dataset.v = String(c); b.onclick = () => answer(c, b); list.append(b); });
           box.append(list);
         }
