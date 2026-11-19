@@ -5,7 +5,7 @@
   // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
   // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
   // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
-  const BUILD = "26";
+  const BUILD = "27";
   try {
     if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
       sessionStorage.setItem("village-rebuild", BUILD);
@@ -1055,7 +1055,7 @@
     for (let i = 0; i < n; i++) {
       const t = (i + phase) / n;
       g.save(); g.globalAlpha = Math.sin(t * Math.PI);
-      g.translate(sx0 + (doorX - sx0) * t, sy0 + (doorY - sy0) * t); g.rotate(turn);
+      g.translate(sx0 + (doorX - sx0) * t, sy0 + (doorY - sy0) * t); g.rotate(turn); g.scale(0.75, 0.75);
       g.lineJoin = "round"; g.lineCap = "round";
       g.strokeStyle = "#5e3820"; g.lineWidth = 7;
       g.beginPath(); g.moveTo(-11, -5); g.lineTo(0, 5); g.lineTo(11, -5); g.stroke();
@@ -1065,19 +1065,19 @@
   }
   // 길목 표지판: 노란 큰 이름표와 통통 튀는 화살표(문 쪽을 가리켜요)
   function gateSign(l, x, y, fs, now) {
-    const f = fs + 8, { dx, dy } = l.gate;
-    const bob = Math.sin(now / 250) * 3;
+    const z = 0.7, f = Math.round((fs + 8) * z), { dx, dy } = l.gate;  // 크기를 30% 줄였어요
+    const bob = Math.sin(now / 250) * 3 * z;
     g.font = "bold " + f + "px Jua, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
-    const w = g.measureText(l.text).width + 24, h = f + 14;
+    const w = g.measureText(l.text).width + 24 * z, h = f + 14 * z;
     const top = y - h / 2 + bob;
-    g.fillStyle = "rgba(0,0,0,.25)"; roundRect(x - w / 2 + 2, top + 3, w, h, 10); g.fill();
-    g.fillStyle = "#ffd84d"; roundRect(x - w / 2, top, w, h, 10); g.fill();
-    g.strokeStyle = "#5e3820"; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "rgba(0,0,0,.25)"; roundRect(x - w / 2 + 2, top + 2, w, h, 8); g.fill();
+    g.fillStyle = "#ffd84d"; roundRect(x - w / 2, top, w, h, 8); g.fill();
+    g.strokeStyle = "#5e3820"; g.lineWidth = 2; g.stroke();
     g.fillStyle = "#5e3820"; g.textAlign = "center"; g.textBaseline = "middle";
     g.fillText(l.text, x, top + h / 2 + 1);
     const hop = Math.abs(bob);
-    const ax = dx ? x + dx * (w / 2 + 14 + hop) : x, ay = dx ? top + h / 2 : dy < 0 ? top - 12 - hop : top + h + 12 + hop;
-    g.save(); g.translate(ax, ay); g.rotate(Math.atan2(dy, dx) - Math.PI / 2);
+    const ax = dx ? x + dx * (w / 2 + 10 + hop) : x, ay = dx ? top + h / 2 : dy < 0 ? top - 9 - hop : top + h + 9 + hop;
+    g.save(); g.translate(ax, ay); g.rotate(Math.atan2(dy, dx) - Math.PI / 2); g.scale(z, z);
     g.beginPath(); g.moveTo(-12, -7); g.lineTo(12, -7); g.lineTo(0, 8); g.closePath();
     g.fillStyle = "#ffd84d"; g.fill(); g.strokeStyle = "#5e3820"; g.lineWidth = 3; g.stroke();
     g.restore();
