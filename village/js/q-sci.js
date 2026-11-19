@@ -341,19 +341,4 @@
       } }
     ]
   });
-  // 🔬 과학 연구소 입구(건물 그림이 오기 전까지 쓰는 임시 창)
-  Activities.register("scihub", ({ el, frame, ctx }) => {
-    const root = frame("🔬 과학 연구소: 몇 학년 방으로 갈까요?");
-    root.append(Quiz.npcBanner(el, Quiz.NPCS.sci, "안녕! 나는 궁금 박사야. 궁금한 건 실험으로 알아보자!"));
-    const grid = el("div", "qz-missions");
-    Quiz.rooms.filter((r) => r.id.startsWith("sci")).forEach((r) => {
-      const p = ctx.getProgress(r.id) || { done: [] };
-      const all = p.done.length === r.missions.length;
-      const b = el("button", "qz-mission" + (all ? " done" : ""), "<span>" + r.e + "</span><b>" + r.grade.replace(/^\S+ /, "") + "</b><small>" + r.title + " · " + (all ? "✅ 도장" : "미션 " + p.done.length + "/" + r.missions.length) + "</small>");
-      b.onclick = () => { ctx.sfx("door"); Activities.open(r.id); };
-      grid.append(b);
-    });
-    root.append(grid);
-    ctx.speak("과학 연구소예요. 몇 학년 방으로 갈까요?");
-  });
 })();

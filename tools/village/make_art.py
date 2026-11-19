@@ -15,8 +15,9 @@ OUT = HERE.parents[1] / "village" / "assets"
 BUILDINGS = [
     ("musichall.png", 1222, 560, 400),
     ("artmuseum.png", 548, 884, 320),
+    ("scibuilding.png", 1060, 900, 290),
 ]
-GRAY_ROOMS = ["mus12", "mus34", "mus56", "art12", "art34", "art56"]
+GRAY_ROOMS = ["mus12", "mus34", "mus56", "art12", "art34", "art56", "sci12", "sci34", "sci56"]
 
 
 def cutout(path):
