@@ -298,6 +298,7 @@ const Maps = (() => {
     return sc;
   }
 
+  const REGIONS = { village: "🏡 발명가 마을", hill: "📚 배움 동산", subjects: "🌍 교과 언덕" };
   function buildOutdoor(v) {
     const sc = { id: v.id, name: v.name, w: v.w, h: v.h, img: v.img, backdrop: v.backdrop, indoor: false,
       spawn: v.spawn, gather: v.gather, npcs: v.npcs.map((n) => Object.assign({}, n)), stations: [], labels: [], doors: [], areas: [] };
@@ -309,6 +310,15 @@ const Maps = (() => {
       paint(sc.solid, [d.x, d.y, d.x + d.w - 1, d.y], false);
       sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick || d.activity ? null : d.to || d.id, pick: d.pick, extra: d.extra, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
       const edge = d.y === 0 ? "top" : d.y === v.h - 2 || d.y === v.h - 1 || d.id === "hill" ? "bottom" : null;
+      // 다른 지역으로 가는 길목(마을 ↔ 배움 동산 ↔ 교과 언덕)은 눈에 잘 띄게 따로 표시해요
+      const gate = !d.pick && !d.activity && REGIONS[d.to || d.id];
+      if (gate) {
+        const up = d.out.y > d.y;  // 문이 위쪽에 있으면 위로 가는 길
+        sc.doors[sc.doors.length - 1].gate = up ? "up" : "down";
+        sc.labels.push({ text: REGIONS[d.to || d.id] + " 가는 길", gate: up ? "up" : "down",
+          x: (d.x + d.w / 2) * T, y: up ? (d.out.y + 2.5) * T : (d.out.y - 2.5) * T });
+        return;
+      }
       const text = room.emoji + " " + room.name + (edge === "top" ? " ▲" : edge === "bottom" ? " ▼" : "");
       const above = d.id === "garden" || edge === "bottom";
       sc.labels.push({ text, x: (d.x + d.w / 2) * T, y: above ? d.y * T - 4 : (d.y + 2) * T + 6, small: true });
