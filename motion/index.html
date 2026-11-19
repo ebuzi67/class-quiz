@@ -19,6 +19,7 @@ body{overflow:hidden;color:var(--ink);background:#7cc7ff;
   font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   -webkit-user-select:none;user-select:none;touch-action:none}
 [hidden]{display:none!important}
+body.cam.idle,body.cam.idle *{cursor:none!important}
 button{font:inherit;cursor:pointer;border:0;color:inherit}
 
 /* ---------- 배경 장면 ---------- */
@@ -255,6 +256,7 @@ addEventListener("pointerdown", (e) => {
 });
 addEventListener("pointermove", (e) => {
   Object.assign(mouse, { x: e.clientX, y: e.clientY, t: performance.now() });
+  document.body.classList.remove("idle");
   if (e.pointerType === "mouse") mouse.gone = false;
 });
 addEventListener("pointerup", (e) => { mouse.pressed = false; if (e.pointerType !== "mouse") mouse.gone = true; });
@@ -304,8 +306,10 @@ function readCamera(now) {
     }
   });
 }
+// 카메라 모드에서는 게임 속 과일·몬스터 등은 손으로만 맞혀요.
+// (마우스·터치는 메뉴 버튼 누르기에만 쓰고, 게임 안에서는 손으로 치지 않아요)
 function readMouse(now) {
-  if (mouse.gone) return;
+  if (mode === "cam" || mouse.gone) return;
   feed("m", "mouse", mouse.x, mouse.y, now, mouse.pressed || now < mouse.tapUntil);
 }
 // 가장 크게(가까이) 보이는 사람
@@ -1280,6 +1284,8 @@ addEventListener("keydown", (e) => {
 let lastFrame = 0;
 function frame(now) {
   requestAnimationFrame(frame);
+  document.body.classList.toggle("cam", mode === "cam");
+  if (mode === "cam" && now - mouse.t > 2000) document.body.classList.add("idle");
   const dt = Math.min(0.12, (now - (lastFrame || now)) / 1000); lastFrame = now;
   if (mode === "cam") readCamera(now);
   readMouse(now);
