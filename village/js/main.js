@@ -5,7 +5,7 @@
   // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
   // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
   // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
-  const BUILD = "24";
+  const BUILD = "26";
   try {
     if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
       sessionStorage.setItem("village-rebuild", BUILD);
@@ -564,9 +564,10 @@
     ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true],
     ["mus12", "🥁", "음악 1-2", true], ["mus34", "🎼", "음악 3-4", true], ["mus56", "🎹", "음악 5-6", true],
     ["art12", "🖍️", "미술 1-2", true], ["art34", "🖌️", "미술 3-4", true], ["art56", "🖼️", "미술 5-6", true],
-    ["sci12", "🌱", "과학 1-2", true], ["sci34", "🧪", "과학 3-4", true], ["sci56", "⚡", "과학 5-6", true]
+    ["sci12", "🌱", "과학 1-2", true], ["sci34", "🧪", "과학 3-4", true], ["sci56", "⚡", "과학 5-6", true],
+    ["code1", "🧩", "블록 코딩", true], ["code2", "🎨", "픽셀 공방", true], ["code3", "🕵️", "버그 탐정", true], ["code4", "🏁", "로봇 경주", true]
   ];
-  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56", "art12", "art34", "art56", "sci12", "sci34", "sci56"];
+  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56", "art12", "art34", "art56", "sci12", "sci34", "sci56", "code1", "code2", "code3", "code4"];
   // 방마다 미션 수가 달라요(미술 방은 11개)
   const missionCount = (id) => { const r = Quiz.rooms.find((x) => x.id === id); return r ? r.missions.length : 5; };
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
@@ -1039,20 +1040,22 @@
   }
   // 길목 바닥: 문 앞 칸에 빛 웅덩이, 그 위로 화살표 3개가 차례로 밝아지며 문 쪽으로 흘러가요
   function drawGatePath(d, now) {
-    const cx = (d.x + d.w / 2) * T, dy = d.gate === "up" ? -1 : 1;
-    const doorY = (d.y + 0.5) * T, startY = (d.out.y + 0.5) * T - dy * T * 1.5;
-    const glowY = (d.out.y + (d.y - d.out.y) * 0.3 + 0.5) * T;  // 문 앞(아치 밑)이 빛나요
+    const { dx, dy } = d.gate;
+    const doorX = dx ? (d.x + 0.5) * T : (d.x + d.w / 2) * T, doorY = (d.y + 0.5) * T;
+    const ox = dx ? (d.out.x + 0.5) * T : doorX, oy = (d.out.y + 0.5) * T;
+    const sx0 = ox - dx * T * 1.5, sy0 = oy - dy * T * 1.5;
+    const gx = ox + (doorX - ox) * 0.3, gy = oy + (doorY - oy) * 0.3;  // 문 앞(아치 밑)이 빛나요
     const pulse = 0.5 + 0.5 * Math.sin(now / 300);
-    const glow = g.createRadialGradient(cx, glowY, 4, cx, glowY, T * (1.4 + pulse * 0.3));
+    const glow = g.createRadialGradient(gx, gy, 4, gx, gy, T * (1.4 + pulse * 0.3));
     glow.addColorStop(0, "rgba(255,240,140," + (0.95 * (0.55 + 0.45 * pulse)) + ")");
     glow.addColorStop(1, "rgba(255,236,120,0)");
-    g.fillStyle = glow; g.beginPath(); g.ellipse(cx, glowY, T * (1.6 + pulse * 0.3), T * 1.1, 0, 0, 7); g.fill();
-    const n = 3, phase = (now / 700) % 1;
+    g.fillStyle = glow; g.beginPath();
+    g.ellipse(gx, gy, T * (dx ? 1.1 : 1.6 + pulse * 0.3), T * (dx ? 1.6 + pulse * 0.3 : 1.1), 0, 0, 7); g.fill();
+    const n = 3, phase = (now / 700) % 1, turn = Math.atan2(dy, dx) - Math.PI / 2;
     for (let i = 0; i < n; i++) {
       const t = (i + phase) / n;
-      const y = startY + (doorY - startY) * t;
-      const a = Math.sin(t * Math.PI);
-      g.save(); g.globalAlpha = a; g.translate(cx, y); g.scale(1, dy);
+      g.save(); g.globalAlpha = Math.sin(t * Math.PI);
+      g.translate(sx0 + (doorX - sx0) * t, sy0 + (doorY - sy0) * t); g.rotate(turn);
       g.lineJoin = "round"; g.lineCap = "round";
       g.strokeStyle = "#5e3820"; g.lineWidth = 7;
       g.beginPath(); g.moveTo(-11, -5); g.lineTo(0, 5); g.lineTo(11, -5); g.stroke();
@@ -1060,9 +1063,9 @@
       g.restore();
     }
   }
-  // 길목 표지판: 노란 큰 이름표와 통통 튀는 화살표
+  // 길목 표지판: 노란 큰 이름표와 통통 튀는 화살표(문 쪽을 가리켜요)
   function gateSign(l, x, y, fs, now) {
-    const f = fs + 8, up = l.gate === "up";
+    const f = fs + 8, { dx, dy } = l.gate;
     const bob = Math.sin(now / 250) * 3;
     g.font = "bold " + f + "px Jua, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
     const w = g.measureText(l.text).width + 24, h = f + 14;
@@ -1072,9 +1075,9 @@
     g.strokeStyle = "#5e3820"; g.lineWidth = 3; g.stroke();
     g.fillStyle = "#5e3820"; g.textAlign = "center"; g.textBaseline = "middle";
     g.fillText(l.text, x, top + h / 2 + 1);
-    // 화살표는 표지판에서 문 쪽으로
-    const ay = up ? top - 12 - Math.abs(bob) : top + h + 12 + Math.abs(bob);
-    g.save(); g.translate(x, ay); g.scale(1, up ? -1 : 1);
+    const hop = Math.abs(bob);
+    const ax = dx ? x + dx * (w / 2 + 14 + hop) : x, ay = dx ? top + h / 2 : dy < 0 ? top - 12 - hop : top + h + 12 + hop;
+    g.save(); g.translate(ax, ay); g.rotate(Math.atan2(dy, dx) - Math.PI / 2);
     g.beginPath(); g.moveTo(-12, -7); g.lineTo(12, -7); g.lineTo(0, 8); g.closePath();
     g.fillStyle = "#ffd84d"; g.fill(); g.strokeStyle = "#5e3820"; g.lineWidth = 3; g.stroke();
     g.restore();
@@ -1105,7 +1108,7 @@
     const blink = 0.55 + 0.45 * Math.sin(performance.now() / 250);
     scene.doors.forEach((d) => {
       if (!d.gate) return;
-      const gx = (d.x + d.w / 2) * T * s, gy = Math.min(Math.max((d.y + 0.5) * T * s, 7), m.height - 7);
+      const gx = Math.min(Math.max((d.x + d.w / 2) * T * s, 7), m.width - 7), gy = Math.min(Math.max((d.y + 0.5) * T * s, 7), m.height - 7);
       mg.save(); mg.globalAlpha = blink; mg.font = "bold 14px sans-serif"; mg.textAlign = "center"; mg.textBaseline = "middle";
       mg.lineWidth = 3; mg.strokeStyle = "#5e3820"; mg.strokeText("★", gx, gy); mg.fillStyle = "#ffd84d"; mg.fillText("★", gx, gy);
       mg.restore();
