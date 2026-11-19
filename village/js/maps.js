@@ -165,7 +165,7 @@ const Maps = (() => {
   const SUBJECTS = {
     id: "subjects", name: "교과 언덕", w: 48, h: 32, img: "assets/subjects.webp", backdrop: "#4e8a3a",
     walk: [[3, 12, 31, 19], [22, 2, 27, 11], [32, 17, 43, 19], [23, 20, 26, 21], [4, 20, 9, 26], [11, 11, 12, 11],
-      [11, 21, 39, 28]],                                           // 아래쪽 울타리 땅(미술관)
+      [11, 21, 39, 28], [1, 12, 2, 13]],                            // 아래쪽 울타리 땅(미술관·과학 연구소), 왼쪽 끝 흙길(코딩 숲)
     solid: [
       [3, 12, 4, 12],                                               // 우체통
       [18, 6, 19, 10], [21, 7, 21, 10], [28, 7, 28, 10],            // 공중전화, 위 가로등
@@ -185,7 +185,9 @@ const Maps = (() => {
       { id: "artmuseum", x: 16, y: 26, w: 2, out: { x: 17, y: 27, dir: "down" }, pick: ["art12", "art34", "art56"], name: "미술관", emoji: "🎨",
         extra: [{ emoji: "🏛️", name: "우리 반 전시실", activity: "artgallery", sub: () => "친구들 그림 구경 · " + Net.gallery.length + "점" }] },
       // 미술관 오른쪽: 과학 연구소(앞문으로 들어가서 학년 방을 골라요)
-      { id: "scilab", x: 32, y: 26, w: 2, out: { x: 32, y: 27, dir: "down" }, pick: ["sci12", "sci34", "sci56"], name: "과학 연구소", emoji: "🔬" }
+      { id: "scilab", x: 32, y: 26, w: 2, out: { x: 32, y: 27, dir: "down" }, pick: ["sci12", "sci34", "sci56"], name: "과학 연구소", emoji: "🔬" },
+      // 영어 학교 앞 흙길 왼쪽 끝: 코딩 숲 가는 길. 지역 그림이 오기 전까지는 건물 고르기 창이 열려요.
+      { id: "codeforest", x: 0, y: 12, w: 1, activity: "codehub", gate: true, out: { x: 2, y: 12, dir: "right" }, name: "코딩 숲", emoji: "💻" }
     ],
     areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }, { id: "artmuseum", r: [12, 20, 22, 26] }, { id: "scilab", r: [29, 21, 37, 26] }],
     spawn: { x: 24, y: 4, dir: "down" },
@@ -311,12 +313,15 @@ const Maps = (() => {
       sc.doors.push({ x: d.x, y: d.y, w: d.w, to: d.pick || d.activity ? null : d.to || d.id, pick: d.pick, extra: d.extra, activity: d.activity, id: d.id, name: room.name, emoji: room.emoji, out: d.out });
       const edge = d.y === 0 ? "top" : d.y === v.h - 2 || d.y === v.h - 1 || d.id === "hill" ? "bottom" : null;
       // 다른 지역으로 가는 길목(마을 ↔ 배움 동산 ↔ 교과 언덕)은 눈에 잘 띄게 따로 표시해요
-      const gate = !d.pick && !d.activity && REGIONS[d.to || d.id];
-      if (gate) {
-        const up = d.out.y > d.y;  // 문이 위쪽에 있으면 위로 가는 길
-        sc.doors[sc.doors.length - 1].gate = up ? "up" : "down";
-        sc.labels.push({ text: REGIONS[d.to || d.id] + " 가는 길", gate: up ? "up" : "down",
-          x: (d.x + d.w / 2) * T, y: up ? (d.out.y + 2.5) * T : (d.out.y - 2.5) * T });
+      // d.gate: 아직 지역 그림이 없는 길목(임시 입구)도 같은 표시를 써요
+      const goal = d.gate ? d.emoji + " " + d.name : !d.pick && !d.activity && REGIONS[d.to || d.id];
+      if (goal) {
+        const dy = Math.sign(d.y - d.out.y), dx = dy ? 0 : Math.sign(d.x - d.out.x);  // 문으로 가는 방향(위아래가 먼저)
+        const dir = { dx, dy };
+        sc.doors[sc.doors.length - 1].gate = dir;
+        const ox = (d.out.x + 0.5) * T, oy = (d.out.y + 0.5) * T;
+        sc.labels.push({ text: goal + " 가는 길", gate: dir,
+          x: dx ? ox - dx * 3 * T : (d.x + d.w / 2) * T, y: dx ? oy - 1.6 * T : oy - dy * 3 * T });
         return;
       }
       const text = room.emoji + " " + room.name + (edge === "top" ? " ▲" : edge === "bottom" ? " ▼" : "");

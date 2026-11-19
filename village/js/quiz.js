@@ -17,7 +17,7 @@ const Quiz = (() => {
   const ROUND = 10, PASS = 8;
   const sizeOf = (def) => ({ round: def.round || ROUND, pass: def.pass || PASS });
   // 방 안내 NPC: 수학 방은 셈셈 박사, 국어 방은 말랑 작가(그림: assets/npc/아이디.webp)
-  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" }, mus: { id: "lala", name: "라라 선생님" }, art: { id: "allok", name: "알록 선생님" }, sci: { id: "gungeum", name: "궁금 박사" } };
+  const NPCS = { math: { id: "semsem", name: "셈셈 박사" }, kor: { id: "mallang", name: "말랑 작가" }, eng: { id: "jenny", name: "제니 선생님" }, mus: { id: "lala", name: "라라 선생님" }, art: { id: "allok", name: "알록 선생님" }, sci: { id: "gungeum", name: "궁금 박사" }, code: { id: "kobot", name: "코봇 선생님" } };
   const npcOf = (roomId) => NPCS[roomId.replace(/\d+$/, "")];
   function npcBanner(el, npc, line) {
     const b = el("div", "qz-npc");
