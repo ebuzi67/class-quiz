@@ -182,7 +182,9 @@ const Maps = (() => {
       { id: "musichall", x: 37, y: 16, w: 2, out: { x: 37, y: 18, dir: "down" }, pick: ["mus12", "mus34", "mus56"], name: "음악당", emoji: "🎵" },
       // 아래쪽 땅: 미술관(울타리 위쪽 틈으로 들어가서 앞문으로). 학년 방 3개와 우리 반 전시실을 골라요.
       { id: "artmuseum", x: 16, y: 26, w: 2, out: { x: 17, y: 27, dir: "down" }, pick: ["art12", "art34", "art56"], name: "미술관", emoji: "🎨",
-        extra: [{ emoji: "🏛️", name: "우리 반 전시실", activity: "artgallery", sub: () => "친구들 그림 구경 · " + Net.gallery.length + "점" }] }
+        extra: [{ emoji: "🏛️", name: "우리 반 전시실", activity: "artgallery", sub: () => "친구들 그림 구경 · " + Net.gallery.length + "점" }] },
+      // 미술관 오른쪽 땅: 과학 연구소 자리. 건물 그림이 오기 전까지는 이 자리에서 과학 방 고르기 창이 열려요.
+      { id: "scilab", x: 31, y: 24, w: 2, activity: "scihub", out: { x: 31, y: 26, dir: "up" }, name: "과학 연구소", emoji: "🔬" }
     ],
     areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }, { id: "artmuseum", r: [12, 20, 22, 26] }],
     spawn: { x: 24, y: 4, dir: "down" },

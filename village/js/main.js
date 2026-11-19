@@ -5,7 +5,7 @@
   // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
   // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
   // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
-  const BUILD = "21";
+  const BUILD = "22";
   try {
     if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
       sessionStorage.setItem("village-rebuild", BUILD);
@@ -563,9 +563,10 @@
     ["kor12", "🧩", "국어 1-2", true], ["kor34", "📚", "국어 3-4", true], ["kor56", "🎙️", "국어 5-6", true],
     ["eng12", "🎈", "영어 1-2", true], ["eng34", "🔤", "영어 3-4", true], ["eng56", "☕", "영어 5-6", true],
     ["mus12", "🥁", "음악 1-2", true], ["mus34", "🎼", "음악 3-4", true], ["mus56", "🎹", "음악 5-6", true],
-    ["art12", "🖍️", "미술 1-2", true], ["art34", "🖌️", "미술 3-4", true], ["art56", "🖼️", "미술 5-6", true]
+    ["art12", "🖍️", "미술 1-2", true], ["art34", "🖌️", "미술 3-4", true], ["art56", "🖼️", "미술 5-6", true],
+    ["sci12", "🌱", "과학 1-2", true], ["sci34", "🧪", "과학 3-4", true], ["sci56", "⚡", "과학 5-6", true]
   ];
-  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56", "art12", "art34", "art56"];
+  const QUIZ_IDS = ["math1", "math2", "math3", "math4", "math5", "math6", "kor12", "kor34", "kor56", "eng12", "eng34", "eng56", "mus12", "mus34", "mus56", "art12", "art34", "art56", "sci12", "sci34", "sci56"];
   // 방마다 미션 수가 달라요(미술 방은 11개)
   const missionCount = (id) => { const r = Quiz.rooms.find((x) => x.id === id); return r ? r.missions.length : 5; };
   function openActivity(id) { me.path = []; me.moving = false; Activities.open(id); }
