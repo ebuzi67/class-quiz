@@ -17,7 +17,7 @@ BUILDINGS = [
     ("artmuseum.png", 548, 884, 320),
     ("scibuilding.png", 1060, 900, 290),
 ]
-GRAY_ROOMS = ["mus12", "mus34", "mus56", "art12", "art34", "art56", "sci12", "sci34", "sci56"]
+GRAY_ROOMS = ["mus12", "mus34", "mus56", "art12", "art34", "art56", "sci12", "sci34", "sci56", "code1", "code2", "code3", "code4"]
 
 
 def cutout(path):

@@ -186,8 +186,8 @@ const Maps = (() => {
         extra: [{ emoji: "🏛️", name: "우리 반 전시실", activity: "artgallery", sub: () => "친구들 그림 구경 · " + Net.gallery.length + "점" }] },
       // 미술관 오른쪽: 과학 연구소(앞문으로 들어가서 학년 방을 골라요)
       { id: "scilab", x: 32, y: 26, w: 2, out: { x: 32, y: 27, dir: "down" }, pick: ["sci12", "sci34", "sci56"], name: "과학 연구소", emoji: "🔬" },
-      // 영어 학교 앞 흙길 왼쪽 끝: 코딩 숲 가는 길. 지역 그림이 오기 전까지는 건물 고르기 창이 열려요.
-      { id: "codeforest", x: 0, y: 12, w: 1, activity: "codehub", gate: true, out: { x: 2, y: 12, dir: "right" }, name: "코딩 숲", emoji: "💻" }
+      // 영어 학교 앞 흙길 왼쪽 끝: 코딩 숲 가는 길
+      { id: "codeforest", x: 0, y: 12, w: 1, to: "codeforest", out: { x: 2, y: 12, dir: "right" }, name: "코딩 숲", emoji: "💻" }
     ],
     areas: [{ id: "engschool", r: [5, 0, 19, 10] }, { id: "musichall", r: [32, 3, 44, 16] }, { id: "artmuseum", r: [12, 20, 22, 26] }, { id: "scilab", r: [29, 21, 37, 26] }],
     spawn: { x: 24, y: 4, dir: "down" },
@@ -196,6 +196,56 @@ const Maps = (() => {
         lines: ["Hello! 나는 제니 선생님이야. 여기는 교과 언덕이야.", "빨간 벽돌 건물이 영어 학교야. 들어가면 1-2학년, 3-4학년, 5-6학년 방을 고를 수 있어.", "오른쪽에는 음악당, 아래쪽 울타리 땅에는 미술관과 과학 연구소가 있어. See you!"] }
     ]
   };
+
+  // ───────────────────────── 코딩 숲 ─────────────────────────
+  // 그림 1536x1024를 48x32칸으로 나눠요. 오른쪽 길로 교과 언덕에 돌아가요. 가운데 회로 나무 광장 둘레에 건물 4곳이 있어요.
+  const CODEFOREST = {
+    id: "codeforest", name: "코딩 숲", w: 48, h: 32, img: "assets/codeforest.webp", backdrop: "#3f7a34",
+    walk: [
+      [16, 12, 32, 19],                                             // 회로 나무 광장(둥근 돌길)
+      [31, 15, 47, 16],                                             // 오른쪽 길(교과 언덕으로)
+      [13, 9, 15, 9], [14, 10, 16, 10], [15, 11, 16, 11],            // 블록 코딩 집 가는 길
+      [33, 9, 35, 9], [32, 10, 34, 10], [31, 11, 33, 11],            // 픽셀 공방 가는 길
+      [19, 20, 20, 20], [17, 21, 19, 21], [16, 22, 18, 22], [17, 23, 18, 26], [13, 26, 17, 27], [10, 25, 13, 27], // 버그 탐정 사무소 가는 길
+      [27, 20, 29, 20], [28, 21, 30, 21], [29, 22, 31, 22], [30, 23, 31, 23], [29, 24, 38, 28], [38, 26, 42, 28]   // 로봇 경주장
+    ],
+    solid: [
+      [19, 12, 28, 17],                                             // 회로 나무와 꽃밭, 벤치
+      [17, 12, 18, 12], [17, 19, 18, 19], [29, 12, 30, 12], [29, 19, 30, 19], // 광장 등불(발밑 칸만)
+      [32, 24, 32, 25], [37, 24, 37, 25], [36, 25, 38, 25], [34, 26, 37, 27], // 출발 문 기둥, 고깔, 타이어
+      [41, 26, 42, 27], [38, 24, 38, 25]                            // 경주용 카트, 출발 문 오른쪽 구석
+    ],
+    doors: [
+      { id: "subjects", x: 47, y: 15, w: 1, to: "subjects", out: { x: 45, y: 15, dir: "left" }, name: "교과 언덕", emoji: "🌍" },
+      { id: "code1", x: 13, y: 8, w: 2, out: { x: 13, y: 9, dir: "down" } },
+      { id: "code2", x: 34, y: 8, w: 2, out: { x: 34, y: 9, dir: "down" } },
+      { id: "code3", x: 11, y: 24, w: 2, out: { x: 11, y: 25, dir: "down" } },
+      { id: "code4", x: 40, y: 25, w: 2, out: { x: 40, y: 26, dir: "down" } }
+    ],
+    areas: [{ id: "code1", r: [7, 1, 17, 8] }, { id: "code2", r: [31, 1, 40, 8] }, { id: "code3", r: [5, 18, 15, 24] }, { id: "code4", r: [39, 19, 45, 25] }],
+    spawn: { x: 44, y: 16, dir: "left" },
+    npcs: [
+      { id: "kobot", name: "코봇 선생님", x: 31, y: 17, dir: "left",
+        lines: ["삐빅! 코딩 숲에 온 걸 환영해. 나는 코봇 선생님이야.", "광장 둘레에 건물이 4곳 있어. 🧩 블록 코딩 집, 🎨 픽셀 공방, 🕵️ 버그 탐정 사무소, 🏁 로봇 경주장!", "건물마다 미션 5개를 모두 통과하면 도장을 줄게. 오른쪽 길로 가면 교과 언덕이야."] }
+    ]
+  };
+
+  // 코딩 숲 방: 그림 1536x1024를 24x16칸으로 나눠요. 가운데 긴 탁자, 아래 가운데 문은 같아요.
+  const CODE_ROOMS = {
+    code1: { name: "블록 코딩 집", emoji: "🧩", npc: [7, 8], solid: [[4, 7, 5, 7], [1, 10, 7, 11], [18, 8, 22, 10], [19, 6, 22, 7], [1, 6, 1, 6]] },
+    code2: { name: "픽셀 공방", emoji: "🎨", npc: [7, 8], solid: [[1, 8, 6, 10], [1, 11, 1, 11], [19, 8, 22, 9], [19, 6, 22, 6]] },
+    code3: { name: "버그 탐정 사무소", emoji: "🕵️", npc: [7, 8], solid: [[1, 6, 6, 7], [1, 8, 4, 10], [4, 10, 6, 11], [1, 10, 1, 11], [20, 8, 22, 10], [19, 10, 20, 11], [16, 6, 17, 6], [21, 6, 22, 6], [2, 11, 3, 11], [21, 11, 22, 11]] },
+    code4: { name: "로봇 경주장", emoji: "🏁", npc: [8, 9], solid: [[1, 6, 7, 8], [1, 9, 6, 11], [21, 5, 22, 9], [18, 9, 22, 11]] }
+  };
+  Object.entries(CODE_ROOMS).forEach(([id, q]) => {
+    ROOMS[id] = {
+      name: q.name, emoji: q.emoji, parent: "codeforest", w: 24, h: 16, floor: [1, 6, 22, 11], door: { x: 11, y: 12, w: 2 },
+      solid: q.solid.concat([[9, 11, 10, 11], [13, 11, 14, 11]]),
+      stations: [{ x: 9, y: 7, w: 7, h: 2, activity: id, label: "📝 미션 탁자" }],
+      npcs: [{ id: "kobot", name: "코봇 선생님", x: q.npc[0], y: q.npc[1], dir: "right", activity: id, actionLabel: "📝 미션 시작",
+        lines: ["삐빅! 여기는 " + q.name + "이야.", "가운데 탁자에서 코딩 미션을 풀 수 있어. 퀴즈도 있고 🧩 만들기도 있어!", "틀려도 괜찮아. 코드를 고치는 것(디버깅)도 코딩이야!"] }]
+    };
+  });
 
   // 영어 방: 그림 1536x1024를 24x16칸으로 나눠요. 아래 가운데 문, 가운데 긴 탁자 구조는 같아요.
   const ENG_TABLE = [[8, 7, 15, 9], [7, 8, 7, 9], [16, 8, 16, 9], [9, 10, 14, 10]];
@@ -300,7 +350,7 @@ const Maps = (() => {
     return sc;
   }
 
-  const REGIONS = { village: "🏡 발명가 마을", hill: "📚 배움 동산", subjects: "🌍 교과 언덕" };
+  const REGIONS = { village: "🏡 발명가 마을", hill: "📚 배움 동산", subjects: "🌍 교과 언덕", codeforest: "💻 코딩 숲" };
   function buildOutdoor(v) {
     const sc = { id: v.id, name: v.name, w: v.w, h: v.h, img: v.img, backdrop: v.backdrop, indoor: false,
       spawn: v.spawn, gather: v.gather, npcs: v.npcs.map((n) => Object.assign({}, n)), stations: [], labels: [], doors: [], areas: [] };
@@ -373,7 +423,7 @@ const Maps = (() => {
   }
 
   function buildAll() {
-    const all = { village: buildOutdoor(VILLAGE), hill: buildOutdoor(HILL), subjects: buildOutdoor(SUBJECTS) };
+    const all = { village: buildOutdoor(VILLAGE), hill: buildOutdoor(HILL), subjects: buildOutdoor(SUBJECTS), codeforest: buildOutdoor(CODEFOREST) };
     Object.keys(ROOMS).forEach((id) => { all[id] = buildRoom(id); });
     return all;
   }

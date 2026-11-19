@@ -525,19 +525,4 @@
     ]
   });
 
-  // 💻 코딩 숲 입구(지역 그림이 오기 전까지 쓰는 임시 창)
-  Activities.register("codehub", ({ el, frame, ctx }) => {
-    const root = frame("💻 코딩 숲: 어느 건물로 갈까요?");
-    root.append(Quiz.npcBanner(el, Quiz.NPCS.code, "삐빅! 나는 코봇 선생님이야. 코딩 숲은 지금 짓는 중이지만, 건물 4곳의 미션은 벌써 풀 수 있어!"));
-    const grid = el("div", "qz-missions");
-    Quiz.rooms.filter((r) => r.id.startsWith("code")).forEach((r) => {
-      const p = ctx.getProgress(r.id) || { done: [] };
-      const all = p.done.length === r.missions.length;
-      const b = el("button", "qz-mission" + (all ? " done" : ""), "<span>" + r.e + "</span><b>" + r.title + "</b><small>" + r.grade.replace(/^코딩 · /, "") + " · " + (all ? "✅ 도장" : "미션 " + p.done.length + "/" + r.missions.length) + "</small>");
-      b.onclick = () => { ctx.sfx("door"); Activities.open(r.id); };
-      grid.append(b);
-    });
-    root.append(grid);
-    ctx.speak("코딩 숲이에요. 어느 건물로 갈까요?");
-  });
 })();
