@@ -5,7 +5,7 @@
   // 화면(index.html)과 프로그램(js)의 버전이 서로 다르면 한 번 새로 불러와요.
   // 업데이트 직후에 화면만 예전 것으로 남으면 새 기능의 모양(CSS)이 빠져 보이기 때문이에요.
   // 버전을 올릴 때는 여기 BUILD, index.html의 data-build, sw.js의 CACHE 세 곳을 같은 숫자로 맞춰요.
-  const BUILD = "23";
+  const BUILD = "24";
   try {
     if (document.documentElement.dataset.build !== BUILD && sessionStorage.getItem("village-rebuild") !== BUILD) {
       sessionStorage.setItem("village-rebuild", BUILD);
@@ -982,6 +982,9 @@
     g.drawImage(bgs[scene.id], 0, 0, scene.w * T, scene.h * T);
     g.imageSmoothingEnabled = false;
 
+    // 다른 지역으로 가는 길목: 바닥이 반짝이고 화살표가 길을 따라 흘러가요
+    scene.doors.forEach((d) => { if (d.gate) drawGatePath(d, now); });
+
     // 누른 자리 표시
     if (tapMark && now - tapMark.at < 600 && me.path.length) {
       const a = 1 - (now - tapMark.at) / 600;
@@ -1000,7 +1003,10 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sx = (wx) => (wx - v.x) * v.s, sy = (wy) => (wy - v.y) * v.s;
     const fs = Math.round(Math.max(12, Math.min(16, v.s * 6.5)));
-    scene.labels.forEach((l) => tag(l.text, sx(l.x), sy(l.y), l.exit ? "exit" : "place", fs));
+    scene.labels.forEach((l) => {
+      if (l.gate) gateSign(l, sx(l.x), sy(l.y), fs, now);
+      else tag(l.text, sx(l.x), sy(l.y), l.exit ? "exit" : "place", fs);
+    });
     const myT = tileOf(me.x, me.y);
     scene.npcs.forEach((n) => {
       const cx = sx((n.x + 0.5) * T), top = sy(npcTop(n));
@@ -1031,6 +1037,48 @@
     g.fillStyle = fg; g.textAlign = "center"; g.textBaseline = "middle";
     g.fillText(text, x, y - h / 2 + 1);
   }
+  // 길목 바닥: 문 앞 칸에 빛 웅덩이, 그 위로 화살표 3개가 차례로 밝아지며 문 쪽으로 흘러가요
+  function drawGatePath(d, now) {
+    const cx = (d.x + d.w / 2) * T, dy = d.gate === "up" ? -1 : 1;
+    const doorY = (d.y + 0.5) * T, startY = (d.out.y + 0.5) * T - dy * T * 1.5;
+    const glowY = (d.out.y + (d.y - d.out.y) * 0.3 + 0.5) * T;  // 문 앞(아치 밑)이 빛나요
+    const pulse = 0.5 + 0.5 * Math.sin(now / 300);
+    const glow = g.createRadialGradient(cx, glowY, 4, cx, glowY, T * (1.4 + pulse * 0.3));
+    glow.addColorStop(0, "rgba(255,240,140," + (0.95 * (0.55 + 0.45 * pulse)) + ")");
+    glow.addColorStop(1, "rgba(255,236,120,0)");
+    g.fillStyle = glow; g.beginPath(); g.ellipse(cx, glowY, T * (1.6 + pulse * 0.3), T * 1.1, 0, 0, 7); g.fill();
+    const n = 3, phase = (now / 700) % 1;
+    for (let i = 0; i < n; i++) {
+      const t = (i + phase) / n;
+      const y = startY + (doorY - startY) * t;
+      const a = Math.sin(t * Math.PI);
+      g.save(); g.globalAlpha = a; g.translate(cx, y); g.scale(1, dy);
+      g.lineJoin = "round"; g.lineCap = "round";
+      g.strokeStyle = "#5e3820"; g.lineWidth = 7;
+      g.beginPath(); g.moveTo(-11, -5); g.lineTo(0, 5); g.lineTo(11, -5); g.stroke();
+      g.strokeStyle = "#ffe066"; g.lineWidth = 4; g.stroke();
+      g.restore();
+    }
+  }
+  // 길목 표지판: 노란 큰 이름표와 통통 튀는 화살표
+  function gateSign(l, x, y, fs, now) {
+    const f = fs + 8, up = l.gate === "up";
+    const bob = Math.sin(now / 250) * 3;
+    g.font = "bold " + f + "px Jua, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+    const w = g.measureText(l.text).width + 24, h = f + 14;
+    const top = y - h / 2 + bob;
+    g.fillStyle = "rgba(0,0,0,.25)"; roundRect(x - w / 2 + 2, top + 3, w, h, 10); g.fill();
+    g.fillStyle = "#ffd84d"; roundRect(x - w / 2, top, w, h, 10); g.fill();
+    g.strokeStyle = "#5e3820"; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "#5e3820"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(l.text, x, top + h / 2 + 1);
+    // 화살표는 표지판에서 문 쪽으로
+    const ay = up ? top - 12 - Math.abs(bob) : top + h + 12 + Math.abs(bob);
+    g.save(); g.translate(x, ay); g.scale(1, up ? -1 : 1);
+    g.beginPath(); g.moveTo(-12, -7); g.lineTo(12, -7); g.lineTo(0, 8); g.closePath();
+    g.fillStyle = "#ffd84d"; g.fill(); g.strokeStyle = "#5e3820"; g.lineWidth = 3; g.stroke();
+    g.restore();
+  }
   function bubble(text, x, y, fs) { g.font = fs + "px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, x, y); }
   function emoteBubble(i, x, y, fs) {
     const e = EMOTES[i]; if (!e) return;
@@ -1053,6 +1101,15 @@
     mg.strokeRect(v.x * s, v.y * s, v.vw * s, v.vh * s);
     scene.npcs.forEach((n) => { mg.fillStyle = "#ffcc33"; mg.fillRect((n.x + 0.5) * T * s - 2, (n.y + 0.5) * T * s - 2, 4, 4); });
     others.forEach((o) => { if (o.scene === scene.id) { mg.fillStyle = o.profile.teacher ? "#ff9f1a" : "#ffffff"; mg.beginPath(); mg.arc(o.x * s, o.y * s, 2.6, 0, 7); mg.fill(); } });
+    // 길목은 작은 지도에서도 반짝이는 노란 별로 보여요
+    const blink = 0.55 + 0.45 * Math.sin(performance.now() / 250);
+    scene.doors.forEach((d) => {
+      if (!d.gate) return;
+      const gx = (d.x + d.w / 2) * T * s, gy = Math.min(Math.max((d.y + 0.5) * T * s, 7), m.height - 7);
+      mg.save(); mg.globalAlpha = blink; mg.font = "bold 14px sans-serif"; mg.textAlign = "center"; mg.textBaseline = "middle";
+      mg.lineWidth = 3; mg.strokeStyle = "#5e3820"; mg.strokeText("★", gx, gy); mg.fillStyle = "#ffd84d"; mg.fillText("★", gx, gy);
+      mg.restore();
+    });
     mg.fillStyle = "#e8505b"; mg.strokeStyle = "#fff"; mg.beginPath(); mg.arc(me.x * s, me.y * s, 4, 0, 7); mg.fill(); mg.stroke();
   }
 
