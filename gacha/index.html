@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>두근두근 가챠샵</title>
+  <meta name="theme-color" content="#e84855">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="가챠샵">
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: #ffe4ec; color: #3a2440;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 20px; line-height: 1.45; overflow-x: hidden;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    input { font: inherit; color: inherit; }
+    .screen { min-height: 100%; }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
+    h1 { text-align: center; font-size: 1.7em; margin: 18px 0 6px; }
+    h2 { font-size: 1.25em; margin: 0; flex: 1; }
+    .sub { text-align: center; color: #8a5a70; margin: 0 0 24px; font-size: .9em; }
+    .big {
+      display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
+      background: #fff; border: 3px solid #f6c3d2; border-radius: 22px; padding: 18px 20px; margin-bottom: 14px;
+      box-shadow: 0 4px 0 #f6c3d2;
+    }
+    .big:active { transform: translateY(3px); box-shadow: 0 1px 0 #f6c3d2; }
+    .big .ico { font-size: 2.2em; flex: none; }
+    .big b { display: block; font-size: 1.1em; }
+    .big small { color: #8a5a70; }
+    .btn {
+      border: none; border-radius: 16px; padding: 14px 18px; background: #fff; border: 2px solid #f0bfcd;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn.main { background: #e84855; border-color: #e84855; color: #fff; font-weight: bold; }
+    .btn.small { padding: 8px 12px; font-size: .85em; border-radius: 12px; }
+    .bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .card { background: #fff; border-radius: 20px; padding: 16px; margin-bottom: 14px; border: 2px solid #f6d3dd; }
+    .note { color: #8a5a70; font-size: .85em; margin: 6px 0 0; }
+
+    /* 캡슐 채우기 */
+    .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .row .txt { flex: 1; min-width: 0; padding: 10px 12px; border: 2px solid #f0d0da; border-radius: 12px; background: #fffafc; }
+    .row .cnt { display: flex; align-items: center; border: 2px solid #f0d0da; border-radius: 12px; overflow: hidden; flex: none; }
+    .row .cnt button { border: none; background: #fdeef3; width: 34px; height: 44px; font-size: 1.1em; }
+    .row .cnt span { width: 34px; text-align: center; font-weight: bold; }
+    .row .star, .row .del { border: 2px solid #f0d0da; background: #fff; border-radius: 12px; width: 46px; height: 48px; flex: none; font-size: 1.1em; filter: grayscale(1); opacity: .45; }
+    .row .star.on { filter: none; opacity: 1; background: #fff6cf; border-color: #f5c84c; }
+    .row .del { filter: none; opacity: .7; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; }
+    textarea { width: 100%; min-height: 140px; font: inherit; font-size: .9em; padding: 10px; border-radius: 12px; border: 2px solid #f0d0da; }
+    label.opt { display: flex; gap: 10px; align-items: flex-start; }
+    label.opt input { width: 26px; height: 26px; flex: none; margin-top: 2px; }
+    .total { text-align: center; font-weight: bold; margin: 8px 0 12px; }
+    .designs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .design { background: #fffafc; border: 3px solid #f0d0da; border-radius: 16px; padding: 12px 8px; text-align: center; }
+    .design span { font-size: 2em; display: block; }
+    .design b { display: block; }
+    .design small { color: #8a5a70; font-size: .75em; }
+    .design.on { border-color: #e84855; background: #fff0f3; box-shadow: 0 0 0 3px #ffd0da; }
+    #setup .go { width: 100%; padding: 18px; font-size: 1.15em; }
+
+    /* 뽑기 기계 */
+    #machine { display: flex; height: 100vh; height: 100dvh; overflow: hidden; background: radial-gradient(circle at 50% 30%, #fff1f5, #ffd0de); }
+    #stage { flex: 1; position: relative; min-width: 0; }
+    #cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: manipulation; }
+    #side {
+      width: 300px; flex: none; background: rgba(255,255,255,.75); padding: 14px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 12px; border-left: 3px solid #f6c3d2;
+    }
+    #machine.wide #side { display: none; }
+    .sidebox { background: #fff; border-radius: 16px; padding: 12px; text-align: center; }
+    #qr { width: 170px; height: 170px; margin: 4px auto; display: block; image-rendering: pixelated; }
+    .code { font-size: 2.3em; font-weight: 900; letter-spacing: .12em; color: #e84855; line-height: 1.1; }
+    .muted { color: #8a5a70; font-size: .78em; }
+    .left { font-size: 1.1em; font-weight: bold; }
+    #hist { list-style: none; margin: 6px 0 0; padding: 0; text-align: left; font-size: .85em; max-height: 30vh; overflow-y: auto; }
+    #hist li { padding: 5px 8px; border-radius: 8px; }
+    #hist li:nth-child(odd) { background: #fff3f7; }
+    .sidebtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .sidebtns .btn { padding: 10px 6px; font-size: .8em; }
+    #wideBtn { position: absolute; right: 10px; top: 10px; z-index: 2; }
+    @media (max-width: 800px) {
+      #machine { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; }
+      #stage { height: 82vh; flex: none; }
+      #side { width: auto; border-left: none; border-top: 3px solid #f6c3d2; }
+    }
+
+    /* 결과 */
+    #result {
+      position: fixed; inset: 0; z-index: 10; background: rgba(40, 10, 30, .62);
+      display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px;
+    }
+    #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; }
+    .halves { position: relative; width: 220px; height: 220px; margin-bottom: -110px; z-index: 1; }
+    .half { position: absolute; left: 0; width: 220px; height: 110px; }
+    .half.top { top: 0; border-radius: 110px 110px 0 0; background: var(--c); }
+    .half.bot { bottom: 0; border-radius: 0 0 110px 110px; background: #fff; }
+    #result.show .half.top { animation: flyUp .7s ease-out forwards; }
+    #result.show .half.bot { animation: flyDown .7s ease-out forwards; }
+    @keyframes flyUp { to { transform: translate(-260px, -220px) rotate(-60deg); opacity: 0; } }
+    @keyframes flyDown { to { transform: translate(260px, 240px) rotate(70deg); opacity: 0; } }
+    .paper {
+      position: relative; z-index: 2; background: #fffdf5; border-radius: 28px; padding: 30px 40px 26px;
+      max-width: min(900px, 92vw); min-width: min(420px, 90vw); text-align: center;
+      box-shadow: 0 16px 50px rgba(0,0,0,.35); transform: scale(0);
+      border: 8px solid #ffd23f;
+    }
+    #result.show .paper { animation: pop .55s .25s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+    @keyframes pop { to { transform: scale(1); } }
+    .paper.star { border-color: #ffb300; background: linear-gradient(#fff9dc, #fff1b8); }
+    .paper .banner { font-size: 1.4em; font-weight: 900; color: #e08a00; margin-bottom: 6px; }
+    .paper .rtext { font-size: 3.4em; font-weight: 900; line-height: 1.2; word-break: keep-all; overflow-wrap: anywhere; margin: 6px 0 18px; }
+    .paper .ok { padding: 14px 40px; font-size: 1.1em; }
+
+    /* 리모컨 */
+    #remote .wrap { text-align: center; }
+    .codein { font-size: 2.6em; width: 6.2em; text-align: center; letter-spacing: .25em; padding: 8px; border-radius: 18px; border: 3px solid #f0bfcd; font-weight: 900; }
+    #rStatus { font-size: .9em; margin: 4px 0 10px; }
+    #rLeft { font-size: 1em; color: #8a5a70; margin-bottom: 14px; }
+    #rBig {
+      width: min(72vw, 330px); height: min(72vw, 330px); border-radius: 50%; border: none;
+      background: radial-gradient(circle at 35% 30%, #ff8a95, #e84855 60%, #b8323f);
+      color: #fff; font-size: 2em; font-weight: 900; box-shadow: 0 12px 0 #8f2430, 0 18px 30px rgba(0,0,0,.2);
+      margin: 10px auto 26px; display: block; text-shadow: 0 2px 0 rgba(0,0,0,.2);
+    }
+    #rBig:active { transform: translateY(8px); box-shadow: 0 4px 0 #8f2430; }
+    #rBig:disabled { filter: grayscale(.5) brightness(.9); }
+    #rBig.open { background: radial-gradient(circle at 35% 30%, #ffe680, #ffc21a 60%, #d99a00); box-shadow: 0 12px 0 #a87400; color: #5a3a00; text-shadow: none; }
+    #rResult { margin: 0 auto 18px; }
+    #rResult .paper { transform: none; min-width: 0; width: 100%; padding: 20px; }
+    #rResult .rtext { font-size: 2em; margin: 4px 0 4px; }
+    #rPad { display: flex; gap: 18px; justify-content: center; margin: 6px 0 0; }
+    #rPad button {
+      width: min(38vw, 160px); height: 110px; border: none; border-radius: 28px; font-size: 2.6em; color: #fff;
+      background: #3fc3f0; box-shadow: 0 8px 0 #1f8fbd; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    }
+    #rPad button.on { transform: translateY(6px); box-shadow: 0 2px 0 #1f8fbd; background: #7fe3ff; }
+    #rErr { color: #c0283a; min-height: 1.4em; }
+  </style>
+</head>
+<body>
+
+  <!-- 처음 화면 -->
+  <section class="screen" id="home">
+    <div class="wrap">
+      <h1>🎰 두근두근 가챠샵</h1>
+      <p class="sub">선생님이 넣은 캡슐을 하나씩 뽑아요</p>
+      <button class="big" data-go="setup"><span class="ico">✏️</span><span><b>캡슐 채우기</b><small>선생님이 캡슐 속 내용을 적어요</small></span></button>
+      <button class="big" data-go="machine"><span class="ico">🖥️</span><span><b>뽑기 기계 열기</b><small>공유보드·TV에 띄워요. 화면을 눌러도 뽑혀요</small></span></button>
+      <button class="big" data-go="remote"><span class="ico">📱</span><span><b>리모컨으로 쓰기</b><small>휴대폰·태블릿으로 기계를 돌려요</small></span></button>
+      <button class="btn main" id="installBtn" hidden style="width:100%">📲 앱으로 설치하기</button>
+      <p class="note" id="installHelp" hidden></p>
+      <p class="note" style="text-align:center;margin-top:18px">캡슐 내용은 이 기기에만 저장돼요. 리모컨은 인터넷으로 기계와 연결돼요.</p>
+    </div>
+  </section>
+
+  <!-- 캡슐 채우기 -->
+  <section class="screen" id="setup" hidden>
+    <div class="wrap">
+      <div class="bar">
+        <button class="btn small" data-go="home">← 처음</button>
+        <h2>✏️ 캡슐 채우기</h2>
+      </div>
+
+      <div class="card">
+        <b>빠르게 채우기</b>
+        <div class="presets" style="margin-top:8px">
+          <button class="btn small" id="preCoupon">🎟️ 칭찬 쿠폰</button>
+          <button class="btn small" id="preMission">🏃 미션 카드</button>
+          <button class="btn small" id="preNum">🔢 번호 뽑기</button>
+          <button class="btn small" id="preClear">🗑️ 모두 지우기</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <b>캡슐 속 내용</b>
+        <p class="note" style="margin:2px 0 10px">− + 로 같은 캡슐 개수를, ⭐로 특별 캡슐(금색·축하 효과)을 정해요.</p>
+        <div id="rows"></div>
+        <button class="btn" id="addRow" style="width:100%">＋ 한 칸 더</button>
+        <details style="margin-top:12px">
+          <summary>📋 여러 줄 한꺼번에 넣기</summary>
+          <p class="note">한 줄에 하나씩 적어요. 줄 끝에 <b>x3</b>을 쓰면 3개, 맨 앞에 <b>*</b>을 쓰면 특별 캡슐이에요.<br>예) <code>숙제 면제권 x2</code> · <code>*자리 바꾸기권</code></p>
+          <textarea id="bulk" placeholder="간식 하나 더&#10;짝꿍 바꾸기 x2&#10;*선생님과 사진 찍기"></textarea>
+          <button class="btn small" id="bulkAdd" style="margin-top:6px">목록에 더하기</button>
+        </details>
+      </div>
+
+      <div class="card">
+        <b>기계 모양</b>
+        <div class="designs">
+          <button class="design" data-design="gacha"><span>🎰</span><b>캡슐 뽑기</b><small>손잡이를 돌려 캡슐이 데구루루</small></button>
+          <button class="design" data-design="claw"><span>🧸</span><b>인형뽑기</b><small>◀ ▶ 로 집게를 움직여 잡아요</small></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="opt"><input type="checkbox" id="optRemove" checked>
+          <span><b>뽑은 캡슐은 기계에서 빼기</b><br><small class="note">끄면 같은 내용이 또 나올 수 있어요 (벌칙·미션 돌림판처럼)</small></span></label>
+      </div>
+
+      <p class="total" id="total"></p>
+      <button class="btn main go" id="fill">🎰 기계에 넣고 시작하기</button>
+    </div>
+  </section>
+
+  <!-- 뽑기 기계 -->
+  <section id="machine" hidden>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <button class="btn small" id="wideBtn" title="옆 칸 숨기기/보이기">⛶</button>
+    </div>
+    <aside id="side">
+      <div class="sidebox">
+        <b>📱 리모컨 연결</b>
+        <canvas id="qr" width="170" height="170"></canvas>
+        <div class="muted">카메라로 찍거나, 리모컨에서 코드를 넣어요</div>
+        <div class="code" id="code">····</div>
+        <div class="muted" id="netStatus">연결 준비 중…</div>
+        <div class="muted" id="padStatus"></div>
+      </div>
+      <div class="sidebox">
+        <div class="left" id="leftText"></div>
+        <ul id="hist"></ul>
+      </div>
+      <div class="sidebtns">
+        <button class="btn" id="refill">🔄 다시 채우기</button>
+        <button class="btn" id="editBtn">✏️ 캡슐 바꾸기</button>
+        <button class="btn" id="fullBtn">🔲 전체 화면</button>
+        <button class="btn" id="homeBtn">🏠 처음으로</button>
+        <button class="btn" id="designBtn" style="grid-column: span 2">🔁 기계 바꾸기 (캡슐 ↔ 인형뽑기)</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 결과 -->
+  <div id="result" hidden>
+    <div class="halves"><div class="half top"></div><div class="half bot"></div></div>
+    <div class="paper" id="paper">
+      <div class="banner" id="banner"></div>
+      <div class="rtext" id="rtext"></div>
+      <button class="btn main ok" id="okBtn">확인!</button>
+    </div>
+  </div>
+  <canvas id="fx"></canvas>
+
+  <!-- 리모컨 -->
+  <section class="screen" id="remote" hidden>
+    <div class="wrap">
+      <div class="bar">
+        <button class="btn small" id="rBack">← 처음</button>
+        <h2>📱 리모컨</h2>
+      </div>
+      <div id="rJoin">
+        <p>뽑기 기계 화면의 <b>숫자 4개</b>를 넣어요</p>
+        <input class="codein" id="rCode" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off">
+        <p id="rErr"></p>
+        <button class="btn main" id="rConnect" style="width:100%;padding:18px;font-size:1.15em">연결하기</button>
+      </div>
+      <div id="rPlay" hidden>
+        <div id="rStatus"></div>
+        <div id="rLeft"></div>
+        <div id="rResult" hidden><div class="paper" id="rPaper"><div class="banner" id="rBanner"></div><div class="rtext" id="rText"></div></div></div>
+        <div id="rPad" hidden>
+          <button data-dir="-1" aria-label="왼쪽">◀</button>
+          <button data-dir="1" aria-label="오른쪽">▶</button>
+        </div>
+        <button id="rBig">🎰<br>돌리기!</button>
+        <button class="btn small" id="rLeave">연결 끊기</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="lib/peerjs.min.js"></script>
+  <script src="lib/qrcode.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
