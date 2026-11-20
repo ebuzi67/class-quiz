@@ -109,6 +109,10 @@
     .puff { position: absolute; left: 50%; top: 50%; width: 260px; margin: -120px 0 0 -130px; opacity: 0; pointer-events: none; }
     #result.show .puff { animation: puff .7s .1s ease-out forwards; }
     @keyframes puff { 0% { transform: scale(.3); opacity: .95; } 100% { transform: scale(1.7); opacity: 0; } }
+    .prize { position: relative; z-index: 3; height: 190px; margin-bottom: -40px; transform: scale(0); filter: drop-shadow(0 8px 10px rgba(0,0,0,.3)); }
+    #result.show .prize { animation: prizePop .6s cubic-bezier(.2, 1.6, .4, 1) forwards, prizeBob 1.6s .6s ease-in-out infinite; }
+    @keyframes prizePop { to { transform: scale(1); } }
+    @keyframes prizeBob { 0%, 100% { transform: scale(1) rotate(-4deg); } 50% { transform: scale(1) rotate(4deg) translateY(-6px); } }
     .burst { position: absolute; width: 110px; top: -70px; transform: scale(0); }
     .burst.l { left: -50px; transform-origin: right bottom; }
     .burst.r { right: -50px; --flip: -1; transform-origin: left bottom; }
@@ -253,6 +257,7 @@
   <div id="result" hidden>
     <div class="halves"><div class="half bot"></div><div class="half top"></div></div>
     <img class="puff" src="assets/puff.webp" alt="">
+    <img class="prize" id="prize" alt="" hidden>
     <div class="paper" id="paper">
       <img class="burst l" src="assets/burst.webp" alt=""><img class="burst r" src="assets/burst.webp" alt="">
       <div class="banner" id="banner"></div>
