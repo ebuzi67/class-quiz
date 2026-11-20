@@ -70,8 +70,19 @@
 
     /* 뽑기 기계 */
     #machine { display: flex; height: 100vh; height: 100dvh; overflow: hidden; background: radial-gradient(circle at 50% 30%, #fff1f5, #ffd0de); }
-    #stage { flex: 1; position: relative; min-width: 0; }
+    #stage { flex: 1; position: relative; min-width: 0; display: flex; flex-direction: column; }
+    #cvWrap { flex: 1; position: relative; min-height: 0; }
     #cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: manipulation; }
+    #turnTag {
+      align-self: center; margin: 12px 60px 0; padding: 6px 26px; border-radius: 999px; background: #fffdf5;
+      border: 4px solid #ffd23f; box-shadow: 0 4px 0 #f0b400; font-size: clamp(20px, 3.2vw, 36px); text-align: center;
+    }
+    #turnTag b { color: #e84855; font-size: 1.25em; margin: 0 .15em; }
+    #turnTag small { color: #8a5a70; font-size: .55em; margin-left: .6em; white-space: nowrap; }
+    #turnTag.lap { background: #fff3c4; animation: wig .5s ease-in-out 3; }
+    @keyframes wig { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+    .who { font-size: 1.8em; font-weight: 900; color: #e84855; line-height: 1.2; margin: 2px 0; word-break: keep-all; }
+    .rwho { display: inline-block; background: #e84855; color: #fff; font-weight: 900; font-size: 1.3em; padding: 2px 18px; border-radius: 999px; margin-bottom: 4px; }
     #side {
       width: 300px; flex: none; background: rgba(255,255,255,.75); padding: 14px; overflow-y: auto;
       display: flex; flex-direction: column; gap: 12px; border-left: 3px solid #f6c3d2;
@@ -90,7 +101,7 @@
     #wideBtn { position: absolute; right: 10px; top: 10px; z-index: 2; }
     @media (max-width: 800px) {
       #machine { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; }
-      #stage { height: 82vh; flex: none; }
+      #stage { height: 86vh; flex: none; }
       #side { width: auto; border-left: none; border-top: 3px solid #f6c3d2; }
     }
 
@@ -156,6 +167,11 @@
       background: #3fc3f0; box-shadow: 0 8px 0 #1f8fbd; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     }
     #rPad button.on { transform: translateY(6px); box-shadow: 0 2px 0 #1f8fbd; background: #7fe3ff; }
+    #rWho { background: #fff; border: 3px solid #ffd23f; border-radius: 18px; padding: 8px 12px; margin: 0 auto 10px; max-width: 340px; }
+    #rWho span { display: block; color: #8a5a70; font-size: .8em; }
+    #rWho b { display: block; font-size: 1.8em; color: #e84855; line-height: 1.2; }
+    #rWho small { color: #8a5a70; }
+    #rResult .rwho { font-size: 1em; }
     #rErr { color: #c0283a; min-height: 1.4em; }
   </style>
 </head>
@@ -215,6 +231,19 @@
       </div>
 
       <div class="card">
+        <label class="opt"><input type="checkbox" id="optTurns">
+          <span><b>학생 이름 넣고 차례대로 하기</b><br><small class="note">뽑기 화면에 "지금 차례"가 나오고, 확인을 누르면 다음 학생으로 넘어가요</small></span></label>
+        <div id="turnBox" hidden style="margin-top:10px">
+          <textarea id="names" placeholder="한 줄에 한 명씩 적어요&#10;김하나&#10;이두리&#10;박세찬"></textarea>
+          <div class="presets" style="margin-top:6px;align-items:center">
+            <button class="btn small" id="namesNum">🔢 번호로 채우기</button>
+            <label class="opt" style="align-items:center"><input type="checkbox" id="optShuffle"><span>순서 섞기</span></label>
+            <span class="note" id="namesCount" style="margin:0"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <label class="opt"><input type="checkbox" id="optRemove" checked>
           <span><b>뽑은 캡슐은 기계에서 빼기</b><br><small class="note">끄면 같은 내용이 또 나올 수 있어요 (벌칙·미션 돌림판처럼)</small></span></label>
       </div>
@@ -227,7 +256,8 @@
   <!-- 뽑기 기계 -->
   <section id="machine" hidden>
     <div id="stage">
-      <canvas id="cv"></canvas>
+      <div id="turnTag" hidden></div>
+      <div id="cvWrap"><canvas id="cv"></canvas></div>
       <button class="btn small" id="wideBtn" title="옆 칸 숨기기/보이기">⛶</button>
     </div>
     <aside id="side">
@@ -238,6 +268,15 @@
         <div class="code" id="code">····</div>
         <div class="muted" id="netStatus">연결 준비 중…</div>
         <div class="muted" id="padStatus"></div>
+      </div>
+      <div class="sidebox" id="turnSide" hidden>
+        <b>🙋 지금 차례</b>
+        <div class="who" id="sideWho"></div>
+        <div class="muted" id="sideNext"></div>
+        <div class="sidebtns" style="margin-top:8px">
+          <button class="btn" id="prevTurn">⏮ 앞 사람</button>
+          <button class="btn" id="skipTurn">⏭ 건너뛰기</button>
+        </div>
       </div>
       <div class="sidebox">
         <div class="left" id="leftText"></div>
@@ -261,6 +300,7 @@
     <div class="paper" id="paper">
       <img class="burst l" src="assets/burst.webp" alt=""><img class="burst r" src="assets/burst.webp" alt="">
       <div class="banner" id="banner"></div>
+      <div class="rwho" id="rwho" hidden></div>
       <div class="rtext" id="rtext"></div>
       <button class="btn main ok" id="okBtn">확인!</button>
     </div>
@@ -282,6 +322,7 @@
       </div>
       <div id="rPlay" hidden>
         <div id="rStatus"></div>
+        <div id="rWho" hidden><span>🙋 지금 차례</span><b id="rWhoName"></b><small id="rWhoNext"></small></div>
         <div id="rLeft"></div>
         <div id="rResult" hidden><div class="paper" id="rPaper"><div class="banner" id="rBanner"></div><div class="rtext" id="rText"></div></div></div>
         <div id="rPad" hidden>
