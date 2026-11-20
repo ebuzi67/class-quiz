@@ -20,18 +20,45 @@ const SAMPLE = [
   { text: "숙제 면제권", n: 1, star: true }
 ];
 let items = store.get("items", SAMPLE);          // 선생님이 적은 목록 [{text, n, star}]
-let opts = Object.assign({ remove: true, design: "gacha" }, store.get("opts", {}));   // design: gacha(캡슐) | claw(인형뽑기)
+let opts = Object.assign({ remove: true, design: "gacha", turns: false, shuffle: false }, store.get("opts", {}));   // design: gacha(캡슐) | claw(인형뽑기)
 let pool = store.get("pool", null);               // 기계 안에 남은 캡슐 [{text, n, star}]
 let history = store.get("history", []);           // 뽑은 기록 [{text, star}]
 
 const cleanItems = (list) => list.map((it) => ({ text: String(it.text || "").trim().slice(0, 60), n: Math.max(1, Math.min(99, it.n | 0)), star: !!it.star })).filter((it) => it.text);
 const countOf = (list) => list.reduce((s, it) => s + it.n, 0);
 
+// ───────────── 차례 (학생 이름) ─────────────
+// turnState: {order: 이번 바퀴 순서, i: 지금 차례 번호, round: 몇 바퀴째}
+let students = store.get("students", []);
+let turnState = store.get("turn", null);
+const cleanNames = (list) => list.map((s) => String(s).trim().slice(0, 20)).filter(Boolean);
+function shuffleArr(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function resetTurns() {
+  const names = cleanNames(students);
+  turnState = { order: opts.shuffle ? shuffleArr(names.slice()) : names, i: 0, round: 1 };
+  store.set("turn", turnState);
+}
+const turnsOn = () => !!(opts.turns && turnState && turnState.order.length);
+const who = () => (turnsOn() ? turnState.order[turnState.i] : null);
+const nextWho = () => (turnsOn() && turnState.order.length > 1 ? turnState.order[(turnState.i + 1) % turnState.order.length] : null);
+// d = 1 다음 사람, -1 앞 사람. 한 바퀴를 다 돌면 true
+function stepTurn(d) {
+  if (!turnsOn()) return false;
+  let lap = false;
+  turnState.i += d;
+  if (turnState.i >= turnState.order.length) { turnState.i = 0; turnState.round++; lap = true; if (opts.shuffle) shuffleArr(turnState.order); }
+  if (turnState.i < 0) turnState.i = turnState.order.length - 1;
+  store.set("turn", turnState);
+  return lap;
+}
+
 function fillPool() {
   pool = cleanItems(items);
   history = [];
   store.set("pool", pool); store.set("history", history);
+  resetTurns();
 }
+if (!turnState) resetTurns();
 if (!pool) fillPool();
 
 // ───────────── 화면 바꾸기 ─────────────
@@ -77,7 +104,13 @@ const Sound = (() => {
 function saveItems() { store.set("items", items); store.set("opts", opts); renderTotal(); }
 function renderTotal() {
   const n = countOf(cleanItems(items));
-  $("total").textContent = n ? `캡슐 모두 ${n}개` : "캡슐 내용을 하나 이상 적어 주세요";
+  const kids = cleanNames(students).length;
+  let t = n ? `캡슐 모두 ${n}개` : "캡슐 내용을 하나 이상 적어 주세요";
+  if (n && opts.turns) {
+    t += kids ? ` · 학생 ${kids}명` : " · 학생 이름을 적어 주세요";
+    if (kids && opts.remove && n < kids) t += ` (캡슐이 ${kids - n}개 모자라요)`;
+  }
+  $("total").textContent = t;
   $("fill").disabled = !n;
 }
 function renderSetup() {
@@ -104,6 +137,11 @@ function renderSetup() {
     box.appendChild(row);
   });
   $("optRemove").checked = opts.remove;
+  $("optTurns").checked = opts.turns;
+  $("optShuffle").checked = opts.shuffle;
+  $("turnBox").hidden = !opts.turns;
+  if (document.activeElement !== $("names")) $("names").value = students.join("\n");
+  namesCount();
   document.querySelectorAll("[data-design]").forEach((b) => b.classList.toggle("on", b.dataset.design === opts.design));
   renderTotal();
 }
@@ -117,6 +155,23 @@ document.querySelectorAll("[data-design]").forEach((b) => b.addEventListener("cl
   Machine.setDesign(b.dataset.design);
   renderSetup();
 }));
+function namesCount() {
+  const n = cleanNames(students).length;
+  $("namesCount").textContent = n ? `학생 ${n}명` : "한 줄에 한 명씩 적어요";
+}
+$("optTurns").onchange = () => { opts.turns = $("optTurns").checked; $("turnBox").hidden = !opts.turns; saveItems(); };
+$("optShuffle").onchange = () => { opts.shuffle = $("optShuffle").checked; saveItems(); };
+$("names").addEventListener("input", () => {
+  students = $("names").value.split(/[\n,]/).map((x) => x.trim()).filter(Boolean);
+  store.set("students", students); namesCount(); renderTotal();
+});
+$("namesNum").onclick = () => {
+  const n = parseInt(prompt("몇 번까지 넣을까요? (우리 반 학생 수)", "25"), 10);
+  if (!(n > 0)) return;
+  if (cleanNames(students).length && !confirm("지금 적힌 이름을 지우고 번호로 바꿀까요?")) return;
+  students = Array.from({ length: Math.min(n, 60) }, (_, i) => `${i + 1}번`);
+  store.set("students", students); $("names").value = students.join("\n"); namesCount(); renderTotal();
+};
 $("optRemove").onchange = () => { opts.remove = $("optRemove").checked; saveItems(); };
 function replaceItems(list) {
   if (cleanItems(items).length && !confirm("지금 적힌 내용을 지우고 바꿀까요?")) return;
@@ -588,6 +643,7 @@ const Machine = (() => {
   }
   function open() {
     if (phase !== "ready") return;
+    result.who = who();
     history.unshift(result); store.set("history", history);
     setPhase("open");
     Result.show(result, drop.color, isClaw());
@@ -597,8 +653,37 @@ const Machine = (() => {
     if (phase !== "open") return;
     Result.hide();
     drop = null; result = null;
+    const lap = stepTurn(1);
+    updateTurn(lap);
     setPhase("idle");
   }
+
+  // 지금 차례 보여 주기 (기계 위 이름표 + 옆 칸)
+  let lapTimer = 0;
+  function updateTurn(lap) {
+    const on = turnsOn();
+    if ($("turnTag").hidden === on) { $("turnTag").hidden = !on; resize(); }
+    $("turnSide").hidden = !on;
+    if (!on) return;
+    const w = who(), nx = nextWho();
+    $("sideWho").textContent = w;
+    $("sideNext").textContent = `${turnState.i + 1} / ${turnState.order.length}번째` + (turnState.round > 1 ? ` · ${turnState.round}바퀴` : "") + (nx ? ` · 다음: ${nx}` : "");
+    clearTimeout(lapTimer);
+    if (lap) {
+      $("turnTag").classList.add("lap");
+      $("turnTag").innerHTML = "🎉 모두 한 번씩 했어요! 처음부터 다시 해요";
+      lapTimer = setTimeout(() => updateTurn(false), 2600);
+      return;
+    }
+    $("turnTag").classList.remove("lap");
+    $("turnTag").innerHTML = "";
+    const b = document.createElement("b"); b.textContent = w;
+    $("turnTag").append("🙋 지금 차례 ", b);
+    if (nx) { const sm = document.createElement("small"); sm.textContent = `다음: ${nx}`; $("turnTag").append(sm); }
+  }
+  function moveTurn(d) { if (phase !== "idle" || !turnsOn()) return; stepTurn(d); updateTurn(false); broadcast(); }
+  $("skipTurn").onclick = () => moveTurn(1);
+  $("prevTurn").onclick = () => moveTurn(-1);
 
   // 화면 누르기: 손잡이 근처(기다릴 때)나 나오는 곳(열 때)
   cv.addEventListener("pointerdown", (e) => {
@@ -734,7 +819,7 @@ const Machine = (() => {
     ul.innerHTML = "";
     history.slice(0, 50).forEach((h, i) => {
       const li = document.createElement("li");
-      li.textContent = `${history.length - i}. ${h.star ? "⭐ " : ""}${h.text}`;
+      li.textContent = `${history.length - i}. ${h.who ? h.who + " → " : ""}${h.star ? "⭐ " : ""}${h.text}`;
       ul.appendChild(li);
     });
     if (!history.length) ul.innerHTML = '<li class="muted">아직 뽑은 캡슐이 없어요</li>';
@@ -762,7 +847,7 @@ const Machine = (() => {
 
   function state() {
     return { t: "state", design: opts.design, phase: phase === "idle" && !left() ? "empty" : phase, left: left(), total: total(), remove: opts.remove,
-      result: phase === "open" && result ? result : null };
+      result: phase === "open" && result ? result : null, who: who(), nextWho: nextWho() };
   }
   function broadcast() { if (net) net.broadcast(state()); }
 
@@ -793,7 +878,11 @@ const Machine = (() => {
   function start() {
     resize();
     if (!started) { started = true; rebuildBalls(); raf = requestAnimationFrame(loop); }
+    // 이름 목록이 바뀌었으면 차례를 처음부터
+    const key = (l) => l.slice().sort().join("\n");
+    if (opts.turns && key(cleanNames(students)) !== key(turnState.order)) resetTurns();
     updateSide();
+    updateTurn(false);
     startNet();
     broadcast();
   }
@@ -804,7 +893,7 @@ const Machine = (() => {
   function refilled() {
     phase = "idle"; drop = null; result = null; Result.hide(); claw.x = 365;
     if (started) rebuildBalls();
-    updateSide(); broadcast();
+    updateSide(); updateTurn(false); broadcast();
   }
 
   $("wideBtn").onclick = () => { $("machine").classList.toggle("wide"); resize(); };
@@ -843,6 +932,8 @@ const Result = (() => {
     if (isClaw) $("prize").src = res.star ? "assets/toy-star.webp" : `assets/toy-${["bear", "bunny", "chick", "panda", "cat", "penguin", "dino"][res.kind || 0]}.webp`;
     $("paper").classList.toggle("star", res.star);
     $("banner").textContent = isClaw ? (res.star ? "👑 특별 인형! 👑" : "🧸 잡았다!") : (res.star ? "✨ 특별 캡슐! ✨" : "🎉 뽑았다!");
+    $("rwho").hidden = !res.who;
+    $("rwho").textContent = res.who ? `🙋 ${res.who}` : "";
     $("rtext").textContent = res.text;
     $("rtext").style.fontSize = fit(res.text);
     box.classList.remove("show"); box.hidden = false; void box.offsetWidth; box.classList.add("show");
@@ -917,6 +1008,8 @@ const Remote = (() => {
     $("rStatus").textContent = "🟢 뽑기 기계와 연결됐어요";
     const big = $("rBig");
     $("rLeft").textContent = st.remove ? `남은 캡슐 ${st.left} / ${st.total}개` : "";
+    $("rWho").hidden = !st.who;
+    if (st.who) { $("rWhoName").textContent = st.result && st.result.who ? st.result.who : st.who; $("rWhoNext").textContent = st.nextWho && !st.result ? `다음: ${st.nextWho}` : ""; }
     big.classList.remove("open");
     big.disabled = false;
     $("rResult").hidden = !st.result;
