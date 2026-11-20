@@ -60,6 +60,12 @@
     label.opt { display: flex; gap: 10px; align-items: flex-start; }
     label.opt input { width: 26px; height: 26px; flex: none; margin-top: 2px; }
     .total { text-align: center; font-weight: bold; margin: 8px 0 12px; }
+    .designs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .design { background: #fffafc; border: 3px solid #f0d0da; border-radius: 16px; padding: 12px 8px; text-align: center; }
+    .design span { font-size: 2em; display: block; }
+    .design b { display: block; }
+    .design small { color: #8a5a70; font-size: .75em; }
+    .design.on { border-color: #e84855; background: #fff0f3; box-shadow: 0 0 0 3px #ffd0da; }
     #setup .go { width: 100%; padding: 18px; font-size: 1.15em; }
 
     /* 뽑기 기계 */
@@ -132,6 +138,12 @@
     #rResult { margin: 0 auto 18px; }
     #rResult .paper { transform: none; min-width: 0; width: 100%; padding: 20px; }
     #rResult .rtext { font-size: 2em; margin: 4px 0 4px; }
+    #rPad { display: flex; gap: 18px; justify-content: center; margin: 6px 0 0; }
+    #rPad button {
+      width: min(38vw, 160px); height: 110px; border: none; border-radius: 28px; font-size: 2.6em; color: #fff;
+      background: #3fc3f0; box-shadow: 0 8px 0 #1f8fbd; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    }
+    #rPad button.on { transform: translateY(6px); box-shadow: 0 2px 0 #1f8fbd; background: #7fe3ff; }
     #rErr { color: #c0283a; min-height: 1.4em; }
   </style>
 </head>
@@ -183,6 +195,14 @@
       </div>
 
       <div class="card">
+        <b>기계 모양</b>
+        <div class="designs">
+          <button class="design" data-design="gacha"><span>🎰</span><b>캡슐 뽑기</b><small>손잡이를 돌려 캡슐이 데구루루</small></button>
+          <button class="design" data-design="claw"><span>🧸</span><b>인형뽑기</b><small>◀ ▶ 로 집게를 움직여 잡아요</small></button>
+        </div>
+      </div>
+
+      <div class="card">
         <label class="opt"><input type="checkbox" id="optRemove" checked>
           <span><b>뽑은 캡슐은 기계에서 빼기</b><br><small class="note">끄면 같은 내용이 또 나올 수 있어요 (벌칙·미션 돌림판처럼)</small></span></label>
       </div>
@@ -205,6 +225,7 @@
         <div class="muted">카메라로 찍거나, 리모컨에서 코드를 넣어요</div>
         <div class="code" id="code">····</div>
         <div class="muted" id="netStatus">연결 준비 중…</div>
+        <div class="muted" id="padStatus"></div>
       </div>
       <div class="sidebox">
         <div class="left" id="leftText"></div>
@@ -215,6 +236,7 @@
         <button class="btn" id="editBtn">✏️ 캡슐 바꾸기</button>
         <button class="btn" id="fullBtn">🔲 전체 화면</button>
         <button class="btn" id="homeBtn">🏠 처음으로</button>
+        <button class="btn" id="designBtn" style="grid-column: span 2">🔁 기계 바꾸기 (캡슐 ↔ 인형뽑기)</button>
       </div>
     </aside>
   </section>
@@ -247,6 +269,10 @@
         <div id="rStatus"></div>
         <div id="rLeft"></div>
         <div id="rResult" hidden><div class="paper" id="rPaper"><div class="banner" id="rBanner"></div><div class="rtext" id="rText"></div></div></div>
+        <div id="rPad" hidden>
+          <button data-dir="-1" aria-label="왼쪽">◀</button>
+          <button data-dir="1" aria-label="오른쪽">▶</button>
+        </div>
         <button id="rBig">🎰<br>돌리기!</button>
         <button class="btn small" id="rLeave">연결 끊기</button>
       </div>
