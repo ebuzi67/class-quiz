@@ -163,10 +163,20 @@ $("fill").onclick = () => {
 // ───────────── 뽑기 기계 ─────────────
 const Machine = (() => {
   const W = 600, H = 1000;                        // 그림 좌표
-  const DOME = { x: 300, y: 300, r: 228 };
-  const CRANK = { x: 190, y: 735, r: 74 };
-  const CHUTE = { x: 345, y: 690, w: 150, h: 135 };
-  const COLORS = ["#ff6b9a", "#4da3ff", "#6fd17a", "#b88cff", "#ff9f43", "#3fd0d4", "#ff6b6b", "#f78fb3"];
+  // 캡슐 기계 그림 위치 (그림 좌표 600×1000 안). 몸통 그림의 왼쪽 위가 BODY예요.
+  const BODY = { x: 39, y: 110 };
+  const DOMEIMG = { x: 141, y: 214, w: 323, h: 337 };                // 유리 돔 그림 (원본의 0.85배)
+  const DOME = { x: DOMEIMG.x + 161.5, y: DOMEIMG.y + 161.5, r: 158 }; // 유리 동그라미
+  const DOME_FLOOR = DOMEIMG.y + 290;                                 // 캡슐이 얹히는 받침 높이
+  const DOME_BASE = DOMEIMG.y + 272;                                  // 여기부터 아래는 빨간 받침
+  const CROWN = { x: BODY.x + 92, y: BODY.y, w: 346, h: 152 };
+  const CRANK = { x: BODY.x + 271, y: BODY.y + 579, r: 77 };
+  const CHUTE = { x: BODY.x + 206, y: BODY.y + 711, w: 166, h: 56 };   // 아래 아치 구멍
+  const DROP_R = 33;
+  const COLORS = ["red", "blue", "green", "purple", "clear"];        // 특별 캡슐은 yellow
+  const ART = {};
+  ["body", "dome", "crown", "crank", "star", "cap-red", "cap-blue", "cap-yellow", "cap-green", "cap-purple", "cap-clear"]
+    .forEach((n) => { ART[n] = new Image(); ART[n].src = `assets/${n}.webp`; });
   // 인형뽑기 기계
   const isClaw = () => opts.design === "claw";
   const BOX = { l: 205, r: 525, top: 175, floor: 628 };   // 인형이 쌓이는 칸
@@ -199,13 +209,13 @@ const Machine = (() => {
     }
     const a = Math.random() * Math.PI * 2, d = Math.random() * (DOME.r - r - 10);
     return { x: DOME.x + Math.cos(a) * d, y: DOME.y + Math.sin(a) * d * 0.6 + 40, vx: 0, vy: 0, r, ang: Math.random() * 6.28, va: 0, star,
-      color: star ? "#ffc21a" : COLORS[(i * 5 + Math.floor(Math.random() * 3)) % COLORS.length] };
+      color: star ? "yellow" : COLORS[(i * 5 + Math.floor(Math.random() * 3)) % COLORS.length] };
   }
   function visibleCount() { return Math.min(36, left()); }
   function ballR() {
     const n = Math.max(visibleCount(), 1);
     if (isClaw()) return Math.max(28, Math.min(50, Math.sqrt(20000 / n)));
-    return Math.max(30, Math.min(54, Math.sqrt((DOME.r * DOME.r * 0.5) / n)));
+    return Math.max(22, Math.min(40, Math.sqrt((DOME.r * DOME.r * 0.5) / n)));
   }
   function rebuildBalls() {
     const n = visibleCount();
@@ -301,6 +311,7 @@ const Machine = (() => {
           const vn = a.vx * nx + a.vy * ny;
           if (vn > 0) { a.vx -= 1.5 * vn * nx; a.vy -= 1.5 * vn * ny; a.va += vn * 0.01; }
         }
+        if (a.y > DOME_FLOOR - a.r) { a.y = DOME_FLOOR - a.r; if (a.vy > 0) a.vy *= -0.3; a.vx *= 0.95; }
       }
     }
   }
@@ -313,105 +324,80 @@ const Machine = (() => {
     g.arcTo(x + w, y, x + w, y + h, b); g.arcTo(x + w, y + h, x, y + h, c);
     g.arcTo(x, y + h, x, y, d); g.arcTo(x, y, x + w, y, a); g.closePath();
   }
+  // ── 캡슐 뽑기 기계 그리기 (gacha/assets/의 그림 조각을 겹쳐요) ──
   function capsule(x, y, r, ang, color, star) {
+    const im = ART["cap-" + color];
+    if (!im || !im.complete) return;
     g.save(); g.translate(x, y); g.rotate(ang);
-    g.beginPath(); g.arc(0, 0, r, Math.PI, 0); g.closePath(); g.fillStyle = color; g.fill();
-    g.beginPath(); g.arc(0, 0, r, 0, Math.PI); g.closePath(); g.fillStyle = star ? "#fff4c2" : "#ffffff"; g.fill();
-    g.lineWidth = Math.max(2, r * 0.07); g.strokeStyle = "rgba(60,20,40,.35)";
-    g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke();
-    g.beginPath(); g.moveTo(-r, 0); g.lineTo(r, 0); g.stroke();
-    g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.ellipse(-r * 0.38, -r * 0.5, r * 0.22, r * 0.13, -0.6, 0, Math.PI * 2); g.fill();
-    if (star) { g.fillStyle = "#fff"; g.font = `${r * 0.7}px sans-serif`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("★", 0, -r * 0.42); }
+    g.drawImage(im, -r * 1.04, -r * 1.04, r * 2.08, r * 2.08);
+    if (star && ART.star.complete) { const s = r * 0.8; g.drawImage(ART.star, -s / 2, -r * 0.75, s, s); }
     g.restore();
   }
+  function img(name, x, y, w, h) { const im = ART[name]; if (im && im.complete && im.naturalWidth) g.drawImage(im, x, y, w, h); }
   function draw(now) {
     if (isClaw()) return drawClaw(now);
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, cv.width, cv.height);
     g.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * ox, dpr * oy);
+    const font = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+    g.textAlign = "center"; g.textBaseline = "middle";
 
     // 그림자
-    g.fillStyle = "rgba(120,30,60,.15)"; g.beginPath(); g.ellipse(300, 975, 250, 22, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "rgba(120,30,60,.15)"; g.beginPath(); g.ellipse(BODY.x + 261, BODY.y + 830, 255, 20, 0, 0, Math.PI * 2); g.fill();
 
-    // 몸통
     const shake = phase === "turning" ? Math.sin(now / 30) * 2 : 0;
     g.save(); g.translate(shake, 0);
-    rr(70, 500, 460, 450, 40); g.fillStyle = "#e84855"; g.fill();
-    rr(70, 500, 460, 450, 40); g.lineWidth = 6; g.strokeStyle = "#b8323f"; g.stroke();
-    rr(92, 520, 40, 400, 20); g.fillStyle = "rgba(255,255,255,.18)"; g.fill();
-    rr(55, 905, 490, 60, 24); g.fillStyle = "#b8323f"; g.fill();
+    img("body", BODY.x, BODY.y, 522, 833);
 
-    // 간판
-    rr(150, 540, 300, 74, 22); g.fillStyle = "#fffdf5"; g.fill(); g.lineWidth = 5; g.strokeStyle = "#ffd23f"; g.stroke();
-    g.fillStyle = "#e84855"; g.font = "bold 40px 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
-    g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("두근두근 가챠", 300, 579);
+    // 나오는 곳: 캡슐이 안쪽에서 떨어져 바닥에 멈춰요
+    if (drop) {
+      g.save(); g.beginPath(); g.rect(CHUTE.x + 6, CHUTE.y - 22, CHUTE.w - 12, CHUTE.h + 40); g.clip();
+      const wob = phase === "ready" ? Math.sin(now / 120) * 0.15 : 0;
+      capsule(CHUTE.x + CHUTE.w / 2, drop.y, DROP_R, drop.ang + wob, drop.color, drop.star);
+      g.restore();
+      if (phase === "ready") {
+        const p = (Math.sin(now / 200) + 1) / 2;
+        g.globalAlpha = 0.5 + p * 0.5;
+        img("star", CHUTE.x + CHUTE.w - 20, CHUTE.y - 30 - p * 8, 34, 34);
+        img("star", CHUTE.x - 14, CHUTE.y - 18 - (1 - p) * 8, 24, 24);
+        g.globalAlpha = 1;
+      }
+    }
 
-    // 손잡이
-    g.beginPath(); g.arc(CRANK.x, CRANK.y, CRANK.r + 8, 0, Math.PI * 2); g.fillStyle = "#b8323f"; g.fill();
-    g.beginPath(); g.arc(CRANK.x, CRANK.y, CRANK.r, 0, Math.PI * 2);
-    const cg = g.createRadialGradient(CRANK.x - 20, CRANK.y - 25, 10, CRANK.x, CRANK.y, CRANK.r);
-    cg.addColorStop(0, "#fff3a8"); cg.addColorStop(1, "#ffc21a"); g.fillStyle = cg; g.fill();
-    g.save(); g.translate(CRANK.x, CRANK.y); g.rotate(crankA);
-    rr(-CRANK.r * 0.92, -15, CRANK.r * 1.84, 30, 15); g.fillStyle = "#fffdf5"; g.fill(); g.lineWidth = 4; g.strokeStyle = "#d99a00"; g.stroke();
-    g.beginPath(); g.arc(CRANK.r * 0.62, 0, 13, 0, Math.PI * 2); g.fillStyle = "#e84855"; g.fill();
-    g.restore();
-    g.beginPath(); g.arc(CRANK.x, CRANK.y, 12, 0, Math.PI * 2); g.fillStyle = "#d99a00"; g.fill();
+    // 손잡이 (돌아가요)
     if (phase === "idle" && left() > 0) {
       const p = (Math.sin(now / 300) + 1) / 2;
-      g.beginPath(); g.arc(CRANK.x, CRANK.y, CRANK.r + 14 + p * 8, 0, Math.PI * 2);
-      g.lineWidth = 5; g.strokeStyle = `rgba(255,255,255,${0.4 + p * 0.5})`; g.stroke();
+      g.beginPath(); g.arc(CRANK.x, CRANK.y, CRANK.r + 10 + p * 8, 0, Math.PI * 2);
+      g.lineWidth = 6; g.strokeStyle = `rgba(255,255,255,${0.35 + p * 0.55})`; g.stroke();
     }
-
-    // 나오는 곳
-    rr(CHUTE.x - 10, CHUTE.y - 10, CHUTE.w + 20, CHUTE.h + 20, 30); g.fillStyle = "#b8323f"; g.fill();
-    rr(CHUTE.x, CHUTE.y, CHUTE.w, CHUTE.h, 24); g.fillStyle = "#4a1020"; g.fill();
-    if (drop) {
-      g.save(); rr(CHUTE.x, CHUTE.y, CHUTE.w, CHUTE.h, 24); g.clip();
-      const wob = phase === "ready" ? Math.sin(now / 120) * 0.15 : 0;
-      capsule(CHUTE.x + CHUTE.w / 2, drop.y, 48, drop.ang + wob, drop.color, drop.star);
-      g.restore();
-    }
-    rr(CHUTE.x, CHUTE.y, CHUTE.w, 26, [24, 24, 0, 0]); g.fillStyle = "rgba(255,255,255,.12)"; g.fill();
+    g.save(); g.translate(CRANK.x, CRANK.y); g.rotate(crankA);
+    const cs = CRANK.r / 97;
+    img("crank", -101 * cs, -100 * cs, 213 * cs, 199 * cs);
+    g.restore();
     g.restore();
 
-    // 유리 받침
-    rr(115, 470, 370, 48, 20); g.fillStyle = "#c93a48"; g.fill();
-
-    // 유리 돔
-    g.beginPath(); g.arc(DOME.x, DOME.y, DOME.r, 0, Math.PI * 2);
-    g.fillStyle = "rgba(220,240,255,.55)"; g.fill();
-    g.save(); g.beginPath(); g.arc(DOME.x, DOME.y, DOME.r - 4, 0, Math.PI * 2); g.clip();
+    // 유리 돔 안의 캡슐 → 유리(반짝임이 캡슐 위로) → 별 장식
+    // 유리가 캡슐을 너무 뿌옇게 가리지 않게: 유리 → 캡슐 → 유리를 연하게 한 번 더, 받침은 진하게 다시
+    img("dome", DOMEIMG.x, DOMEIMG.y, DOMEIMG.w, DOMEIMG.h);
+    g.save(); g.beginPath(); g.arc(DOME.x, DOME.y, DOME.r - 3, 0, Math.PI * 2); g.clip();
     for (const b of balls) capsule(b.x + shake, b.y, b.r, b.ang, b.color, b.star);
     g.restore();
-    g.lineWidth = 8; g.strokeStyle = "rgba(255,255,255,.95)"; g.beginPath(); g.arc(DOME.x, DOME.y, DOME.r, 0, Math.PI * 2); g.stroke();
-    g.lineWidth = 14; g.strokeStyle = "rgba(255,255,255,.6)"; g.lineCap = "round";
-    g.beginPath(); g.arc(DOME.x, DOME.y, DOME.r - 34, Math.PI * 1.08, Math.PI * 1.38); g.stroke();
-    g.lineWidth = 8; g.beginPath(); g.arc(DOME.x, DOME.y, DOME.r - 34, Math.PI * 1.46, Math.PI * 1.52); g.stroke();
-    g.lineCap = "butt";
-    // 꼭지
-    rr(250, 56, 100, 32, 14); g.fillStyle = "#e84855"; g.fill();
-    g.beginPath(); g.arc(300, 54, 20, 0, Math.PI * 2); g.fillStyle = "#ffd23f"; g.fill();
+    g.save(); g.beginPath(); g.rect(0, 0, W, DOME_BASE); g.clip();
+    g.globalAlpha = 0.4; img("dome", DOMEIMG.x, DOMEIMG.y, DOMEIMG.w, DOMEIMG.h); g.globalAlpha = 1;
+    g.restore();
+    g.save(); g.beginPath(); g.rect(0, DOME_BASE, W, H); g.clip();
+    img("dome", DOMEIMG.x, DOMEIMG.y, DOMEIMG.w, DOMEIMG.h);
+    g.restore();
+    img("crown", CROWN.x, CROWN.y, CROWN.w, CROWN.h);
 
     // 빈 기계
     if (left() === 0 && phase === "idle") {
-      g.fillStyle = "rgba(58,36,64,.75)"; g.font = "bold 36px 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+      g.fillStyle = "rgba(58,36,64,.8)"; g.font = `bold 32px ${font}`;
       g.fillText("캡슐이 다 떨어졌어요", DOME.x, DOME.y - 10);
-      g.font = "26px 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
-      g.fillText("🔄 다시 채우기를 눌러요", DOME.x, DOME.y + 36);
+      g.font = `24px ${font}`; g.fillText("🔄 다시 채우기를 눌러요", DOME.x, DOME.y + 30);
     }
-
-    // 말풍선
-    let tip = null, tx = 0, ty = 0;
-    if (phase === "idle" && left() > 0) { tip = "손잡이를 눌러 돌려요!"; tx = CRANK.x + 40; ty = 860; }
-    if (phase === "ready") { tip = "캡슐을 눌러 열어요!"; tx = CHUTE.x + CHUTE.w / 2 - 40; ty = 862; }
-    if (tip) {
-      const bob = Math.sin(now / 250) * 4;
-      g.font = "bold 28px 'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
-      const w = g.measureText(tip).width + 40;
-      const bx = Math.max(20, Math.min(W - 20 - w, tx - w / 2));
-      rr(bx, ty + bob - 26, w, 52, 26); g.fillStyle = "#fffdf5"; g.fill(); g.lineWidth = 4; g.strokeStyle = "#3a2440"; g.stroke();
-      g.fillStyle = "#3a2440"; g.textAlign = "center"; g.fillText(tip, bx + w / 2, ty + bob + 1);
-    }
+    if (phase === "idle" && left() > 0) bubble("손잡이를 눌러 돌려요!", CRANK.x, 975, now);
+    if (phase === "ready") bubble("캡슐을 눌러 열어요!", CHUTE.x + CHUTE.w / 2, 975, now);
   }
 
   // ── 인형뽑기 기계 그리기 ──
@@ -592,7 +578,7 @@ const Machine = (() => {
     if (phase === "dropping" && drop) {
       drop.vy += 1.1; drop.y += drop.vy; drop.ang += 0.08;
       const C = isClaw() ? DOOR : CHUTE;
-      const floor = C.y + C.h - 52;
+      const floor = isClaw() ? C.y + C.h - 52 : C.y + C.h - DROP_R + 6;
       if (drop.y > floor) {
         drop.y = floor;
         if (drop.vy > 3) { if (!drop.bounced) Sound.thud(); drop.bounced = true; drop.vy = -drop.vy * 0.35; }
@@ -636,7 +622,7 @@ const Machine = (() => {
       return setPhase("dropping");
     }
     removeBall(result.star);
-    drop = { color: result.star ? "#ffc21a" : COLORS[Math.floor(Math.random() * COLORS.length)], star: result.star, y: CHUTE.y - 60, vy: 2, ang: Math.random() * 6.28 };
+    drop = { color: result.star ? "yellow" : COLORS[Math.floor(Math.random() * COLORS.length)], star: result.star, y: CHUTE.y - 50, vy: 2, ang: Math.random() * 6.28 };
     setPhase("dropping");
   }
   function open() {
@@ -668,8 +654,8 @@ const Machine = (() => {
       } else if (phase === "ready") { if (y > 780) open(); }
       return;
     }
-    if (phase === "idle") { if (y > 450 && x > 40 && x < 560) turn(); }
-    else if (phase === "ready") { if (y > 620) open(); }
+    if (phase === "idle") { if (y > 540 && x > 40 && x < 560) turn(); }
+    else if (phase === "ready") { if (y > 760) open(); }
   });
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((n) => cv.addEventListener(n, () => { claw.padDir = 0; }));
 
@@ -879,13 +865,18 @@ const Machine = (() => {
 const Result = (() => {
   const box = $("result"), fx = $("fx"), f = fx.getContext("2d");
   let parts = [], raf = 0;
+  const starImg = new Image(); starImg.src = "assets/star.webp";
   function fit(text) {
     const len = [...text].length;
     return len <= 4 ? "5em" : len <= 8 ? "4em" : len <= 14 ? "3em" : len <= 24 ? "2.3em" : "1.7em";
   }
   function show(res, color, isClaw) {
-    box.querySelector(".half.top").style.setProperty("--c", color);
+    if (!isClaw) {
+      box.querySelector(".half.top").style.backgroundImage = `url(assets/cap-${color}.webp)`;
+      box.querySelector(".half.bot").style.backgroundImage = `url(assets/bowl-${color}.webp)`;
+    }
     box.querySelector(".halves").hidden = isClaw;
+    box.querySelector(".puff").hidden = isClaw;
     $("paper").classList.toggle("star", res.star);
     $("banner").textContent = isClaw ? (res.star ? "👑 특별 인형! 👑" : "🧸 잡았다!") : (res.star ? "✨ 특별 캡슐! ✨" : "🎉 뽑았다!");
     $("rtext").textContent = res.text;
@@ -902,7 +893,8 @@ const Result = (() => {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, s = 6 + Math.random() * 12;
       parts.push({ x: innerWidth / 2, y: innerHeight / 2, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 6, r: 5 + Math.random() * 7,
-        c: cols[i % cols.length], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, life: 120 + Math.random() * 60 });
+        c: cols[i % cols.length], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, life: 120 + Math.random() * 60,
+        star: i % (star ? 4 : 10) === 0 });
     }
     if (!raf) raf = requestAnimationFrame(tick);
   }
@@ -912,7 +904,9 @@ const Result = (() => {
     for (const p of parts) {
       p.vy += 0.3; p.vx *= 0.98; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
       f.save(); f.translate(p.x, p.y); f.rotate(p.rot); f.fillStyle = p.c; f.globalAlpha = Math.min(1, p.life / 40);
-      f.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); f.restore();
+      if (p.star && starImg.complete) { const s = p.r * 4; f.drawImage(starImg, -s / 2, -s / 2, s, s); }
+      else f.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+      f.restore();
     }
     raf = parts.length ? requestAnimationFrame(tick) : 0;
     if (!raf) f.clearRect(0, 0, fx.width, fx.height);

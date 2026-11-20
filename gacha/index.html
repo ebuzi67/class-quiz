@@ -101,11 +101,19 @@
     }
     #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; }
     .halves { position: relative; width: 220px; height: 220px; margin-bottom: -110px; z-index: 1; }
-    .half { position: absolute; left: 0; width: 220px; height: 110px; }
-    .half.top { top: 0; border-radius: 110px 110px 0 0; background: var(--c); }
-    .half.bot { bottom: 0; border-radius: 0 0 110px 110px; background: #fff; }
-    #result.show .half.top { animation: flyUp .7s ease-out forwards; }
-    #result.show .half.bot { animation: flyDown .7s ease-out forwards; }
+    .half { position: absolute; left: 0; width: 220px; background-repeat: no-repeat; }
+    .half.top { top: 0; height: 112px; background-size: 220px 220px; background-position: center top; }
+    .half.bot { top: 66px; height: 211px; background-size: 220px 211px; }
+    #result.show .half.top { animation: flyUp .8s .15s ease-out forwards; }
+    #result.show .half.bot { animation: flyDown .8s .15s ease-out forwards; }
+    .puff { position: absolute; left: 50%; top: 50%; width: 260px; margin: -120px 0 0 -130px; opacity: 0; pointer-events: none; }
+    #result.show .puff { animation: puff .7s .1s ease-out forwards; }
+    @keyframes puff { 0% { transform: scale(.3); opacity: .95; } 100% { transform: scale(1.7); opacity: 0; } }
+    .burst { position: absolute; width: 110px; top: -70px; transform: scale(0); }
+    .burst.l { left: -50px; transform-origin: right bottom; }
+    .burst.r { right: -50px; --flip: -1; transform-origin: left bottom; }
+    #result.show .burst { animation: burst .45s .5s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+    @keyframes burst { to { transform: scale(var(--flip, 1), 1); } }
     @keyframes flyUp { to { transform: translate(-260px, -220px) rotate(-60deg); opacity: 0; } }
     @keyframes flyDown { to { transform: translate(260px, 240px) rotate(70deg); opacity: 0; } }
     .paper {
@@ -243,8 +251,10 @@
 
   <!-- 결과 -->
   <div id="result" hidden>
-    <div class="halves"><div class="half top"></div><div class="half bot"></div></div>
+    <div class="halves"><div class="half bot"></div><div class="half top"></div></div>
+    <img class="puff" src="assets/puff.webp" alt="">
     <div class="paper" id="paper">
+      <img class="burst l" src="assets/burst.webp" alt=""><img class="burst r" src="assets/burst.webp" alt="">
       <div class="banner" id="banner"></div>
       <div class="rtext" id="rtext"></div>
       <button class="btn main ok" id="okBtn">확인!</button>
