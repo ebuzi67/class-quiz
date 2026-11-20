@@ -1,7 +1,7 @@
 // 두근두근 가챠샵 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // (휴대폰 리모컨 연결은 인터넷이 있어야 해요. 보드에서 직접 뽑기는 저장분으로도 돼요.)
-const CACHE = "gacha-v3";
+const CACHE = "gacha-v4";
 const FILES = [
   "./",
   "./index.html",
@@ -29,6 +29,18 @@ const FILES = [
   "./assets/bowl-green.webp",
   "./assets/bowl-purple.webp",
   "./assets/bowl-clear.webp",
+  "./assets/claw-body.webp",
+  "./assets/claw-open.webp",
+  "./assets/claw-closed.webp",
+  "./assets/sparkle.webp",
+  "./assets/toy-bear.webp",
+  "./assets/toy-bunny.webp",
+  "./assets/toy-chick.webp",
+  "./assets/toy-panda.webp",
+  "./assets/toy-cat.webp",
+  "./assets/toy-penguin.webp",
+  "./assets/toy-dino.webp",
+  "./assets/toy-star.webp",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-180.png"

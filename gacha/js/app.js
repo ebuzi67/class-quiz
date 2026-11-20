@@ -175,15 +175,24 @@ const Machine = (() => {
   const DROP_R = 33;
   const COLORS = ["red", "blue", "green", "purple", "clear"];        // 특별 캡슐은 yellow
   const ART = {};
-  ["body", "dome", "crown", "crank", "star", "cap-red", "cap-blue", "cap-yellow", "cap-green", "cap-purple", "cap-clear"]
+  ["claw-body", "claw-open", "claw-closed", "sparkle", "toy-star", "toy-bear", "toy-bunny", "toy-chick", "toy-panda", "toy-cat", "toy-penguin", "toy-dino",
+    "body", "dome", "crown", "crank", "star", "cap-red", "cap-blue", "cap-yellow", "cap-green", "cap-purple", "cap-clear"]
     .forEach((n) => { ART[n] = new Image(); ART[n].src = `assets/${n}.webp`; });
   // 인형뽑기 기계
   const isClaw = () => opts.design === "claw";
-  const BOX = { l: 205, r: 525, top: 175, floor: 628 };   // 인형이 쌓이는 칸
-  const RAIL = 192, HOLE_X = 140, REACH = 46;              // 집게 레일 높이, 구멍 위치, 집게 끝까지 길이
-  const DOOR = { x: 225, y: 805, w: 150, h: 112 };         // 선물 나오는 문
-  const PAD = { l: { x: 165, y: 728 }, r: { x: 265, y: 728 }, grab: { x: 418, y: 728 } };
-  const TOY_COLORS = ["#ffb3c7", "#9ad0ff", "#b5e8a0", "#d7b8ff", "#ffd59e", "#a8ecec", "#ffc2a8"];
+  // 몸통 그림(원본 699×1057)을 0.84배로 (6, 40)에 놓아요. 시트 좌표 → 그림 좌표: 6 + (x - 27) × 0.84, 40 + (y - 4) × 0.84
+  const BODYC = { x: 6, y: 40, w: 587, h: 888 };
+  const GL = { x: 77, y: 215, w: 444, h: 437 };            // 비워 둔 유리 칸
+  const BOX = { l: 195, r: 517, top: 260, floor: 644 };    // 인형이 쌓이는 칸
+  const HOLE_TOP = 470;                                    // 선물 구멍 칸막이 높이
+  const RAIL = 229, HOLE_X = 136, REACH = 106;             // 집게 레일 높이, 구멍 위치, 집게 그림 위에서 인형 가운데까지
+  const CLAW_K = 0.42;                                     // 집게 그림 크기
+  const CLAWIMG = { open: { w: 230, h: 385, px: 113 }, closed: { w: 217, h: 327, px: 104 } };  // px: 막대 가운데
+  const DOOR = { x: 222, y: 800, w: 186, h: 66 };          // 선물 나오는 문
+  const DROPC_R = 27;
+  const PAD = { l: { x: 128, y: 690 }, r: { x: 242, y: 690 }, stick: { x: 185, y: 680 }, grab: { x: 433, y: 696 } };
+  const TOYS = ["bear", "bunny", "chick", "panda", "cat", "penguin", "dino"];
+  const TOY_COLORS = ["#a0663c", "#ffd0dc", "#ffd23f", "#f2f2f2", "#ffad5c", "#3b7be0", "#5cc45a"];
   const claw = { x: 365, len: 30, open: 0.45, held: null, target: null, fall: null, stage: 0, fromX: 0, xAt: 0, lenAt: 0,
     remoteDir: 0, remoteAt: 0, padDir: 0, keyDir: 0, padGp: 0, dir: 0 };
 
@@ -204,17 +213,18 @@ const Machine = (() => {
     const r = ballR();
     if (isClaw()) {
       return { x: BOX.l + r + Math.random() * (BOX.r - BOX.l - 2 * r), y: BOX.top + 60 + Math.random() * (BOX.floor - BOX.top - 60 - r),
-        vx: 0, vy: 0, r, ang: 0, va: 0, star, item, kind: Math.floor(Math.random() * 4),
-        color: star ? "#ffd23f" : TOY_COLORS[(i * 3 + Math.floor(Math.random() * 2)) % TOY_COLORS.length] };
+        vx: 0, vy: 0, r, ang: 0, va: 0, star, item, kind: (i + kindShift) % TOYS.length,
+        get color() { return star ? "#ff8fc0" : TOY_COLORS[this.kind]; } };
     }
     const a = Math.random() * Math.PI * 2, d = Math.random() * (DOME.r - r - 10);
     return { x: DOME.x + Math.cos(a) * d, y: DOME.y + Math.sin(a) * d * 0.6 + 40, vx: 0, vy: 0, r, ang: Math.random() * 6.28, va: 0, star,
       color: star ? "yellow" : COLORS[(i * 5 + Math.floor(Math.random() * 3)) % COLORS.length] };
   }
+  let kindShift = Math.floor(Math.random() * 7);   // 인형 종류가 골고루 섞이게
   function visibleCount() { return Math.min(36, left()); }
   function ballR() {
     const n = Math.max(visibleCount(), 1);
-    if (isClaw()) return Math.max(28, Math.min(50, Math.sqrt(20000 / n)));
+    if (isClaw()) return Math.max(30, Math.min(46, Math.sqrt(20000 / n)));
     return Math.max(22, Math.min(40, Math.sqrt((DOME.r * DOME.r * 0.5) / n)));
   }
   function rebuildBalls() {
@@ -400,44 +410,16 @@ const Machine = (() => {
     if (phase === "ready") bubble("캡슐을 눌러 열어요!", CHUTE.x + CHUTE.w / 2, 975, now);
   }
 
-  // ── 인형뽑기 기계 그리기 ──
-  // 인형: 곰(0)·고양이(1)·토끼(2)·병아리(3). 특별 인형은 금색에 왕관을 써요.
+  // ── 인형뽑기 기계 그리기 (gacha/assets/의 claw-·toy- 그림을 겹쳐요) ──
+  // 인형 kind: TOYS의 번호. 특별 인형은 분홍 별 인형(toy-star)에 반짝이가 붙어요.
+  function toyName(star, kind) { return star ? "toy-star" : "toy-" + TOYS[kind % TOYS.length]; }
   function toy(x, y, r, tilt, color, star, kind) {
+    const im = ART[toyName(star, kind)];
+    if (!im || !im.complete || !im.naturalWidth) return;
+    const h = r * 2.35, w = h * im.naturalWidth / im.naturalHeight;
     g.save(); g.translate(x, y); g.rotate(tilt);
-    const line = "rgba(70,40,60,.45)";
-    g.lineWidth = Math.max(2, r * 0.06); g.strokeStyle = line; g.fillStyle = color;
-    if (kind === 0) {
-      for (const s of [-1, 1]) {
-        g.beginPath(); g.arc(s * r * 0.62, -r * 0.72, r * 0.32, 0, Math.PI * 2); g.fill(); g.stroke();
-        g.beginPath(); g.arc(s * r * 0.62, -r * 0.72, r * 0.15, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,.55)"; g.fill(); g.fillStyle = color;
-      }
-    } else if (kind === 1) {
-      for (const s of [-1, 1]) {
-        g.beginPath(); g.moveTo(s * r * 0.85, -r * 0.35); g.lineTo(s * r * 0.7, -r * 1.12); g.lineTo(s * r * 0.2, -r * 0.82); g.closePath(); g.fill(); g.stroke();
-      }
-    } else if (kind === 2) {
-      for (const s of [-1, 1]) {
-        g.beginPath(); g.ellipse(s * r * 0.36, -r * 1.05, r * 0.2, r * 0.52, s * 0.15, 0, Math.PI * 2); g.fill(); g.stroke();
-        g.beginPath(); g.ellipse(s * r * 0.36, -r * 1.02, r * 0.09, r * 0.36, s * 0.15, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,.55)"; g.fill(); g.fillStyle = color;
-      }
-    } else {
-      g.beginPath(); g.moveTo(-r * 0.1, -r * 0.95); g.quadraticCurveTo(0, -r * 1.35, r * 0.12, -r * 0.95); g.stroke();
-    }
-    g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill(); g.stroke();
-    g.beginPath(); g.ellipse(0, r * 0.45, r * 0.55, r * 0.38, 0, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,.4)"; g.fill();
-    g.fillStyle = "#3a2440";
-    for (const s of [-1, 1]) { g.beginPath(); g.arc(s * r * 0.33, -r * 0.12, r * 0.1, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = "#fff";
-    for (const s of [-1, 1]) { g.beginPath(); g.arc(s * r * 0.33 + r * 0.03, -r * 0.16, r * 0.035, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = "rgba(255,110,140,.45)";
-    for (const s of [-1, 1]) { g.beginPath(); g.ellipse(s * r * 0.56, r * 0.12, r * 0.13, r * 0.08, 0, 0, Math.PI * 2); g.fill(); }
-    if (kind === 3) { g.fillStyle = "#ff9f43"; g.beginPath(); g.moveTo(-r * 0.12, r * 0.04); g.lineTo(r * 0.12, r * 0.04); g.lineTo(0, r * 0.2); g.closePath(); g.fill(); }
-    else { g.strokeStyle = "#3a2440"; g.lineWidth = Math.max(1.5, r * 0.05); g.beginPath(); g.arc(-r * 0.07, r * 0.08, r * 0.07, 0, Math.PI); g.arc(r * 0.07, r * 0.08, r * 0.07, 0, Math.PI); g.stroke(); }
-    if (star) {
-      g.fillStyle = "#ffb300"; g.strokeStyle = "#c98200"; g.lineWidth = 2;
-      g.beginPath(); g.moveTo(-r * 0.4, -r * 0.78); g.lineTo(-r * 0.45, -r * 1.12); g.lineTo(-r * 0.2, -r * 0.95); g.lineTo(0, -r * 1.22);
-      g.lineTo(r * 0.2, -r * 0.95); g.lineTo(r * 0.45, -r * 1.12); g.lineTo(r * 0.4, -r * 0.78); g.closePath(); g.fill(); g.stroke();
-    }
+    if (star) { g.shadowColor = "rgba(255,210,60,.95)"; g.shadowBlur = 18; }
+    g.drawImage(im, -w / 2, -h * 0.55, w, h);
     g.restore();
   }
   function bubble(text, tx, ty, now) {
@@ -456,105 +438,84 @@ const Machine = (() => {
     const font = "'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
     g.textAlign = "center"; g.textBaseline = "middle";
 
-    g.fillStyle = "rgba(60,40,140,.15)"; g.beginPath(); g.ellipse(300, 975, 260, 22, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "rgba(60,40,140,.15)"; g.beginPath(); g.ellipse(300, 935, 270, 20, 0, 0, Math.PI * 2); g.fill();
 
-    // 몸통
-    rr(55, 30, 490, 915, 34); g.fillStyle = "#6a5cff"; g.fill(); g.lineWidth = 6; g.strokeStyle = "#4436c9"; g.stroke();
-    rr(42, 915, 516, 55, 22); g.fillStyle = "#4436c9"; g.fill();
+    // 유리 안쪽: 뒤판 → 바닥 → 천장 불빛
+    const bg = g.createLinearGradient(0, GL.y, 0, GL.y + GL.h);
+    bg.addColorStop(0, "#d9dcf7"); bg.addColorStop(0.6, "#c9c4ef"); bg.addColorStop(1, "#e7c9e6");
+    g.fillStyle = bg; g.fillRect(GL.x - 4, GL.y - 4, GL.w + 8, GL.h + 8);
+    g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(GL.x + 30, GL.y + 34, GL.w - 60, GL.h - 60);
+    g.fillStyle = "#e9b9d6"; g.fillRect(BOX.l, BOX.floor, BOX.r - BOX.l + 6, GL.y + GL.h - BOX.floor + 4);
+    rr(240, GL.y + 10, 130, 14, 7); g.fillStyle = "#fff6c8"; g.shadowColor = "#fff2a0"; g.shadowBlur = 16; g.fill(); g.shadowBlur = 0;
 
-    // 간판 + 반짝이 전구
-    rr(78, 44, 444, 104, 26); g.fillStyle = "#fffdf5"; g.fill(); g.lineWidth = 5; g.strokeStyle = "#ffd23f"; g.stroke();
-    g.fillStyle = "#ff5c8a"; g.font = `bold 44px ${font}`; g.fillText("두근두근 인형뽑기", 300, 98);
-    const blink = Math.floor(now / 350) % 2;
-    for (let i = 0; i < 12; i++) {
-      const bx = 98 + i * 36.5;
-      for (const by of [36, 156]) {
-        g.beginPath(); g.arc(bx, by, 6, 0, Math.PI * 2);
-        g.fillStyle = (i + (by > 100 ? 1 : 0) + blink) % 2 ? "#fff36b" : "#ffb3c7"; g.fill();
-      }
-    }
-
-    // 유리 칸 (뒤판)
-    const GL = { x: 78, y: 168, w: 444, h: 470 };
-    rr(GL.x, GL.y, GL.w, GL.h, 14);
-    const bg = g.createLinearGradient(0, GL.y, 0, GL.y + GL.h); bg.addColorStop(0, "#e9e4ff"); bg.addColorStop(1, "#ffe4ef");
-    g.fillStyle = bg; g.fill();
-    g.save(); rr(GL.x, GL.y, GL.w, GL.h, 14); g.clip();
-    // 바닥
-    g.fillStyle = "#f6c6d9"; g.fillRect(BOX.l, BOX.floor, BOX.r - BOX.l, 20);
-    for (const b of balls) if (!b.held) toy(b.x, b.y, b.r, Math.sin(b.ang) * 0.15, b.color, b.star, b.kind);
+    g.save(); g.beginPath(); g.rect(GL.x, GL.y, GL.w, GL.h); g.clip();
+    for (const b of balls) if (!b.held) toy(b.x, b.y, b.r, Math.sin(b.ang) * 0.12, b.color, b.star, b.kind);
     if (claw.fall) toy(claw.fall.x, claw.fall.y, claw.fall.r, 0.2, claw.fall.color, claw.fall.star, claw.fall.kind);
-    // 구멍 칸막이 (투명 판)
-    g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(GL.x, 478, BOX.l - GL.x - 4, GL.y + GL.h - 478);
-    g.fillStyle = "#4436c9"; g.fillRect(BOX.l - 8, 478, 8, GL.y + GL.h - 478);
-    g.fillStyle = "#ffd23f"; g.fillRect(GL.x, 470, BOX.l - GL.x, 10);
-    g.fillStyle = "#4436c9"; g.font = `bold 22px ${font}`; g.fillText("선물 구멍", (GL.x + BOX.l) / 2, 520);
-    g.font = `26px ${font}`; g.fillText("⬇", (GL.x + BOX.l) / 2, 556);
+    // 특별 인형 반짝이
+    const tw = (Math.sin(now / 260) + 1) / 2;
+    for (const b of balls) if (b.star && !b.held) { g.globalAlpha = 0.4 + tw * 0.6; img("sparkle", b.x + b.r * 0.6, b.y - b.r * 1.3, b.r * 0.7, b.r * 0.7); g.globalAlpha = 1; }
+
+    // 선물 구멍 칸막이 (투명 판)
+    g.fillStyle = "rgba(255,255,255,.4)"; g.fillRect(GL.x, HOLE_TOP, BOX.l - GL.x - 6, GL.y + GL.h - HOLE_TOP);
+    g.fillStyle = "#d8344a"; g.fillRect(BOX.l - 8, HOLE_TOP, 8, GL.y + GL.h - HOLE_TOP);
+    g.fillStyle = "#ffd23f"; g.fillRect(GL.x, HOLE_TOP - 8, BOX.l - GL.x, 10);
+    g.fillStyle = "#c62a40"; g.font = `bold 21px ${font}`; g.fillText("선물 구멍", (GL.x + BOX.l) / 2, HOLE_TOP + 44);
+    g.font = `24px ${font}`; g.fillText("⬇", (GL.x + BOX.l) / 2, HOLE_TOP + 78);
 
     // 레일 + 집게
-    g.fillStyle = "#8a8fa8"; g.fillRect(GL.x, RAIL - 12, GL.w, 10);
-    rr(claw.x - 32, RAIL - 18, 64, 24, 8); g.fillStyle = "#c9cfdf"; g.fill(); g.lineWidth = 3; g.strokeStyle = "#6c7290"; g.stroke();
-    const head = RAIL + claw.len;
-    g.strokeStyle = "#6c7290"; g.lineWidth = 4; g.beginPath(); g.moveTo(claw.x, RAIL + 6); g.lineTo(claw.x, head - 8); g.stroke();
+    g.fillStyle = "#9aa0b8"; g.fillRect(GL.x, RAIL - 6, GL.w, 9);
+    const top = RAIL + claw.len - 20;
+    g.fillStyle = "#b9bfd0"; g.fillRect(claw.x - 5, RAIL, 10, Math.max(0, top - RAIL + 6));
+    rr(claw.x - 26, RAIL - 12, 52, 22, 7); g.fillStyle = "#e23b4c"; g.fill();
     if (claw.held) toy(claw.held.x, claw.held.y, claw.held.r, 0, claw.held.color, claw.held.star, claw.held.kind);
-    const a = 0.12 + claw.open * 0.6;
-    g.lineCap = "round"; g.lineJoin = "round";
-    for (const s of [-1, 1]) {
-      const p0x = claw.x + s * 10, p0y = head + 12;
-      const p1x = p0x + s * Math.sin(a) * 34, p1y = p0y + Math.cos(a) * 28;
-      const p2x = p1x - s * (10 + (1 - claw.open) * 6), p2y = p1y + 20;
-      g.beginPath(); g.moveTo(p0x, p0y); g.lineTo(p1x, p1y); g.lineTo(p2x, p2y);
-      g.strokeStyle = "#5a6080"; g.lineWidth = 12; g.stroke();
-      g.strokeStyle = "#dfe4f2"; g.lineWidth = 7; g.stroke();
-    }
-    g.lineCap = "butt"; g.lineJoin = "miter";
-    rr(claw.x - 22, head - 10, 44, 26, 9); g.fillStyle = "#ffd23f"; g.fill(); g.lineWidth = 3; g.strokeStyle = "#c98200"; g.stroke();
+    const openIm = claw.open > 0.55;
+    const ci = openIm ? CLAWIMG.open : CLAWIMG.closed;
+    img(openIm ? "claw-open" : "claw-closed", claw.x - ci.px * CLAW_K, top, ci.w * CLAW_K, ci.h * CLAW_K);
     g.restore();
 
-    // 유리 반짝임 + 테두리
-    g.fillStyle = "rgba(255,255,255,.25)";
-    g.beginPath(); g.moveTo(420, GL.y); g.lineTo(470, GL.y); g.lineTo(330, GL.y + GL.h); g.lineTo(280, GL.y + GL.h); g.closePath(); g.fill();
-    g.beginPath(); g.moveTo(490, GL.y); g.lineTo(505, GL.y); g.lineTo(365, GL.y + GL.h); g.lineTo(350, GL.y + GL.h); g.closePath(); g.fill();
-    rr(GL.x, GL.y, GL.w, GL.h, 14); g.lineWidth = 8; g.strokeStyle = "#fffdf5"; g.stroke();
+    // 몸통 (유리 칸은 비어 있어서 위의 그림이 보여요)
+    img("claw-body", BODYC.x, BODYC.y, BODYC.w, BODYC.h);
 
-    // 조종판: ◀ ▶ + 잡기 단추
-    rr(92, 662, 416, 128, 28); g.fillStyle = "#4436c9"; g.fill();
+    // 유리 반짝임
+    g.save(); g.beginPath(); g.rect(GL.x, GL.y, GL.w, GL.h); g.clip();
+    g.fillStyle = "rgba(255,255,255,.22)";
+    g.beginPath(); g.moveTo(GL.x + 330, GL.y); g.lineTo(GL.x + 380, GL.y); g.lineTo(GL.x + 250, GL.y + GL.h); g.lineTo(GL.x + 200, GL.y + GL.h); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(GL.x + 400, GL.y); g.lineTo(GL.x + 414, GL.y); g.lineTo(GL.x + 284, GL.y + GL.h); g.lineTo(GL.x + 270, GL.y + GL.h); g.closePath(); g.fill();
+    g.restore();
+
+    // 조종판: 조이스틱 양옆 ◀ ▶ 와 잡기 단추 둘레가 반짝여요
     for (const [pt, d, label] of [[PAD.l, -1, "◀"], [PAD.r, 1, "▶"]]) {
       const on = phase === "idle" && claw.dir === d;
-      g.beginPath(); g.arc(pt.x, pt.y + (on ? 4 : 0), 40, 0, Math.PI * 2); g.fillStyle = on ? "#7fe3ff" : "#3fc3f0"; g.fill();
-      if (!on) { g.beginPath(); g.arc(pt.x, pt.y + 6, 40, 0, Math.PI); g.lineWidth = 6; g.strokeStyle = "#1f8fbd"; g.stroke(); }
-      g.fillStyle = "#fff"; g.font = `bold 34px ${font}`; g.fillText(label, pt.x, pt.y + (on ? 5 : 1));
+      g.beginPath(); g.arc(pt.x, pt.y, 25, 0, Math.PI * 2); g.fillStyle = on ? "#7fe3ff" : "rgba(63,195,240,.9)"; g.fill();
+      g.lineWidth = 3; g.strokeStyle = "#1f6fa0"; g.stroke();
+      g.fillStyle = "#fff"; g.font = `bold 24px ${font}`; g.fillText(label, pt.x, pt.y + 1);
     }
-    const pressed = phase === "turning";
-    g.beginPath(); g.arc(PAD.grab.x, PAD.grab.y + 8, 50, 0, Math.PI * 2); g.fillStyle = "#a81f4a"; g.fill();
-    g.beginPath(); g.arc(PAD.grab.x, PAD.grab.y + (pressed ? 6 : 0), 50, 0, Math.PI * 2);
-    const gg = g.createRadialGradient(PAD.grab.x - 15, PAD.grab.y - 18, 8, PAD.grab.x, PAD.grab.y, 50);
-    gg.addColorStop(0, "#ff9ab8"); gg.addColorStop(1, "#ff3d77"); g.fillStyle = gg; g.fill();
-    g.fillStyle = "#fff"; g.font = `bold 28px ${font}`; g.fillText("잡기!", PAD.grab.x, PAD.grab.y + (pressed ? 7 : 1));
     if (phase === "idle" && left() > 0) {
       const p = (Math.sin(now / 300) + 1) / 2;
-      g.beginPath(); g.arc(PAD.grab.x, PAD.grab.y, 58 + p * 6, 0, Math.PI * 2); g.lineWidth = 4; g.strokeStyle = `rgba(255,255,255,${0.35 + p * 0.5})`; g.stroke();
+      g.beginPath(); g.ellipse(PAD.grab.x, PAD.grab.y, 50 + p * 6, 30 + p * 4, 0, 0, Math.PI * 2);
+      g.lineWidth = 4; g.strokeStyle = `rgba(255,255,255,${0.35 + p * 0.6})`; g.stroke();
     }
 
     // 선물 나오는 문
-    rr(DOOR.x - 10, DOOR.y - 10, DOOR.w + 20, DOOR.h + 20, 28); g.fillStyle = "#4436c9"; g.fill();
-    rr(DOOR.x, DOOR.y, DOOR.w, DOOR.h, 22); g.fillStyle = "#231a5c"; g.fill();
     if (drop) {
-      g.save(); rr(DOOR.x, DOOR.y, DOOR.w, DOOR.h, 22); g.clip();
+      g.save(); g.beginPath(); g.rect(DOOR.x, DOOR.y - 10, DOOR.w, DOOR.h + 10); g.clip();
       const wob = phase === "ready" ? Math.sin(now / 120) * 0.15 : 0;
-      toy(DOOR.x + DOOR.w / 2, drop.y, 44, wob, drop.color, drop.star, drop.kind);
+      toy(DOOR.x + DOOR.w / 2, drop.y, DROPC_R, wob, drop.color, drop.star, drop.kind);
       g.restore();
+      if (phase === "ready") {
+        g.globalAlpha = 0.5 + tw * 0.5;
+        img("star", DOOR.x + DOOR.w - 6, DOOR.y - 28 - tw * 8, 30, 30);
+        img("star", DOOR.x - 22, DOOR.y - 14 - (1 - tw) * 8, 22, 22);
+        g.globalAlpha = 1;
+      }
     }
-    rr(DOOR.x, DOOR.y, DOOR.w, 22, [22, 22, 0, 0]); g.fillStyle = "rgba(255,255,255,.12)"; g.fill();
-    g.fillStyle = "#fffdf5"; g.font = `bold 22px ${font}`; g.fillText("선물", DOOR.x + DOOR.w + 60, DOOR.y + 40);
-    g.fillText("나오는 곳", DOOR.x + DOOR.w + 60, DOOR.y + 70);
 
     if (left() === 0 && phase === "idle" && !balls.length) {
-      g.fillStyle = "rgba(58,36,64,.8)"; g.font = `bold 36px ${font}`; g.fillText("인형이 다 떨어졌어요", 365, 380);
-      g.font = `26px ${font}`; g.fillText("🔄 다시 채우기를 눌러요", 365, 425);
+      g.fillStyle = "rgba(58,36,64,.8)"; g.font = `bold 34px ${font}`; g.fillText("인형이 다 떨어졌어요", 355, 420);
+      g.font = `24px ${font}`; g.fillText("🔄 다시 채우기를 눌러요", 355, 462);
     }
-    if (phase === "idle" && left() > 0) bubble("◀ ▶ 로 움직이고 잡기!", 300, 650, now);
-    if (phase === "ready") bubble("선물을 눌러 열어요!", 300, 952, now);
+    if (phase === "idle" && left() > 0) bubble("◀ ▶ 로 움직이고 잡기!", 300, 965, now);
+    if (phase === "ready") bubble("선물을 눌러 열어요!", 300, 965, now);
   }
 
   // ── 진행 ──
@@ -647,11 +608,12 @@ const Machine = (() => {
       // 인형뽑기: 판의 ◀ ▶ 를 누르고 있으면 움직이고, 빨간 단추를 누르면 잡아요
       const near = (pt, r) => Math.hypot(x - pt.x, y - pt.y) < r;
       if (phase === "idle") {
-        if (near(PAD.l, 50)) claw.padDir = -1;
-        else if (near(PAD.r, 50)) claw.padDir = 1;
-        else if (near(PAD.grab, 58)) turn();
+        if (near(PAD.l, 36)) claw.padDir = -1;
+        else if (near(PAD.r, 36)) claw.padDir = 1;
+        else if (near(PAD.stick, 34)) claw.padDir = x < PAD.stick.x ? -1 : 1;
+        else if (near(PAD.grab, 52)) turn();
         if (claw.padDir) { try { cv.setPointerCapture(e.pointerId); } catch (err) {} }
-      } else if (phase === "ready") { if (y > 780) open(); }
+      } else if (phase === "ready") { if (y > 760) open(); }
       return;
     }
     if (phase === "idle") { if (y > 540 && x > 40 && x < 560) turn(); }
@@ -877,6 +839,8 @@ const Result = (() => {
     }
     box.querySelector(".halves").hidden = isClaw;
     box.querySelector(".puff").hidden = isClaw;
+    $("prize").hidden = !isClaw;
+    if (isClaw) $("prize").src = res.star ? "assets/toy-star.webp" : `assets/toy-${["bear", "bunny", "chick", "panda", "cat", "penguin", "dino"][res.kind || 0]}.webp`;
     $("paper").classList.toggle("star", res.star);
     $("banner").textContent = isClaw ? (res.star ? "👑 특별 인형! 👑" : "🧸 잡았다!") : (res.star ? "✨ 특별 캡슐! ✨" : "🎉 뽑았다!");
     $("rtext").textContent = res.text;
