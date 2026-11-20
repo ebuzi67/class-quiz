@@ -1,0 +1,16 @@
+{
+  "name": "두근두근 가챠샵",
+  "short_name": "가챠샵",
+  "description": "선생님이 넣은 캡슐을 휴대폰·태블릿 리모컨이나 공유보드로 뽑는 수업용 뽑기 기계",
+  "lang": "ko",
+  "id": "/class-quiz/gacha/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffe4ec",
+  "theme_color": "#e84855",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
