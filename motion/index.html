@@ -77,19 +77,95 @@ body[data-bg=grass] #bg{background:
 /* ---------- 화면 공통 ---------- */
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:calc(var(--u)*3);z-index:2}
-.logo{font-size:calc(var(--u)*8);font-weight:900;color:#fff;margin:0;letter-spacing:.02em;
-  text-shadow:0 .5vmin 0 #1f5fb8,0 1vmin 2vmin #0004;display:flex;align-items:center;gap:calc(var(--u)*2)}
-.logo .mascot{font-size:1em;animation:bob 1.6s ease-in-out infinite}
-@keyframes bob{50%{transform:translateY(-8%) rotate(-6deg)}}
-.tag{color:#fff;font-weight:800;font-size:calc(var(--u)*2.4);margin:calc(var(--u)*1) 0 calc(var(--u)*3);text-shadow:0 2px 4px #0005;text-align:center}
-.big-btn{display:block;width:min(92vw,calc(var(--u)*58));margin:calc(var(--u)*1.2) auto;padding:calc(var(--u)*1.8) calc(var(--u)*2);
-  border-radius:999px;font-size:calc(var(--u)*2.8);font-weight:900;color:#fff;position:relative;overflow:hidden;
-  box-shadow:0 .6vmin 0 #0003,inset 0 -.5vmin 0 #0002}
-.big-btn small{font-weight:700;opacity:.9;font-size:.75em}
-.b-blue{background:linear-gradient(#4d9bff,#2a6fe0)}
-.b-green{background:linear-gradient(#5fd35a,#2fa83a)}
-.b-gray{background:linear-gradient(#8aa0c8,#5f77a6);font-size:calc(var(--u)*2.2)!important}
-.note{color:#fff;font-size:calc(var(--u)*1.6);margin-top:calc(var(--u)*2);text-align:center;line-height:1.6;background:#0003;border-radius:14px;padding:6px 14px}
+/* ---------- 첫 화면 ---------- */
+#title{justify-content:center;padding-top:calc(var(--u)*2.4)}
+#title > :not(.decor){position:relative;z-index:1}
+/* 호랑이 + 타이틀 */
+.mascot-wrap{position:relative;line-height:0;margin-bottom:calc(var(--u)*-2.4);z-index:0!important}
+.mascot{display:block;height:calc(var(--u)*11.5);width:auto;transform-origin:50% 100%;filter:drop-shadow(0 .6vmin .8vmin #0003);animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-5%) rotate(-3deg)}}
+.logo{margin:0;display:flex;align-items:center;gap:calc(var(--u)*1.4);font-size:calc(var(--u)*7);font-weight:900;line-height:1.05;
+  color:#fff;letter-spacing:.02em;-webkit-text-stroke:.16em #1f5fd0;paint-order:stroke fill;
+  filter:drop-shadow(0 .9vmin 0 #163f9c) drop-shadow(0 1.4vmin 1.2vmin #0003)}
+.logo .star{font-size:.62em;-webkit-text-stroke:0;filter:drop-shadow(0 .4vmin 0 #c98a00)}
+/* 나무 팻말 부제 */
+.tag{position:relative;margin:calc(var(--u)*1.2) 0 calc(var(--u)*2.6);padding:calc(var(--u)*.9) calc(var(--u)*4);
+  color:#4a2a10;font-weight:800;font-size:calc(var(--u)*2.2);text-align:center;border-radius:calc(var(--u)*1.4);
+  background:repeating-linear-gradient(0deg,#0000 0 calc(var(--u)*1.1),#ffffff14 calc(var(--u)*1.1) calc(var(--u)*1.3)),linear-gradient(#f5c98f,#dc9b5a);
+  border:calc(var(--u)*.3) solid #b06a32;box-shadow:0 .6vmin 0 #8a4f22,0 1.2vmin 1.4vmin #0002}
+.tag::before,.tag::after{content:"";position:absolute;top:50%;width:calc(var(--u)*.8);height:calc(var(--u)*.8);margin-top:calc(var(--u)*-.4);
+  border-radius:50%;background:#8a4f22;box-shadow:inset 0 1px 0 #fff6}
+.tag::before{left:calc(var(--u)*1.4)}.tag::after{right:calc(var(--u)*1.4)}
+/* 모드 카드 */
+.modes{display:flex;gap:calc(var(--u)*2.4);justify-content:center;align-items:stretch;flex-wrap:wrap}
+.mode{--edge:#fff;width:calc(var(--u)*25);min-height:calc(var(--u)*17.5);border-radius:calc(var(--u)*3.4);padding:calc(var(--u)*1.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*.3);color:#fff;word-break:keep-all;
+  border:calc(var(--u)*.55) solid var(--edge);position:relative;overflow:hidden;
+  box-shadow:0 .9vmin 0 var(--deep),0 1.6vmin 1.8vmin #0002,inset 0 0 calc(var(--u)*2) #ffffff59;
+  transition:transform .25s ease,box-shadow .25s ease,filter .25s ease}
+.mode::before{content:"";position:absolute;left:7%;right:7%;top:4%;height:34%;border-radius:999px;background:linear-gradient(#ffffff80,#fff0);pointer-events:none}
+.mode::after{content:"";position:absolute;left:9%;top:9%;width:calc(var(--u)*1.6);height:calc(var(--u)*1);border-radius:50%;background:#fffc;pointer-events:none}
+.mode .mi{font-size:calc(var(--u)*6.8);line-height:1.1;filter:drop-shadow(0 .5vmin 0 #0002) drop-shadow(0 0 .2vmin #fff)}
+.mode b,.mode small{font-weight:900;line-height:1.2;-webkit-text-stroke:.14em var(--deep);paint-order:stroke fill}
+.mode b{font-size:calc(var(--u)*2.9)}
+.mode small{font-size:calc(var(--u)*2.5)}
+.m-blue{--edge:#7fd0ff;--deep:#1d5fc4;background:linear-gradient(160deg,#5cc4ff,#2b7ff0 70%,#2a6fe0)}
+.m-green{--edge:#c4f27a;--deep:#2f8f22;background:linear-gradient(160deg,#a3ec55,#55c832 70%,#3fae2c)}
+.m-purple{--edge:#e3b8ff;--deep:#6a2fc2;background:linear-gradient(160deg,#d29bff,#a25cf2 70%,#8a45e6)}
+@media (hover:hover){
+  .mode:hover{transform:scale(1.06);filter:brightness(1.06);
+    box-shadow:0 0 0 calc(var(--u)*.5) #fff59a,0 0 calc(var(--u)*5) #ffef6bdd,0 .9vmin 0 var(--deep)}
+  .mode:hover .mi{animation:iconHop .5s ease}
+}
+@keyframes iconHop{0%,100%{transform:translateY(0)}40%{transform:translateY(-18%)}70%{transform:translateY(4%)}}
+.mode:active{transform:scale(.96)!important;transition-duration:.08s}
+.mode:disabled{cursor:wait}
+/* 하단 안내 바 */
+.note{display:flex;align-items:center;gap:calc(var(--u)*2);margin-top:calc(var(--u)*2.6);padding:calc(var(--u)*1.2) calc(var(--u)*3);
+  background:#fff8e8f2;border-radius:calc(var(--u)*2.6);color:#3b2a1a;font-size:calc(var(--u)*1.75);font-weight:700;line-height:1.55;
+  box-shadow:0 .6vmin 0 #0000001f,0 1.2vmin 2vmin #0002;text-align:left}
+.note .tv{font-size:calc(var(--u)*4.2);line-height:1}
+.note .hl{color:#1f5fd0;font-weight:900}.note .warn{color:#e0302f;font-weight:900}
+.note .keys{display:flex;align-items:center;gap:calc(var(--u)*1);padding-left:calc(var(--u)*2);border-left:2px solid #3b2a1a33;white-space:nowrap}
+.note kbd{font:inherit;font-weight:900;color:#fff;background:linear-gradient(#5a6273,#3a4050);border-radius:calc(var(--u)*.7);
+  padding:calc(var(--u)*.2) calc(var(--u)*.8);box-shadow:0 .35vmin 0 #1e222b}
+.note .keys span{margin-right:calc(var(--u)*.8)}
+/* 첫 화면 배경: 잔디 언덕 + 가장자리 장식 */
+.decor{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;background:linear-gradient(#4fa9ff,#a9dcff 60%,#e3f5ff)}
+.decor::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-38%;height:72%;border-radius:50% 50% 0 0;
+  background:radial-gradient(ellipse at 50% 0,#a6e36c,#6cc845 45%,#4fae38)}
+.cloud{position:absolute;width:calc(var(--u)*16);height:calc(var(--u)*5);background:#fff;border-radius:999px;opacity:.95}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:45%;height:150%;left:15%;bottom:20%}
+.cloud::after{width:35%;height:120%;right:14%;bottom:25%}
+.cloud.c1{left:2%;top:13%;animation:drift 24s ease-in-out infinite alternate}
+.cloud.c2{right:6%;top:9%;transform:scale(.85);animation:drift2 30s ease-in-out infinite alternate}
+.cloud.c3{right:-2%;top:36%;transform:scale(.7);animation:drift 28s ease-in-out infinite alternate-reverse}
+@keyframes drift{from{translate:-1.5vw 0}to{translate:2.5vw 0}}
+@keyframes drift2{from{translate:2vw 0}to{translate:-2vw 0}}
+.balloon{position:absolute;right:4%;top:5%;width:calc(var(--u)*4.4);height:calc(var(--u)*5.4);border-radius:50% 50% 48% 48%;
+  background:radial-gradient(circle at 35% 30%,#ffb3d1,#ff4f98 60%);animation:floaty 4.5s ease-in-out infinite}
+.balloon::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:calc(var(--u)*6);background:#ffffffaa}
+.balloon.b2{right:3%;top:47%;transform:scale(.8);animation-delay:-2s}
+@keyframes floaty{0%,100%{translate:0 0}50%{translate:0 calc(var(--u)*-2)}}
+.spark{position:absolute;color:#ffe066;font-size:calc(var(--u)*2.4);text-shadow:0 0 1vmin #fff8;animation:twinkle 5s ease-in-out infinite}
+.spark.s1{left:17%;top:9%}.spark.s2{right:18%;top:12%;animation-delay:-1.7s}.spark.s3{left:13%;top:33%;font-size:calc(var(--u)*1.8);animation-delay:-3.3s}
+@keyframes twinkle{0%,100%{opacity:.45;transform:translateY(0) rotate(0)}50%{opacity:1;transform:translateY(calc(var(--u)*-1.4)) rotate(25deg)}}
+.melon{position:absolute;left:3%;top:31%;font-size:calc(var(--u)*5.4);transform:rotate(-20deg);animation:sway 3.5s ease-in-out infinite}
+@keyframes sway{0%,100%{rotate:0deg}50%{rotate:8deg}}
+.flower{position:absolute;bottom:2%;font-size:calc(var(--u)*3.6)}
+.flower.f1{left:2%}.flower.f2{left:6%;bottom:9%;font-size:calc(var(--u)*2.8)}.flower.f3{right:3%;bottom:10%}.flower.f4{right:7%;bottom:2%;font-size:calc(var(--u)*2.8)}
+/* 누를 때 별가루 */
+.dust{position:fixed;z-index:20;pointer-events:none;color:#ffe066;font-size:calc(var(--u)*2.4);text-shadow:0 0 1vmin #fff,0 0 .3vmin #c98a00;
+  translate:-50% -50%;animation:burst .55s ease-out forwards}
+@keyframes burst{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--x),var(--y)) scale(.3)}}
+/* 다음 화면이 부드럽게 나타나기 */
+#hub:not([hidden]),#title:not([hidden]){animation:screenIn .6s ease}
+@keyframes screenIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .decor *,.mascot,.mode,.mode .mi,#hub,#title{animation:none!important;transition:none!important}
+  .dust{display:none}
+}
 .err{background:#fff;color:#c62828;border-radius:14px;padding:10px 16px;font-weight:700;margin-top:12px;white-space:pre-line;text-align:center}
 
 /* 손으로 1초 올리면 눌리는 버튼: 채워지는 막대 */
@@ -145,14 +221,28 @@ body[data-bg=grass] #bg{background:
 
 <!-- 첫 화면 -->
 <section class="screen" id="title">
-  <h1 class="logo"><span class="mascot">🐯</span>무브무브 놀이터</h1>
+  <div class="decor" aria-hidden="true">
+    <i class="cloud c1"></i><i class="cloud c2"></i><i class="cloud c3"></i>
+    <i class="balloon"></i><i class="balloon b2"></i>
+    <span class="spark s1">✦</span><span class="spark s2">✦</span><span class="spark s3">✦</span>
+    <span class="melon">🍉</span>
+    <span class="flower f1">🌼</span><span class="flower f2">🌼</span><span class="flower f3">🌼</span><span class="flower f4">🌼</span>
+  </div>
+  <div class="mascot-wrap"><img class="mascot" src="tiger.png" alt="손을 흔드는 호랑이" draggable="false"></div>
+  <h1 class="logo"><span class="star" aria-hidden="true">⭐</span>무브무브 놀이터<span class="star" aria-hidden="true">⭐</span></h1>
   <p class="tag">몸을 움직이면 게임이 움직여요! 손으로 베고, 치고, 터치해요</p>
-  <button class="big-btn b-blue" id="camNear">📷 카메라로 시작 <small>(가까이 서서)</small></button>
-  <button class="big-btn b-green" id="camFar">🧍 전신 모드로 시작 <small>(멀리 서서)</small></button>
-  <button class="big-btn b-gray" id="mouseBtn">🖱️ 마우스·터치로 체험</button>
+  <div class="modes">
+    <button class="mode m-blue" id="camNear"><span class="mi">📷</span><b>카메라로 시작</b><small>(가까이 서서)</small></button>
+    <button class="mode m-green" id="camFar"><span class="mi">🙌</span><b>전신 모드로 시작</b><small>(멀리 서서)</small></button>
+    <button class="mode m-purple" id="mouseBtn"><span class="mi">🖱️</span><b>마우스·터치로<br>체험</b></button>
+  </div>
   <div class="err" id="err" hidden></div>
-  <p class="note">TV나 전자칠판에 연결하면 더 신나요. 카메라 화면은 이 기기 안에서만 쓰고 저장하지 않아요.<br>
-    키보드: F 전체 화면 · Esc 뒤로</p>
+  <div class="note">
+    <span class="tv" aria-hidden="true">📺</span>
+    <p style="margin:0"><span class="hl">TV</span>나 <span class="hl">전자칠판</span>에 연결하면 더 신나요.<br>
+      카메라 화면은 <span class="warn">이 기기 안에서만</span> 쓰고 저장하지 않아요.</p>
+    <div class="keys"><kbd>F</kbd><span>전체 화면</span><kbd>Esc</kbd><span>뒤로</span></div>
+  </div>
 </section>
 
 <!-- 게임 종류 고르기 -->
@@ -1261,9 +1351,29 @@ async function begin(m, z = 1) {
   $("zoomBtn").hidden = mode !== "cam";
   buildHub(); goHub();
 }
-$("camNear").onclick = () => begin("cam", 1);
-$("camFar").onclick = () => begin("cam", 1.6);
-$("mouseBtn").onclick = () => begin("mouse");
+// 첫 화면 카드: 누르면 별가루가 퍼진 뒤 시작해요(움직임 줄이기 설정이면 바로 시작)
+const calmMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function starDust(btn) {
+  const r = btn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement("span"), a = (i / 12) * Math.PI * 2 + Math.random() * 0.4, d = r.width * (0.45 + Math.random() * 0.35);
+    s.className = "dust"; s.textContent = i % 3 ? "✦" : "★";
+    s.style.left = cx + "px"; s.style.top = cy + "px";
+    s.style.setProperty("--x", Math.cos(a) * d + "px"); s.style.setProperty("--y", Math.sin(a) * d + "px");
+    document.body.appendChild(s); setTimeout(() => s.remove(), 600);
+  }
+}
+function launch(btn, go) {
+  btn.onclick = () => {
+    if (btn.dataset.busy) return;
+    if (calmMotion.matches) return go();
+    btn.dataset.busy = 1; starDust(btn);
+    setTimeout(() => { delete btn.dataset.busy; go(); }, 380);
+  };
+}
+launch($("camNear"), () => begin("cam", 1));
+launch($("camFar"), () => begin("cam", 1.6));
+launch($("mouseBtn"), () => begin("mouse"));
 $("toTitle").onclick = () => { sfx.pick(); stopCamera(); mode = "mouse"; setScreen("title"); };
 $("zoomBtn").onclick = () => { sfx.pick(); setZoom(zoom > 1 ? 1 : 1.6); };
 $("catBack").onclick = () => { sfx.pick(); goHub(); };

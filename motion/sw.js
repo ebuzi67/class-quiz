@@ -9,7 +9,8 @@ const FILES = [
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./icons/icon-180.png"
+  "./icons/icon-180.png",
+  "./tiger.png"
 ];
 const SCOPE = self.registration.scope;
 const LIB_PATH = new URL("../pe/lib/", SCOPE).pathname;
