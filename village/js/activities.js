@@ -59,11 +59,11 @@ const Activities = (() => {
     const palette = el("div", "rb-palette");
     const strip = el("div", "rb-strip");
     const controls = el("div", "rb-controls");
-    side.append(el("div", "rb-label", "① 화살표를 눌러 길을 만들어요"), palette, el("div", "rb-label", "② 내가 만든 명령"), strip, controls);
+    side.append(el("div", "rb-label", "① 블록을 눌러 길을 만들어요"), palette, el("div", "rb-label", "② 내가 만든 명령"), strip, controls);
     body.append(top, main);
 
     Object.entries(ARROWS).forEach(([k, a]) => {
-      const b = el("button", "rb-arrow", a[0]);
+      const b = el("button", "cd-blk cd-pal " + k, a[0] + " " + a[3] + (k === "up" || k === "down" ? "로" : "으로"));
       b.setAttribute("aria-label", a[3]);
       b.onclick = () => { if (running) return; if (program.length >= MAX_CARDS) { ctx.sfx("bump"); return; } program.push(k); ctx.sfx("tap"); drawStrip(); };
       palette.append(b);
@@ -106,9 +106,10 @@ const Activities = (() => {
 
     function drawStrip(active = -1) {
       strip.innerHTML = "";
+      strip.append(el("span", "cd-start", "▶ 시작"));
       if (!program.length) strip.append(el("div", "rb-empty", "아직 비어 있어요"));
       program.forEach((k, i) => {
-        const card = el("button", "rb-card" + (i === active ? " active" : ""), ARROWS[k][0]);
+        const card = el("button", "cd-blk " + k + (i === active ? " active" : ""), ARROWS[k][0] + " " + ARROWS[k][3] + (k === "up" || k === "down" ? "로" : "으로"));
         card.title = "눌러서 지우기";
         card.onclick = () => { if (running) return; program.splice(i, 1); ctx.sfx("tap"); drawStrip(); };
         strip.append(card);

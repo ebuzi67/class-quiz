@@ -25,7 +25,9 @@
   const coord = (x, y) => "ABCDEFG"[x] + (y + 1);
   // 코드 블록 그림(문제용): 스크래치처럼 색깔 블록을 위에서 아래로 쌓아요. 반복은 주황색 상자 안에 넣어요.
   const WORD = { up: "위로", right: "오른쪽으로", down: "아래로", left: "왼쪽으로" };
-  const blk = (k, num) => "<span class='cd-blk " + k + "'>" + (num ? "<i>" + num + "</i>" : "") + DIRS[k][2] + " " + WORD[k] + " 1칸</span>";
+  const BLK = { fwd: "⏫ 앞으로 1칸", tl: "↩️ 왼쪽으로 돌기", tr: "↪️ 오른쪽으로 돌기" };
+  const blkText = (k) => BLK[k] || DIRS[k][2] + " " + WORD[k] + " 1칸";
+  const blk = (k, num) => "<span class='cd-blk " + k + "'>" + (num ? "<i>" + num + "</i>" : "") + blkText(k) + "</span>";
   const loopBlk = (n, inner) => "<span class='cd-loop'><b>🔁 " + n + "번 반복하기</b><span class='cd-in'>" + inner + "</span></span>";
   const prog = (inner) => "<div class='cd-prog'><span class='cd-start'>▶ 시작</span>" + inner + "</div>";
   const side = (a, b) => "<div class='cd-qrow'>" + a + b + "</div>";
@@ -71,12 +73,14 @@
       palette.innerHTML = "";
       const keys = P.turn ? Object.keys(TURNS) : CLOCK;
       keys.forEach((key) => {
-        const b = el("button", "rb-arrow", card(key)); b.setAttribute("aria-label", (DIRS[key] || TURNS[key])[DIRS[key] ? 3 : 1]);
+        const b = el("button", "cd-blk cd-pal " + key, blkText(key)); b.setAttribute("aria-label", (DIRS[key] || TURNS[key])[DIRS[key] ? 3 : 1]);
         b.onclick = () => add({ k: key }); palette.append(b);
       });
       if (P.rep) {
-        [2, 3, 4, 5].forEach((n) => { const b = el("button", "rb-arrow cd-repbtn", "🔁" + n); b.setAttribute("aria-label", n + "번 반복"); b.onclick = () => add({ k: "rep", n }); palette.append(b); });
-        const e = el("button", "rb-arrow cd-repbtn end", "🔚"); e.setAttribute("aria-label", "반복 끝"); e.onclick = () => add({ k: "end" }); palette.append(e);
+        const row = el("div", "cd-palrow");
+        [2, 3, 4, 5].forEach((n) => { const b = el("button", "cd-loopbtn", "🔁 " + n + "번 반복"); b.setAttribute("aria-label", n + "번 반복"); b.onclick = () => add({ k: "rep", n }); row.append(b); });
+        const e = el("button", "cd-loopbtn end", "🔚 반복 닫기"); e.setAttribute("aria-label", "반복 끝"); e.onclick = () => add({ k: "end" }); row.append(e);
+        palette.append(row);
       }
       ctrl.innerHTML = "";
       if (P.fix) { const again = el("button", "btn btn-soft", "🔄 처음 코드로"); again.onclick = () => { if (running) return; prog = P.fix.map((x) => ({ k: x })); ctx.sfx("tap"); drawStrip(); }; ctrl.append(again, run); }
@@ -111,19 +115,27 @@
       bot.style.left = (x * 100 / P.n) + "%"; bot.style.top = (y * 100 / P.n) + "%";
       if (f) { face = f; bot.firstChild.style.transform = "rotate(" + (CLOCK.indexOf(f) * 90 - 90) + "deg)"; }
     }
+    // 내 코드: ▶ 시작 아래로 블록을 쌓아요. 반복은 주황 상자이고, 닫기 전에는 상자 아래가 열려 있어요.
     function drawStrip(active = -1) {
       strip.innerHTML = "";
-      if (!prog.length) { strip.append(el("span", "rb-empty", "블록을 눌러 넣어요")); return; }
-      let depth = 0;
+      strip.append(el("span", "cd-start", "▶ 시작"));
+      const stack = [strip];
       prog.forEach((t, i) => {
-        if (t.k === "end") depth = Math.max(0, depth - 1);
-        const c = el("button", "rb-card" + (t.k === "rep" ? " cd-rep" : t.k === "end" ? " cd-rep end" : "") + (depth && t.k !== "end" ? " in" : "") + (i === active ? " active" : "") + (P.fix && i === sel ? " cd-sel" : ""),
-          t.k === "rep" ? "🔁" + t.n : t.k === "end" ? "🔚" : card(t.k));
+        const here = stack[stack.length - 1];
+        if (t.k === "end") { if (stack.length > 1) { stack.pop().parentNode.classList.remove("open"); } return; }
+        if (t.k === "rep") {
+          const lp = el("div", "cd-loop open" + (i === active ? " active" : "") + (P.fix && i === sel ? " cd-sel" : ""), "<b>🔁 " + t.n + "번 반복하기</b>");
+          const inner = el("div", "cd-in"); lp.append(inner); here.append(lp); stack.push(inner); return;
+        }
+        const c = el("button", "cd-blk " + t.k + (i === active ? " active" : "") + (P.fix && i === sel ? " cd-sel" : ""), blkText(t.k));
+        c.dataset.i = i;
         if (P.fix) c.onclick = () => { if (running) return; sel = i; ctx.sfx("tap"); drawStrip(); };
-        strip.append(c);
-        if (t.k === "rep") depth++;
+        here.append(c);
       });
-      if (!P.fix) strip.append(el("span", "cd-count", blocks(prog) + " / " + P.max));
+      // 아직 닫지 않은 반복 상자: 다음 블록이 들어갈 자리를 보여 줘요
+      strip.querySelectorAll(".cd-loop.open > .cd-in").forEach((inner) => { if (!running) inner.append(el("span", "cd-slot", "여기에 블록을 넣어요")); });
+      if (!prog.length) strip.append(el("span", "rb-empty", "위의 블록을 눌러 쌓아요"));
+      if (!P.fix) strip.append(el("span", "cd-count", "블록 " + blocks(prog) + " / " + P.max));
     }
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     run.onclick = async () => {
@@ -154,7 +166,7 @@
       if (fail) {
         bot.classList.add("shake"); say(fail + " 코드를 다시 살펴봐요.", "bump");
         await wait(1300); drawBoard(); place(P.start, P.turn ? P.face : null);
-        running = false; run.disabled = false; return;
+        running = false; run.disabled = false; drawStrip(); return;
       }
       bot.classList.add("happy");
       say("🎉 성공! 블록 " + blocks(prog) + "개로 해냈어요.", "win");
