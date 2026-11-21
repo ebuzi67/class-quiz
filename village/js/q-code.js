@@ -23,6 +23,17 @@
     return h + "</div>";
   }
   const coord = (x, y) => "ABCDEFG"[x] + (y + 1);
+  // 코드 블록 그림(문제용): 스크래치처럼 색깔 블록을 위에서 아래로 쌓아요. 반복은 주황색 상자 안에 넣어요.
+  const WORD = { up: "위로", right: "오른쪽으로", down: "아래로", left: "왼쪽으로" };
+  const BLK = { fwd: "⏫ 앞으로 1칸", tl: "↩️ 왼쪽으로 돌기", tr: "↪️ 오른쪽으로 돌기" };
+  const blkText = (k) => BLK[k] || DIRS[k][2] + " " + WORD[k] + " 1칸";
+  const blk = (k, num) => "<span class='cd-blk " + k + "'>" + (num ? "<i>" + num + "</i>" : "") + blkText(k) + "</span>";
+  const loopBlk = (n, inner) => "<span class='cd-loop'><b>🔁 " + n + "번 반복하기</b><span class='cd-in'>" + inner + "</span></span>";
+  const prog = (inner) => "<div class='cd-prog'><span class='cd-start'>▶ 시작</span>" + inner + "</div>";
+  const side = (a, b) => "<div class='cd-qrow'>" + a + b + "</div>";
+  // 풀이용 한 줄: 같은 방향끼리 묶어서 "⬆️ 위로 2칸 → ➡️ 오른쪽으로 1칸"
+  const runs = (moves) => { const r = []; moves.forEach((m) => { const l = r[r.length - 1]; if (l && l.k === m) l.n++; else r.push({ k: m, n: 1 }); }); return r; };
+  const runText = (moves) => runs(moves).map((p) => DIRS[p.k][2] + " " + WORD[p.k] + " " + p.n + "칸").join(" → ");
   // 0과 1 그림(보기용)
   const pix = (rows) => "<span class='cd-pix' style='--n:" + rows[0].length + "'>" + rows.join("").split("").map((c) => "<i class='" + (c === "1" ? "on" : "") + "'></i>").join("") + "</span>";
   const codeText = (rows) => "<div class='cd-code'>" + rows.join("<br>") + "</div>";
@@ -62,12 +73,14 @@
       palette.innerHTML = "";
       const keys = P.turn ? Object.keys(TURNS) : CLOCK;
       keys.forEach((key) => {
-        const b = el("button", "rb-arrow", card(key)); b.setAttribute("aria-label", (DIRS[key] || TURNS[key])[DIRS[key] ? 3 : 1]);
+        const b = el("button", "cd-blk cd-pal " + key, blkText(key)); b.setAttribute("aria-label", (DIRS[key] || TURNS[key])[DIRS[key] ? 3 : 1]);
         b.onclick = () => add({ k: key }); palette.append(b);
       });
       if (P.rep) {
-        [2, 3, 4, 5].forEach((n) => { const b = el("button", "rb-arrow cd-repbtn", "🔁" + n); b.setAttribute("aria-label", n + "번 반복"); b.onclick = () => add({ k: "rep", n }); palette.append(b); });
-        const e = el("button", "rb-arrow cd-repbtn end", "🔚"); e.setAttribute("aria-label", "반복 끝"); e.onclick = () => add({ k: "end" }); palette.append(e);
+        const row = el("div", "cd-palrow");
+        [2, 3, 4, 5].forEach((n) => { const b = el("button", "cd-loopbtn", "🔁 " + n + "번 반복"); b.setAttribute("aria-label", n + "번 반복"); b.onclick = () => add({ k: "rep", n }); row.append(b); });
+        const e = el("button", "cd-loopbtn end", "🔚 반복 닫기"); e.setAttribute("aria-label", "반복 끝"); e.onclick = () => add({ k: "end" }); row.append(e);
+        palette.append(row);
       }
       ctrl.innerHTML = "";
       if (P.fix) { const again = el("button", "btn btn-soft", "🔄 처음 코드로"); again.onclick = () => { if (running) return; prog = P.fix.map((x) => ({ k: x })); ctx.sfx("tap"); drawStrip(); }; ctrl.append(again, run); }
@@ -102,19 +115,27 @@
       bot.style.left = (x * 100 / P.n) + "%"; bot.style.top = (y * 100 / P.n) + "%";
       if (f) { face = f; bot.firstChild.style.transform = "rotate(" + (CLOCK.indexOf(f) * 90 - 90) + "deg)"; }
     }
+    // 내 코드: ▶ 시작 아래로 블록을 쌓아요. 반복은 주황 상자이고, 닫기 전에는 상자 아래가 열려 있어요.
     function drawStrip(active = -1) {
       strip.innerHTML = "";
-      if (!prog.length) { strip.append(el("span", "rb-empty", "블록을 눌러 넣어요")); return; }
-      let depth = 0;
+      strip.append(el("span", "cd-start", "▶ 시작"));
+      const stack = [strip];
       prog.forEach((t, i) => {
-        if (t.k === "end") depth = Math.max(0, depth - 1);
-        const c = el("button", "rb-card" + (t.k === "rep" ? " cd-rep" : t.k === "end" ? " cd-rep end" : "") + (depth && t.k !== "end" ? " in" : "") + (i === active ? " active" : "") + (P.fix && i === sel ? " cd-sel" : ""),
-          t.k === "rep" ? "🔁" + t.n : t.k === "end" ? "🔚" : card(t.k));
+        const here = stack[stack.length - 1];
+        if (t.k === "end") { if (stack.length > 1) { stack.pop().parentNode.classList.remove("open"); } return; }
+        if (t.k === "rep") {
+          const lp = el("div", "cd-loop open" + (i === active ? " active" : "") + (P.fix && i === sel ? " cd-sel" : ""), "<b>🔁 " + t.n + "번 반복하기</b>");
+          const inner = el("div", "cd-in"); lp.append(inner); here.append(lp); stack.push(inner); return;
+        }
+        const c = el("button", "cd-blk " + t.k + (i === active ? " active" : "") + (P.fix && i === sel ? " cd-sel" : ""), blkText(t.k));
+        c.dataset.i = i;
         if (P.fix) c.onclick = () => { if (running) return; sel = i; ctx.sfx("tap"); drawStrip(); };
-        strip.append(c);
-        if (t.k === "rep") depth++;
+        here.append(c);
       });
-      if (!P.fix) strip.append(el("span", "cd-count", blocks(prog) + " / " + P.max));
+      // 아직 닫지 않은 반복 상자: 다음 블록이 들어갈 자리를 보여 줘요
+      strip.querySelectorAll(".cd-loop.open > .cd-in").forEach((inner) => { if (!running) inner.append(el("span", "cd-slot", "여기에 블록을 넣어요")); });
+      if (!prog.length) strip.append(el("span", "rb-empty", "위의 블록을 눌러 쌓아요"));
+      if (!P.fix) strip.append(el("span", "cd-count", "블록 " + blocks(prog) + " / " + P.max));
     }
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     run.onclick = async () => {
@@ -145,7 +166,7 @@
       if (fail) {
         bot.classList.add("shake"); say(fail + " 코드를 다시 살펴봐요.", "bump");
         await wait(1300); drawBoard(); place(P.start, P.turn ? P.face : null);
-        running = false; run.disabled = false; return;
+        running = false; run.disabled = false; drawStrip(); return;
       }
       bot.classList.add("happy");
       say("🎉 성공! 블록 " + blocks(prog) + "개로 해냈어요.", "win");
@@ -220,7 +241,7 @@
     // 같은 블록이 이어지면 🔁 반복 블록으로 보여 줘요
     const parts = [];
     moves.forEach((m) => { const last = parts[parts.length - 1]; if (last && last.k === m) last.n++; else parts.push({ k: m, n: 1 }); });
-    const code = parts.map((p) => (p.n > 1 && rnd(0, 1) ? "🔁" + p.n + "[" + card(p.k) + "]" : card(p.k).repeat(p.n))).join(" ");
+    const code = prog(parts.map((p) => (p.n > 1 && rnd(0, 1) ? loopBlk(p.n, blk(p.k)) : blk(p.k).repeat(p.n))).join(""));
     const cells = {}; for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) cells[a + "," + b] = at(a, b);
     cells[sx + "," + sy] = "🤖";
     // 헷갈리기 쉬운 오답: 마지막 블록을 빼먹거나, 한 칸 덜/더 간 곳
@@ -228,8 +249,8 @@
     const end = (list) => { let a = sx, b = sy; list.forEach((m) => { a += DIRS[m][0]; b += DIRS[m][1]; }); return a >= 0 && b >= 0 && a < n && b < n && !(a === sx && b === sy) ? at(a, b) : null; };
     wrong.push(end(moves.slice(0, -1)), end(moves.concat(moves[moves.length - 1])), end(moves.map((m) => (m === "left" ? "right" : m === "right" ? "left" : m))));
     for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) if (!(a === sx && b === sy)) wrong.push(at(a, b));
-    return { text: "🤖가 코드대로 움직이면 어디에 도착할까요?", visual: mini(n, cells, { [sx + "," + sy]: "me" }) + "<div class='cd-codeline'>" + code + "</div>",
-      choices: opts(at(x, y), wrong.filter((w) => w && w !== at(x, y))), answer: at(x, y), explain: "코드: " + code + " → " + at(x, y) };
+    return { text: "🤖가 코드를 위에서부터 차례로 따라가면 어디에 도착할까요?", visual: side(mini(n, cells, { [sx + "," + sy]: "me" }), code),
+      choices: opts(at(x, y), wrong.filter((w) => w && w !== at(x, y))), answer: at(x, y), explain: "🤖 " + runText(moves) + " → " + at(x, y) };
   }
 
   Quiz.add({
@@ -374,21 +395,23 @@
         const bad = moves.slice(); bad[b] = pick(CLOCK.filter((k) => k !== moves[b]));
         const cells = {}, cls = {};
         path.forEach(([x, y], i) => { cells[x + "," + y] = i === 0 ? "🤖" : i === path.length - 1 ? "🏁" : "👣"; cls[x + "," + y] = i === 0 ? "me" : "foot"; });
-        return { text: "🤖가 👣 발자국 길로 🏁까지 가야 해요. 틀린 블록은 몇 번일까요?", visual: mini(n, cells, cls) + "<div class='cd-codeline'>" + bad.map((k, i) => NUMS[i] + card(k)).join(" ") + "</div>",
-          choices: opts(NUMS[b], NUMS.slice(0, moves.length).filter((_, i) => i !== b), 4), answer: NUMS[b], explain: NUMS[b] + "은(는) " + card(moves[b]) + "여야 해요." };
+        return { text: "🤖가 👣 발자국 길로 🏁까지 가야 해요. 틀린 블록은 몇 번일까요?", visual: side(mini(n, cells, cls), prog(bad.map((k, i) => blk(k, NUMS[i])).join(""))),
+          choices: opts(NUMS[b], NUMS.slice(0, moves.length).filter((_, i) => i !== b), 4), answer: NUMS[b], explain: NUMS[b] + "은(는) " + DIRS[moves[b]][2] + " " + WORD[moves[b]] + " 가야 해요." };
       } },
       { id: "loop", e: "🔁", name: "반복 찾기", desc: "반복 블록으로 줄이기", gen() {
         const type = rnd(0, 2);
-        if (type === 0) { const k = pick(CLOCK), t = rnd(3, 8);
-          return { text: "이 코드를 반복 블록으로 줄이면 🔁 몇 번일까요?", visual: "<div class='cd-codeline'>" + card(k).repeat(t) + "</div><div class='cd-codeline'>🔁❓[" + card(k) + "]</div>", choices: opts(t, [t - 1, t + 1, t - 2, t + 2].filter((v) => v > 1)), answer: t, explain: card(k) + "가 " + t + "번이에요." }; }
-        const len = rnd(2, 3), body = Array.from({ length: len }, () => pick(CLOCK)); if (new Set(body).size === 1) body[1] = CLOCK[(CLOCK.indexOf(body[0]) + 1) % 4];
-        const t = rnd(2, 4), show = (b) => b.map(card).join("");
+        if (type === 0) { const k = pick(CLOCK), t = rnd(3, 6);
+          return { text: "왼쪽 코드를 오른쪽처럼 반복 블록으로 줄이면 ❓는 몇 번일까요?", visual: side(prog(blk(k).repeat(t)), prog(loopBlk("❓", blk(k)))), choices: opts(t, [t - 1, t + 1, t - 2, t + 2].filter((v) => v > 1)), answer: t, explain: DIRS[k][2] + " " + WORD[k] + " 블록이 " + t + "개 → 🔁 " + t + "번 반복" }; }
+        const len = 2, body = [pick(CLOCK)]; body.push(pick(CLOCK.filter((k) => k !== body[0])));
+        const t = rnd(2, 3), flat = (b) => b.map((k) => blk(k)).join("");
         if (type === 1) {
-          const wrong = [body.slice().reverse(), [body[0]], body.slice(0, -1).concat(pick(CLOCK.filter((k) => k !== body[len - 1]))), body.concat(body[0])].map(show).filter((w) => w !== show(body));
-          return { text: "이 코드는 어떤 블록 묶음을 반복한 걸까요?", visual: "<div class='cd-codeline'>" + show(body).repeat(t) + "</div>", choices: opts(show(body), wrong).map((c) => "🔁" + t + "[" + c + "]"), answer: "🔁" + t + "[" + show(body) + "]", explain: show(body) + " 묶음이 " + t + "번 나와요." };
+          const cands = [body.slice().reverse(), [body[0]], [body[0], pick(CLOCK.filter((k) => k !== body[0] && k !== body[1]))], [body[1]]];
+          const key = (b) => b.join(","), seen = new Set([key(body)]), wrong = cands.filter((c) => !seen.has(key(c)) && seen.add(key(c)));
+          const show = (b) => loopBlk(t, flat(b));
+          return { text: "이 코드는 어떤 블록 묶음을 반복한 걸까요?", visual: prog(flat(body).repeat(t)), choices: [show(body), ...shuffle(wrong).slice(0, 2).map(show)], answer: show(body), explain: runText(body) + " 묶음이 " + t + "번 나와요." };
         }
         const all = len * t;
-        return { text: "🔁" + t + "[" + show(body) + "] 를 풀어 쓰면 블록이 모두 몇 개일까요?", visual: "<div class='cd-codeline'>🔁" + t + "[" + show(body) + "]</div>", choices: opts(all, [all - 1, all + 1, len + t, t, all + len]), answer: all, explain: len + "개 × " + t + "번 = " + all + "개" };
+        return { text: "이 반복 블록을 하나씩 풀어 쓰면 블록이 모두 몇 개일까요?", visual: prog(loopBlk(t, flat(body))), choices: opts(all, [all - 1, all + 1, len + t, t, all + len]), answer: all, explain: "블록 " + len + "개를 " + t + "번 → " + len + " × " + t + " = " + all + "개" };
       } },
       { id: "if", e: "❓", name: "만약에 (조건)", desc: "만약 ~라면, 아니면", gen() { return Object.assign({ explain: "조건이 맞으면 첫 번째 일을, 아니면 다른 일을 해요." }, pick(IF_RULES)()); } },
       { id: "fix", e: "🔧", name: "버그 고치기", desc: "🧩 만들기 · 틀린 블록 하나 고치기", done: "버그 탐정 합격! 코드를 한 줄씩 따라가며 틀린 곳을 찾았어요.", puzzles: [
@@ -520,7 +543,7 @@
           return { text: "📦 생명 = 3에서 시작해요. 💔 -1, 💖 +1 이에요.<br>차례로 만나면 생명은 몇 개 남을까요?", visual: "<div class='cd-codeline'>" + items.join(" ") + "</div>", input: true, answer: s, unit: "개", explain: "생명: 3 → " + s, key: items.join("") };
         }
         const t = rnd(2, 5), m = rnd(2, 5), s0 = rnd(0, 5);
-        return { text: "📦 사탕 = " + s0 + "<br>🔁" + t + "번 반복 [ 사탕에 " + m + " 더하기 ]<br>코드가 끝나면 사탕은 몇 개일까요?", input: true, answer: s0 + t * m, unit: "개", explain: s0 + " + " + m + " × " + t + " = " + (s0 + t * m) };
+        return { text: "📦 사탕은 처음에 " + s0 + "개예요. 코드가 끝나면 사탕은 몇 개일까요?", visual: prog(loopBlk(t, "<span class='cd-blk var'>🍬 사탕에 " + m + " 더하기</span>")), input: true, answer: s0 + t * m, unit: "개", explain: s0 + " + " + m + " × " + t + " = " + (s0 + t * m) };
       } }
     ]
   });
