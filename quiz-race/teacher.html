@@ -76,6 +76,24 @@ td.warn{color:#e8590c}
 .lane .sc{font-family:'Jua';font-size:20px;text-align:right}
 .lane.fin .nm:before{content:attr(data-rank);display:inline-block;background:var(--yellow);border-radius:8px;padding:0 6px;margin-right:6px}
 
+/* 팀 */
+.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.team{border-radius:16px;padding:10px;background:color-mix(in srgb,var(--tc) 14%,#fff);border:3px solid var(--tc)}
+.team h3{margin:0 0 8px;font-size:21px;display:flex;align-items:center;gap:6px}
+.team h3 small{font-size:15px;color:var(--muted)}
+.team .kids{min-height:40px}
+.team .kid{background:#fff;font-size:18px}
+.kid b{font-weight:400}
+.kid b.mv{cursor:pointer;text-decoration:underline dotted rgba(0,0,0,.25);text-underline-offset:4px}
+.tboard{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.trow{display:grid;grid-template-columns:150px 1fr 170px;gap:12px;align-items:center;font-family:'Jua'}
+.trow .tn{font-size:26px;white-space:nowrap}
+.trow .tb{height:40px;background:#f1ead8;border-radius:12px;overflow:hidden}
+.trow .tb i{display:block;height:100%;border-radius:12px;transition:width .5s}
+.trow .ts{font-size:24px;text-align:right}
+.trow .ts small{font-size:15px;color:var(--muted)}
+@media (max-width:760px){.trow{grid-template-columns:100px 1fr 110px}.trow .tn{font-size:20px}.trow .ts{font-size:18px}}
+
 /* 결과 */
 .podium{display:flex;justify-content:center;align-items:flex-end;gap:14px;margin:10px 0 20px}
 .pod{text-align:center;font-family:'Jua'}
@@ -110,6 +128,7 @@ td.warn{color:#e8590c}
   <div class="card">
     <h2>⚙️ 경주 규칙</h2>
     <div class="settings">
+      <div class="set"><label>경주 방식</label><div class="seg" data-k="teams"><button data-v="0">개인전</button><button data-v="2">2팀</button><button data-v="3">3팀</button><button data-v="4">4팀</button></div><small>팀전은 팀원들이 맞힌 문제 수의 평균으로 겨뤄요</small></div>
       <div class="set"><label>한 판 문제 수</label><div class="seg" data-k="count"><button data-v="5">5</button><button data-v="8">8</button><button data-v="10">10</button><button data-v="15">15</button><button data-v="0">전부</button></div><small>문제가 많으면 그중에서 골라 내요</small></div>
       <div class="set"><label>생각 시간</label><div class="seg" data-k="think"><button data-v="6">6초</button><button data-v="9">9초</button><button data-v="12">12초</button><button data-v="16">16초</button></div><small>문제가 보이고 문까지 오는 시간 · 1학년은 12초 이상 추천</small></div>
       <div class="set"><label>장애물(고깔)</label><div class="seg" data-k="obstacles"><button data-v="1">있음</button><button data-v="0">없음</button></div><small>점프로 넘어요. 처음엔 '없음'도 좋아요</small></div>
@@ -139,9 +158,9 @@ td.warn{color:#e8590c}
       <div id="qr"></div>
     </div>
     <div class="card">
-      <h2>들어온 친구 <span class="cnt" id="kidCount">0명</span></h2>
+      <h2>들어온 친구 <span class="cnt" id="kidCount">0명</span><span style="flex:1"></span><button class="btn" id="shuffleTeams" style="display:none">🔀 팀 다시 나누기</button></h2>
       <div class="kids" id="kids"><p class="help">학생들이 주소에 들어가서 방 번호와 이름을 쓰면 여기에 나와요.</p></div>
-      <p class="help" style="font-size:13px">이름을 누르면 내보낼 수 있어요 (✕)</p>
+      <p class="help" style="font-size:13px" id="kidsHelp">✕를 누르면 내보낼 수 있어요</p>
       <div style="height:10px"></div>
       <button class="btn g big" id="goBtn" style="width:100%">출발! 🏁</button>
       <p class="help" id="raceInfo" style="text-align:center"></p>
@@ -152,7 +171,7 @@ td.warn{color:#e8590c}
 <!-- 3. 경주 -->
 <section class="view" id="vRace">
   <header><h1>🏎️ 경주 중</h1><span class="tag" id="raceTag"></span><div style="flex:1"></div><button class="btn danger" id="endBtn">끝내기</button></header>
-  <div class="card"><div class="track" id="track"></div></div>
+  <div class="card"><div class="tboard" id="tboard"></div><div class="track" id="track"></div></div>
 </section>
 
 <!-- 4. 결과 -->
@@ -162,6 +181,7 @@ td.warn{color:#e8590c}
     <button class="btn" id="toSetup">⚙️ 문제·규칙 바꾸기</button>
     <button class="btn g" id="againBtn">다시 하기 🔁</button></header>
   <div class="podium" id="podium"></div>
+  <div class="card" id="teamCard" style="display:none"><h2>팀 순위</h2><table id="teamTable"></table></div>
   <div class="lobby">
     <div class="card"><h2>순위</h2><table id="rankTable"></table></div>
     <div class="card"><h2>문제별 정답률</h2><table id="qStat"></table></div>
@@ -240,7 +260,7 @@ function download(name,text){const a=document.createElement('a');a.href=URL.crea
 $('#qText').value=store.get('qr_t_text')||'';refreshQ();
 
 /* ===== 설정 ===== */
-const settings=Object.assign({count:'8',think:'12',obstacles:'1',penalty:'slow',order:'shuffle'},JSON.parse(store.get('qr_t_set')||'{}'));
+const settings=Object.assign({teams:'0',count:'8',think:'12',obstacles:'1',penalty:'slow',order:'shuffle'},JSON.parse(store.get('qr_t_set')||'{}'));
 document.querySelectorAll('.seg').forEach(seg=>{
   const k=seg.dataset.k;
   const sync=()=>seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===String(settings[k])));
@@ -260,6 +280,40 @@ function studentURL(){
   return base+'?room='+code+extra;
 }
 function validQs(){return questions.filter(x=>x.a&&x.w.length>0)}
+
+/* ===== 팀 ===== */
+const TEAMS=[{name:'빨강팀',emoji:'🔴',color:'#ff6b6b'},{name:'파랑팀',emoji:'🔵',color:'#4dabf7'},{name:'초록팀',emoji:'🟢',color:'#51cf66'},{name:'노랑팀',emoji:'🟡',color:'#fcc419'}];
+function teamCount(){return +settings.teams||0}
+function hasTeam(p,n){return p.team>=0&&p.team<n}
+// 인원이 가장 적은 팀 (같으면 그중 아무 팀)
+function smallestTeam(){
+  const n=teamCount(),size=Array(n).fill(0);
+  players.forEach(p=>{if(p.online&&hasTeam(p,n))size[p.team]++});
+  const min=Math.min(...size),c=size.map((v,i)=>v===min?i:-1).filter(i=>i>=0);
+  return c[Math.random()*c.length|0];
+}
+function fixTeams(){const n=teamCount();if(!n)return;players.forEach(p=>{if(!hasTeam(p,n)){p.team=-1;p.team=smallestTeam()}})}
+function teamMsg(p){const n=teamCount();return n&&hasTeam(p,n)?Object.assign({t:'team',team:p.team},TEAMS[p.team]):{t:'team',team:-1}}
+function sendTeams(){players.forEach(p=>send(p,teamMsg(p)))}
+function kidColor(p){const n=race&&state!=='lobby'?race.teams:teamCount();return n&&hasTeam(p,n)?TEAMS[p.team].color:p.color}
+$('#shuffleTeams').onclick=()=>{
+  const n=teamCount();if(!n)return;
+  shuffle([...players.values()].filter(p=>p.online)).forEach((p,i)=>p.team=i%n);
+  players.forEach(p=>{if(!p.online)p.team=-1});fixTeams();sendTeams();renderKids();
+};
+// 팀별 성적: 팀원 평균 맞힌 문제 수 → 평균 달린 거리 → 평균 기록 순으로 겨뤄요
+function teamStats(){
+  const n=race?race.teams:0;if(!n)return[];
+  const out=TEAMS.slice(0,n).map((t,i)=>{
+    const m=[...players.values()].filter(p=>p.inRace&&p.team===i);if(!m.length)return null;
+    const sum=m.reduce((a,p)=>a+p.ok,0),fin=m.filter(p=>p.fin);
+    return Object.assign({i,m,sum,avg:sum/m.length,prog:m.reduce((a,p)=>a+p.p,0)/m.length,time:fin.length===m.length?fin.reduce((a,p)=>a+p.time,0)/m.length:Infinity},t);
+  }).filter(Boolean);
+  out.sort((a,b)=>(b.avg-a.avg)||(b.prog-a.prog)||(a.time-b.time));
+  out.forEach((t,k)=>{const prev=out[k-1];t.rank=prev&&prev.avg===t.avg&&prev.prog===t.prog&&prev.time===t.time?prev.rank:k+1});
+  return out;
+}
+function avgText(v){return (Math.round(v*10)/10).toString()}
 
 $('#makeBtn').onclick=()=>{
   if(validQs().length<1){$('#setupMsg').textContent='문제를 1개 이상 넣어 주세요 (정답과 오답 1개 이상)';return}
@@ -288,9 +342,9 @@ function toLobby(){
   state='lobby';view('vLobby');
   $('#lobbyTitle').textContent=($('#className').value.trim()||'대기실');
   $('#code').textContent=code;const url=studentURL();$('#addr').textContent=url.replace(/^https?:\/\//,'');
-  makeQR(url);renderKids();
+  fixTeams();sendTeams();makeQR(url);renderKids();
   const n=settings.count==='0'?validQs().length:Math.min(+settings.count,validQs().length);
-  $('#raceInfo').textContent='한 판 '+n+'문제 · 생각 시간 '+settings.think+'초 · 장애물 '+(settings.obstacles==='1'?'있음':'없음');
+  $('#raceInfo').textContent=(teamCount()?teamCount()+'팀 대항전 · ':'')+'한 판 '+n+'문제 · 생각 시간 '+settings.think+'초 · 장애물 '+(settings.obstacles==='1'?'있음':'없음');
   players.forEach(p=>send(p,{t:'lobby'}));
 }
 async function makeQR(url){
@@ -308,10 +362,13 @@ function onMsg(c,m){
     if(old&&!old.online){players.delete(old.id);old.id=c.peer;old.conn=c;old.online=true;old.color=m.color||old.color;players.set(c.peer,old);p=old}
     else{
       if(old){let k=2;while([...players.values()].some(x=>x.name===name+k))k++;name=name+k}
-      p={id:c.peer,name,color:m.color||'#4dabf7',conn:c,online:true,p:0,ok:0,fin:false,time:0,rank:0,ans:{},inRace:false};
+      p={id:c.peer,name,color:m.color||'#4dabf7',conn:c,online:true,p:0,ok:0,fin:false,time:0,rank:0,ans:{},inRace:false,team:-1};
+      if(teamCount())p.team=smallestTeam();
       players.set(c.peer,p);
     }
     send(p,{t:'welcome',name:p.name,racing:state==='race'&&!p.inRace});
+    if(teamCount()&&!hasTeam(p,teamCount()))p.team=smallestTeam();
+    send(p,teamMsg(p));
     renderKids();renderTrack();
     return;
   }
@@ -327,10 +384,19 @@ function onMsg(c,m){
   }
 }
 function renderKids(){
-  const list=[...players.values()];
+  const list=[...players.values()],n=teamCount();
   $('#kidCount').textContent=list.filter(p=>p.online).length+'명';
-  $('#kids').innerHTML=list.length?list.map(p=>'<span class="kid'+(p.online?'':' off')+'"><i style="background:'+esc(p.color)+'"></i>'+esc(p.name)+'<button data-id="'+esc(p.id)+'" title="내보내기">✕</button></span>').join(''):'<p class="help">학생들이 주소에 들어가서 방 번호와 이름을 쓰면 여기에 나와요.</p>';
-  $('#kids').querySelectorAll('button').forEach(b=>b.onclick=()=>{const p=players.get(b.dataset.id);if(!p)return;if(confirm(p.name+' 학생을 내보낼까요?')){send(p,{t:'kick'});setTimeout(()=>{try{p.conn.close()}catch(e){}},300);players.delete(p.id);renderKids()}});
+  $('#shuffleTeams').style.display=n?'':'none';
+  $('#kidsHelp').textContent=n?'이름을 누르면 다른 팀으로 옮겨요 · ✕를 누르면 내보내요':'✕를 누르면 내보낼 수 있어요';
+  const chip=p=>'<span class="kid'+(p.online?'':' off')+'"><i style="background:'+esc(kidColor(p))+'"></i><b'+(n?' class="mv" data-mv="'+esc(p.id)+'" title="다른 팀으로 옮기기"':'')+'>'+esc(p.name)+'</b><button data-id="'+esc(p.id)+'" title="내보내기">✕</button></span>';
+  if(n){
+    $('#kids').innerHTML='<div class="teams" style="width:100%">'+TEAMS.slice(0,n).map((t,i)=>{const m=list.filter(p=>p.team===i);
+      return '<div class="team" style="--tc:'+t.color+'"><h3>'+t.emoji+' '+t.name+' <small>'+m.filter(p=>p.online).length+'명</small></h3><div class="kids">'+m.map(chip).join('')+'</div></div>'}).join('')+'</div>';
+  }else{
+    $('#kids').innerHTML=list.length?list.map(chip).join(''):'<p class="help">학생들이 주소에 들어가서 방 번호와 이름을 쓰면 여기에 나와요.</p>';
+  }
+  $('#kids').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{const p=players.get(b.dataset.id);if(!p)return;if(confirm(p.name+' 학생을 내보낼까요?')){send(p,{t:'kick'});setTimeout(()=>{try{p.conn.close()}catch(e){}},300);players.delete(p.id);renderKids()}});
+  $('#kids').querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const p=players.get(b.dataset.mv);if(!p||!n)return;p.team=(p.team+1)%n;send(p,teamMsg(p));renderKids()});
 }
 $('#backSetup').onclick=()=>{state='setup';view('vSetup');players.forEach(p=>send(p,{t:'lobby'}))};
 
@@ -341,11 +407,12 @@ $('#goBtn').onclick=()=>{
   if(!online.length){alert('아직 들어온 학생이 없어요');return}
   let qs=validQs().slice();if(settings.order==='shuffle')shuffle(qs);
   if(settings.count!=='0')qs=qs.slice(0,+settings.count);
-  race={qs,finCount:0,t0:Date.now()};
+  race={qs,finCount:0,t0:Date.now(),teams:teamCount()};
+  if(race.teams){fixTeams();sendTeams()}
   players.forEach(p=>{p.p=0;p.ok=0;p.fin=false;p.time=0;p.rank=0;p.ans={};p.inRace=p.online});
   const st={think:+settings.think,obstacles:settings.obstacles==='1',penalty:settings.penalty};
   online.forEach(p=>send(p,{t:'start',qs:qs.map(x=>({q:x.q,a:x.a,w:x.w})),settings:st}));
-  state='race';view('vRace');$('#raceTag').textContent=qs.length+'문제 · '+online.length+'명';renderTrack();
+  state='race';view('vRace');$('#raceTag').textContent=(race.teams?race.teams+'팀 대항전 · ':'')+qs.length+'문제 · '+online.length+'명';renderTrack();
 };
 function renderTrack(){
   if(state!=='race')return;
@@ -355,9 +422,16 @@ function renderTrack(){
   const ids=list.map(p=>p.id).join('|');
   if(tr.dataset.ids!==ids){tr.dataset.ids=ids;tr.innerHTML=list.map(p=>'<div class="lane" data-id="'+esc(p.id)+'"><div class="nm"></div><div class="road"><div class="dash"></div><div class="car"></div></div><div class="sc"></div></div>').join('')}
   list.forEach(p=>{const el=tr.querySelector('.lane[data-id="'+CSS.escape(p.id)+'"]');if(!el)return;
-    el.classList.toggle('fin',p.fin);el.querySelector('.nm').dataset.rank=p.rank+'등';el.querySelector('.nm').textContent=p.name+(p.online?'':' (끊김)');
-    const car=el.querySelector('.car');car.style.background=p.color;car.style.left='calc('+(p.p*100)+'% - '+(p.p*68)+'px)';car.textContent=p.fin?'🏁':'';
+    el.classList.toggle('fin',p.fin);el.querySelector('.nm').dataset.rank=p.rank+'등';el.querySelector('.nm').textContent=(race.teams&&hasTeam(p,race.teams)?TEAMS[p.team].emoji+' ':'')+p.name+(p.online?'':' (끊김)');
+    const car=el.querySelector('.car');car.style.background=kidColor(p);car.style.left='calc('+(p.p*100)+'% - '+(p.p*68)+'px)';car.textContent=p.fin?'🏁':'';
     el.querySelector('.sc').textContent='✔ '+p.ok+'/'+race.qs.length});
+  renderTeamBoard();
+}
+function renderTeamBoard(){
+  const tb=$('#tboard'),ts=teamStats();
+  if(!ts.length){tb.innerHTML='';tb.style.display='none';return}
+  tb.style.display='';const total=race.qs.length||1;
+  tb.innerHTML='<p class="jua" style="margin:0;font-size:20px;color:var(--muted)">🏆 팀 점수 (팀원 평균 맞힌 문제)</p>'+ts.map(t=>'<div class="trow"><div class="tn">'+t.emoji+' '+t.name+'</div><div class="tb"><i style="width:'+Math.max(2,t.avg/total*100)+'%;background:'+t.color+'"></i></div><div class="ts">'+avgText(t.avg)+'문제 <small>'+t.m.length+'명</small></div></div>').join('');
 }
 function checkAllDone(){
   const list=[...players.values()].filter(p=>p.inRace&&p.online);
@@ -369,10 +443,21 @@ function showResults(){
   const list=[...players.values()].filter(p=>p.inRace);
   list.sort((a,b)=>(b.fin-a.fin)||(a.fin?a.rank-b.rank:(b.p-a.p))||(b.ok-a.ok));
   let r=0;list.forEach(p=>{if(!p.fin)p.rank=0;p.finalRank=++r});
-  results={list,qs:race.qs};
+  const ts=teamStats(),tm=race.teams;
+  results={list,qs:race.qs,teams:tm,ts};
   const medal=['🥇','🥈','🥉'],hs=[150,115,90],col=['#ffc107','#adb5bd','#e8a76b'],order=[1,0,2];
-  $('#podium').innerHTML=order.filter(i=>list[i]).map(i=>'<div class="pod"><div class="who">'+esc(list[i].name)+'</div><div class="blk" style="height:'+hs[i]+'px;background:'+col[i]+'">'+medal[i]+'</div></div>').join('');
-  $('#rankTable').innerHTML='<tr><th>순위</th><th>이름</th><th>맞힌 문제</th><th>기록</th></tr>'+list.map(p=>'<tr><td class="jua" style="font-size:20px">'+p.finalRank+'</td><td>'+esc(p.name)+'</td><td>'+p.ok+' / '+race.qs.length+'</td><td>'+(p.fin?p.time+'초':Math.round(p.p*100)+'% 달림')+'</td></tr>').join('');
+  if(ts.length){
+    // 팀 시상대: 블록 색은 팀 색, 메달은 순위대로 (공동 순위는 같은 메달)
+    $('#podium').innerHTML=order.filter(i=>ts[i]).map(i=>{const t=ts[i],r=t.rank-1;return '<div class="pod"><div class="who">'+t.emoji+' '+t.name+'</div><div class="blk" style="height:'+hs[Math.min(r,2)]+'px;background:'+t.color+'">'+(medal[r]||t.rank+'등')+'</div></div>'}).join('');
+    $('#teamCard').style.display='';
+    $('#teamTable').innerHTML='<tr><th>순위</th><th>팀</th><th>팀원</th><th>평균 맞힌 문제</th><th>모두 맞힌 문제</th></tr>'+ts.map(t=>'<tr><td class="jua" style="font-size:22px">'+t.rank+'</td><td class="jua" style="font-size:20px">'+t.emoji+' '+t.name+'</td><td>'+t.m.map(p=>esc(p.name)).join(', ')+'</td><td class="jua" style="font-size:20px">'+avgText(t.avg)+' / '+race.qs.length+'</td><td>'+t.sum+'</td></tr>').join('');
+    ts.forEach(t=>t.m.forEach(p=>send(p,{t:'teamResult',rank:t.rank,count:ts.length,name:t.name,emoji:t.emoji,color:t.color,avg:avgText(t.avg)})));
+  }else{
+    $('#teamCard').style.display='none';
+    $('#podium').innerHTML=order.filter(i=>list[i]).map(i=>'<div class="pod"><div class="who">'+esc(list[i].name)+'</div><div class="blk" style="height:'+hs[i]+'px;background:'+col[i]+'">'+medal[i]+'</div></div>').join('');
+  }
+  const teamOf=p=>tm&&hasTeam(p,tm)?TEAMS[p.team]:null;
+  $('#rankTable').innerHTML='<tr><th>순위</th>'+(tm?'<th>팀</th>':'')+'<th>이름</th><th>맞힌 문제</th><th>기록</th></tr>'+list.map(p=>'<tr><td class="jua" style="font-size:20px">'+p.finalRank+'</td>'+(tm?'<td>'+(teamOf(p)?teamOf(p).emoji+' '+teamOf(p).name:'')+'</td>':'')+'<td>'+esc(p.name)+'</td><td>'+p.ok+' / '+race.qs.length+'</td><td>'+(p.fin?p.time+'초':Math.round(p.p*100)+'% 달림')+'</td></tr>').join('');
   $('#qStat').innerHTML='<tr><th>#</th><th>문제</th><th>정답률</th></tr>'+race.qs.map((q,i)=>{
     const tried=list.filter(p=>i in p.ans),ok=tried.filter(p=>p.ans[i]).length;const pct=tried.length?Math.round(ok/tried.length*100):null;
     const c=pct===null?'#dee2e6':pct>=80?'#69db7c':pct>=50?'#ffd43b':'#ff8787';
@@ -383,8 +468,10 @@ $('#againBtn').onclick=()=>toLobby();
 $('#toSetup').onclick=()=>{state='setup';view('vSetup');players.forEach(p=>send(p,{t:'lobby'}))};
 $('#csvBtn').onclick=()=>{
   if(!results)return;const q=results.qs;const cell=v=>'"'+String(v).replace(/"/g,'""')+'"';
-  let csv='﻿'+['순위','이름','맞힌 문제','기록(초)',...q.map((x,i)=>(i+1)+'. '+x.q)].map(cell).join(',')+'\n';
-  results.list.forEach(p=>{csv+=[p.finalRank,p.name,p.ok,p.fin?p.time:'',...q.map((x,i)=>i in p.ans?(p.ans[i]?'O':'X'):'')].map(cell).join(',')+'\n'});
+  const tm=results.teams,tn=p=>tm&&hasTeam(p,tm)?[TEAMS[p.team].name]:tm?['']:[];
+  let csv='﻿'+['순위',...(tm?['팀']:[]),'이름','맞힌 문제','기록(초)',...q.map((x,i)=>(i+1)+'. '+x.q)].map(cell).join(',')+'\n';
+  results.list.forEach(p=>{csv+=[p.finalRank,...tn(p),p.name,p.ok,p.fin?p.time:'',...q.map((x,i)=>i in p.ans?(p.ans[i]?'O':'X'):'')].map(cell).join(',')+'\n'});
+  if(tm&&results.ts.length){csv+='\n'+['팀 순위','팀','팀원 수','평균 맞힌 문제','모두 맞힌 문제'].map(cell).join(',')+'\n';results.ts.forEach(t=>{csv+=[t.rank,t.name,t.m.length,avgText(t.avg),t.sum].map(cell).join(',')+'\n'})}
   const d=new Date();download('레이싱퀴즈_결과_'+(d.getMonth()+1)+'월'+d.getDate()+'일.csv',csv);
 };
 window.addEventListener('beforeunload',e=>{if(state!=='setup'){e.preventDefault();e.returnValue=''}});
