@@ -1,4 +1,4 @@
-// 율이 꿀벌 수학 - 게임 화면
+// 나율이의 달콤 수학 - 게임 화면
 (function () {
   "use strict";
   const { UNITS, gen } = window.YM;
