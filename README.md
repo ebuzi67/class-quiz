@@ -9,7 +9,7 @@
 ```
 /class-quiz/                 학습 앱 모음 (전체 메뉴)
 ├─ math/                     수학 퀴즈
-│  ├─ math5/  math1/  area5/  fraction4/
+│  ├─ yulmath/  math5/  math1/  area5/  fraction4/
 ├─ europe/                   유럽 탐방
 │  ├─ london/ paris/ rome/ italy/ spain/ portugal/ germany/ austria/ czech/ hungary/
 ├─ pe/                       체육시간
@@ -33,11 +33,13 @@
 
 | 앱 | 폴더 | 내용 |
 |---|---|---|
+| 율이 꿀벌 수학 (초4~중3) | `math/yulmath/` | 단원 45개 꿀받기 게임. 단원마다 기본·응용·심화, 실수형 오답과 실수 설명, 오답노트, 벌 표본 상자, 진도 설정 |
 | 분수 퀴즈 (4학년) | `math/fraction4/` | 분수의 뜻, 크기 비교, 덧셈과 뺄셈 |
 | 수학 모험 (1학년) | `math/math1/` | 1-1 1~5단원 게임. 단원마다 개념·기본·응용·유형·준심화 5단계, 10문제 중 8개 맞히면 통과 |
 | 수학 방탈출 (5학년) | `math/math5/` | 5-1 1~6단원 방탈출 게임. 단원마다 개념·기본·응용·유형·준심화 방, 10문제 중 8개 맞히면 통과 |
 | 넓이 퀴즈 (5학년) | `math/area5/` | 5-1 6단원 다각형의 넓이: 삼각형의 밑변과 높이, 사각형의 넓이, 밑변 2배·넓이 2배 |
 
+- `math/yulmath/problems.js`(초등), `problems-mid.js`(중학교 + 단원 목록): 문제를 그때그때 새로 만드는 코드예요. 단원을 고치거나 더한 뒤 `node tools/yulmath/test_problems.js`로 검산해요 (단원·단계마다 1500문제씩 정답과 오답을 확인해요). 아이콘은 `python3 tools/yulmath/make_icons.py`
 - `worksheets/`: 넓이 퀴즈와 같은 내용의 인쇄용 학습지 PDF
 - `tools/math1/adventure.original.html`, `tools/math1/build.py`: 1학년 수학 모험의 원본(아티팩트 「1학년 수학 모험」 그대로)과 앱 만드는 스크립트. 수학 방탈출과 같은 방식이에요.
 - `tools/math5/castle.original.html`: Claude 대화에서 만든 수학 방탈출 게임 원본 (아티팩트 「계산 순서의 성」 그대로)

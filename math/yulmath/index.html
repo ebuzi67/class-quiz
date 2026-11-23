@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>율이 꿀벌 수학</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f2a516">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="꿀벌 수학">
+  <style>
+    :root {
+      --bg: #fff7e2; --card: #ffffff; --text: #33261a; --muted: #7a6a58;
+      --honey: #f2a516; --honey-dark: #c97f00; --honey-soft: #ffe9b3;
+      --ok: #2e9d5b; --ok-bg: #e3f6ea; --bad: #d9443b; --bad-bg: #fde6e4;
+      --line: #eadcc0; --now: #2b7bd9; --review: #8e5bd6; --next: #2e9d5b;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 19px; line-height: 1.45;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    .screen { max-width: 820px; margin: 0 auto; padding: 16px 14px 28px; min-height: 100%; }
+
+    /* 공통 */
+    .row { display: flex; gap: 10px; align-items: center; }
+    .spacer { flex: 1; }
+    .btn { border: none; border-radius: 16px; padding: 14px 18px; background: var(--card); box-shadow: 0 2px 0 var(--line); border: 2px solid var(--line); font-weight: 700; }
+    .btn:active { transform: translateY(2px); box-shadow: none; }
+    .btn.main { background: var(--honey); border-color: var(--honey-dark); color: #3a2400; box-shadow: 0 3px 0 var(--honey-dark); }
+    .btn.small { padding: 8px 12px; font-size: .85em; border-radius: 12px; }
+    .back { background: none; border: none; color: var(--muted); font-size: .9em; padding: 6px 0; }
+    h1 { font-size: 1.5em; margin: 4px 0; }
+    h2 { font-size: 1.2em; margin: 18px 0 8px; }
+    .muted { color: var(--muted); }
+    .card { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 14px; }
+
+    /* 수식 */
+    .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: .82em; line-height: 1.15; margin: 0 2px; }
+    .fr > span:first-child { border-bottom: 2px solid currentColor; padding: 0 3px; }
+    .fr > span:last-child { padding: 0 3px; }
+    .mixed { white-space: nowrap; margin: 0 3px; }
+
+    /* 첫 화면 */
+    .top { display: flex; align-items: center; gap: 12px; }
+    .top .bee { width: 64px; height: 64px; flex: none; }
+    .stars-total { font-weight: 800; color: var(--honey-dark); }
+    .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .quick .btn { text-align: left; padding: 14px; }
+    .quick .btn b { display: block; font-size: 1.05em; }
+    .quick .btn small { color: var(--muted); font-weight: 500; }
+    .quick .wide { grid-column: 1 / -1; }
+    .tabs { display: flex; gap: 6px; overflow-x: auto; margin: 18px 0 10px; padding-bottom: 4px; }
+    .tabs button { flex: none; border: 2px solid var(--line); background: var(--card); border-radius: 999px; padding: 8px 16px; font-weight: 700; }
+    .tabs button.on { background: var(--text); color: #fff; border-color: var(--text); }
+    .units { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+    .unit { text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; }
+    .unit .g { font-size: .78em; color: var(--muted); font-weight: 600; }
+    .unit .nm { font-size: 1.02em; }
+    .unit .meta { display: flex; gap: 8px; align-items: center; font-size: .85em; }
+    .stars { color: var(--honey); letter-spacing: 1px; }
+    .badge { font-size: .72em; font-weight: 800; color: #fff; border-radius: 8px; padding: 1px 7px; }
+    .badge.now { background: var(--now); } .badge.review { background: var(--review); } .badge.next { background: var(--next); }
+    .foot { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
+
+    /* 단계 고르기 */
+    .tiers { display: grid; gap: 10px; margin-top: 12px; }
+    .tiers .btn { text-align: left; }
+    .tiers .btn small { display: block; color: var(--muted); font-weight: 500; }
+    .toggle { display: flex; gap: 6px; margin-top: 8px; }
+    .toggle button { flex: 1; border: 2px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px; font-weight: 700; }
+    .toggle button.on { background: var(--honey-soft); border-color: var(--honey); }
+
+    /* 게임 */
+    #play { display: flex; flex-direction: column; height: 100%; max-width: 820px; margin: 0 auto; padding: 10px 12px 12px; }
+    .hud { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+    .progress { flex: 1; height: 12px; background: #f1e3c4; border-radius: 99px; overflow: hidden; }
+    .progress > div { height: 100%; background: var(--honey); width: 0; transition: width .3s; }
+    .tier-tag { font-size: .75em; border-radius: 8px; padding: 2px 8px; color: #fff; }
+    .t1 { background: #2fa36b; } .t2 { background: #e98a00; } .t3 { background: #d9443b; }
+    .question { margin-top: 10px; background: var(--card); border: 3px solid var(--honey); border-radius: 20px; padding: 14px 16px; font-size: 1.25em; font-weight: 700; text-align: center; min-height: 3.2em; display: flex; align-items: center; justify-content: center; }
+    .field { position: relative; flex: 1; min-height: 260px; margin-top: 10px; border-radius: 20px; overflow: hidden; background: linear-gradient(#dff3ff, #f4fbe9 70%, #cfe9b0); touch-action: manipulation; user-select: none; }
+    .lane-line { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.7); }
+    .drop {
+      position: absolute; top: 0; width: 31%; max-width: 200px; transform: translate(-50%, 0);
+      background: radial-gradient(circle at 35% 30%, #ffe28a, #f7b52a 60%, #e39410);
+      border: 3px solid #c97f00; border-radius: 48% 48% 44% 44% / 58% 58% 40% 40%;
+      padding: 14px 6px 12px; text-align: center; font-weight: 800; color: #3a2400; font-size: 1.15em;
+      box-shadow: 0 4px 8px rgba(120,70,0,.25); cursor: pointer; line-height: 1.25; word-break: keep-all;
+    }
+    .drop.long { font-size: .9em; } .drop.xlong { font-size: .75em; }
+    .drop.ok { background: radial-gradient(circle at 35% 30%, #c9f5d8, #4fc27e); border-color: var(--ok); }
+    .drop.bad { background: radial-gradient(circle at 35% 30%, #ffd6d2, #ee6b5f); border-color: var(--bad); }
+    .player { position: absolute; bottom: 6px; width: 31%; transform: translateX(-50%); transition: left .18s; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+    .player svg { width: 72px; height: 72px; }
+    .jar { font-size: 30px; margin-top: -10px; }
+    .controls { display: flex; gap: 8px; margin-top: 10px; }
+    .controls .btn { flex: 1; font-size: 1.1em; padding: 12px 0; }
+    .float { position: absolute; font-weight: 900; color: var(--honey-dark); font-size: 1.4em; pointer-events: none; animation: up .9s forwards; }
+    @keyframes up { to { transform: translateY(-60px); opacity: 0; } }
+
+    /* 틀렸을 때 */
+    .overlay { position: fixed; inset: 0; background: rgba(40,25,5,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+    .sheet { background: var(--card); border-radius: 22px; padding: 20px; max-width: 520px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .sheet h3 { margin: 0 0 8px; color: var(--bad); font-size: 1.25em; }
+    .sheet .ans { background: var(--ok-bg); border-radius: 14px; padding: 10px 14px; margin: 10px 0; font-weight: 800; font-size: 1.15em; }
+    .sheet .mine { background: var(--bad-bg); border-radius: 14px; padding: 8px 14px; font-weight: 700; }
+    .sheet .tip { background: var(--honey-soft); border-radius: 14px; padding: 10px 14px; margin: 10px 0 14px; }
+
+    /* 결과 */
+    .big-stars { font-size: 3em; text-align: center; color: var(--honey); letter-spacing: 6px; }
+    .result-line { text-align: center; font-size: 1.15em; font-weight: 700; }
+    .wrong-list .item { border-top: 1px dashed var(--line); padding: 10px 0; }
+    .wrong-list .item .q { font-weight: 700; }
+    .wrong-list .item .a { color: var(--ok); font-weight: 800; }
+    .wrong-list .item .m { color: var(--bad); font-size: .88em; }
+    .unlock { display: flex; gap: 12px; align-items: center; background: var(--honey-soft); border-radius: 18px; padding: 12px; margin: 12px 0; }
+    .unlock svg { width: 70px; height: 70px; flex: none; }
+
+    /* 표본 상자 */
+    .box { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .spec { text-align: center; padding: 10px; position: relative; }
+    .spec svg { width: 96px; height: 96px; }
+    .spec.locked svg { filter: brightness(0) opacity(.18); }
+    .spec.sel { border-color: var(--honey); background: var(--honey-soft); }
+    .spec .nm { font-weight: 800; }
+    .spec small { color: var(--muted); }
+    .pin { position: absolute; top: 6px; left: 50%; width: 6px; height: 14px; background: #888; border-radius: 3px; transform: translateX(-50%); }
+
+    /* 기록 */
+    table { width: 100%; border-collapse: collapse; font-size: .9em; }
+    td, th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+    td.num { text-align: right; white-space: nowrap; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { border: 2px solid var(--line); background: var(--card); border-radius: 12px; padding: 8px 12px; font-weight: 700; min-width: 84px; }
+    .chips button.now { border-color: var(--now); background: #e4efff; }
+    .chips button.review { border-color: var(--review); background: #f1e8ff; }
+    .chips button.next { border-color: var(--next); background: #e3f6ea; }
+    .install-help { margin-top: 8px; padding: 12px 14px; border-radius: 14px; background: #fff1cf; font-size: .9em; }
+    .danger { color: var(--bad); }
+
+    @media (max-width: 480px) {
+      body { font-size: 17px; }
+      .question { font-size: 1.1em; }
+      .player svg { width: 56px; height: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 첫 화면 -->
+  <section id="home" class="screen">
+    <a class="back" href="../">← 수학 퀴즈</a>
+    <div class="top">
+      <span class="bee" id="home-bee"></span>
+      <div>
+        <h1>율이 꿀벌 수학</h1>
+        <div class="muted">모은 별 <span class="stars-total" id="star-total">0</span>개 · 오늘 푼 문제 <b id="today-count">0</b>개</div>
+      </div>
+    </div>
+    <div class="quick">
+      <button class="btn main wide" id="go-today"><b>🍯 오늘의 추천 12문제</b><small id="today-desc">지금 진도와 복습 단원에서 골라요</small></button>
+      <button class="btn" id="go-calc"><b>🎯 연산 실수 잡기</b><small>계산 단원만 모아서</small></button>
+      <button class="btn" id="go-note"><b>📒 오답 다시 풀기</b><small id="note-count">0문제</small></button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="units" id="units"></div>
+    <div class="foot">
+      <button class="btn small" id="go-box">🐝 표본 상자</button>
+      <button class="btn small" id="go-stats">📊 기록</button>
+      <button class="btn small" id="go-set">⚙️ 진도·설정</button>
+    </div>
+  </section>
+
+  <!-- 단계 고르기 -->
+  <section id="pick" class="screen" hidden>
+    <button class="back" data-go="home">← 처음으로</button>
+    <div class="muted" id="pick-g"></div>
+    <h1 id="pick-name"></h1>
+    <div class="muted" id="pick-info"></div>
+    <div class="tiers">
+      <button class="btn main" data-tiers="1,1,1,1,2,2,2,2,3,3,3,3">🐝 기본 → 응용 → 심화 <small>12문제, 갈수록 어려워져요 (별은 여기서만 받아요)</small></button>
+      <button class="btn" data-tiers="1,1,1,1,1,1,1,1"><span class="tier-tag t1">기본</span> 기본만 8문제 <small>개념과 계산 연습</small></button>
+      <button class="btn" data-tiers="2,2,2,2,2,2,2,2"><span class="tier-tag t2">응용</span> 응용만 8문제 <small>실수하기 쉬운 문제</small></button>
+      <button class="btn" data-tiers="3,3,3,3,3,3,3,3"><span class="tier-tag t3">심화</span> 심화만 8문제 <small>한 번 더 생각하는 문제</small></button>
+    </div>
+    <h2>놀이 방식</h2>
+    <div class="toggle" id="mode-toggle">
+      <button data-mode="fall">🍯 떨어지는 꿀 받기</button>
+      <button data-mode="slow">🐢 천천히 골라 누르기</button>
+    </div>
+    <p class="muted" style="font-size:.85em">떨어지는 꿀: 꿀벌을 정답 아래로 옮겨서 받아요. 천천히: 시간 제한 없이 정답을 눌러요.</p>
+  </section>
+
+  <!-- 게임 -->
+  <section id="play" hidden>
+    <div class="hud">
+      <button class="back" id="quit">✕</button>
+      <span class="tier-tag" id="tier-tag"></span>
+      <div class="progress"><div id="bar"></div></div>
+      <span id="honey">🍯 0</span>
+    </div>
+    <div class="question" id="question"></div>
+    <div class="field" id="field">
+      <div class="lane-line" style="left:33.3%"></div>
+      <div class="lane-line" style="left:66.6%"></div>
+      <div class="player" id="player"><span id="player-bee"></span><span class="jar">🍯</span></div>
+    </div>
+    <div class="controls" id="controls">
+      <button class="btn" id="left">◀</button>
+      <button class="btn main" id="fast">⏬ 빨리 받기</button>
+      <button class="btn" id="right">▶</button>
+    </div>
+  </section>
+
+  <!-- 틀렸을 때 -->
+  <div class="overlay" id="oops" hidden>
+    <div class="sheet">
+      <h3 id="oops-title">앗, 아쉬워요!</h3>
+      <div class="mine" id="oops-mine"></div>
+      <div class="ans" id="oops-ans"></div>
+      <div class="tip" id="oops-tip"></div>
+      <button class="btn main" id="oops-next" style="width:100%">알겠어요, 다음 문제!</button>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <section id="result" class="screen" hidden>
+    <div class="big-stars" id="res-stars"></div>
+    <div class="result-line" id="res-line"></div>
+    <div id="res-unlock"></div>
+    <div class="card" id="res-mistakes" style="margin-top:12px"></div>
+    <div class="row" style="margin-top:14px; flex-wrap:wrap">
+      <button class="btn main" id="res-retry-wrong">📒 틀린 문제 다시</button>
+      <button class="btn" id="res-again">🔁 다시 하기</button>
+      <button class="btn" data-go="home">🏠 처음으로</button>
+    </div>
+    <div class="wrong-list card" id="res-list" style="margin-top:14px"></div>
+  </section>
+
+  <!-- 표본 상자 -->
+  <section id="box" class="screen" hidden>
+    <button class="back" data-go="home">← 처음으로</button>
+    <h1>🐝 표본 상자</h1>
+    <p class="muted">별을 모으면 새 벌 표본을 얻어요. 표본을 누르면 그 벌로 게임을 해요.</p>
+    <div class="box" id="box-grid"></div>
+    <div class="card" id="box-info" style="margin-top:12px" hidden></div>
+  </section>
+
+  <!-- 기록 -->
+  <section id="stats" class="screen" hidden>
+    <button class="back" data-go="home">← 처음으로</button>
+    <h1>📊 기록</h1>
+    <div class="card" id="stats-summary"></div>
+    <h2>자주 하는 실수</h2>
+    <div class="card" id="stats-mistakes"></div>
+    <h2>단원별 정답률</h2>
+    <div class="card"><table id="stats-table"></table></div>
+  </section>
+
+  <!-- 설정 -->
+  <section id="set" class="screen" hidden>
+    <button class="back" data-go="home">← 처음으로</button>
+    <h1>⚙️ 진도·설정</h1>
+    <h2>학기별 진도 표시</h2>
+    <p class="muted" style="font-size:.88em">누를 때마다 <b style="color:var(--now)">학원 진도</b> → <b style="color:var(--review)">복습</b> → <b style="color:var(--next)">다음 진도</b> → 표시 없음 으로 바뀌어요. '오늘의 추천'은 학원 진도와 복습 학기에서 문제를 골라요.</p>
+    <div class="chips" id="sem-chips"></div>
+    <h2>소리</h2>
+    <div class="toggle" id="sound-toggle">
+      <button data-sound="on">🔔 켜기</button>
+      <button data-sound="off">🔕 끄기</button>
+    </div>
+    <h2>앱으로 설치</h2>
+    <button class="btn" id="install-btn">📲 홈 화면에 설치하기</button>
+    <div class="install-help" id="install-help" hidden></div>
+    <h2>기록 지우기</h2>
+    <button class="btn small danger" id="reset-btn">모든 기록 지우기</button>
+    <span class="muted" id="reset-msg" style="font-size:.85em"></span>
+  </section>
+
+  <script src="problems.js"></script>
+  <script src="problems-mid.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
