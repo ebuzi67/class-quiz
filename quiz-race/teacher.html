@@ -213,7 +213,12 @@ function refreshQ(){
 $('#qText').addEventListener('input',refreshQ);
 $('#sampleBtn').onclick=()=>{const cur=$('#qText').value.trim();$('#qText').value=(cur?cur+'\n':'')+SAMPLE.map(r=>r.join('\t')).join('\n');refreshQ()};
 $('#clearBtn').onclick=()=>{if(confirm('문제를 모두 지울까요?')){$('#qText').value='';refreshQ()}};
-$('#tplBtn').onclick=()=>download('레이싱퀴즈_문제양식.csv','﻿문제,정답,오답 1,오답 2,오답 3\n3 + 4 = ?,7,6,8,5\n\'크다\'의 반대말은?,작다,많다,높다,길다\n');
+// 엑셀 문제 양식을 내려받아요 (만드는 스크립트: tools/quiz-race/make_template.py)
+$('#tplBtn').onclick=async()=>{
+  const a=document.createElement('a');a.download='레이싱퀴즈_문제양식.xlsx';
+  try{const r=await fetch('question-template.xlsx');if(!r.ok)throw 0;a.href=URL.createObjectURL(await r.blob())}catch(e){a.href='question-template.xlsx'}
+  document.body.appendChild(a);a.click();setTimeout(()=>{if(a.href.startsWith('blob:'))URL.revokeObjectURL(a.href);a.remove()},1000);
+};
 $('#uploadBtn').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;e.target.value='';
