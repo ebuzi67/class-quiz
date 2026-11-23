@@ -2,7 +2,7 @@
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // 이 주소(/class-quiz/) 아래에는 다른 앱들이 모두 있어서, 전체 메뉴 자체의 파일만 맡아요.
 // 각 앱은 자기 서비스 워커가 따로 맡아요.
-const CACHE = "home-v6";
+const CACHE = "home-v7";
 const FILES = [
   "./",
   "./index.html",
@@ -26,7 +26,8 @@ const SCOPE = self.registration.scope;
 const MINE = new Set(FILES.map((file) => new URL(file, SCOPE).href));
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)));
+  // GitHub Pages는 파일을 브라우저에 10분까지 저장해 두게 해요. 그 저장분을 건너뛰어야 새 메뉴가 바로 들어와요.
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES.map((f) => new Request(f, { cache: "reload" })))));
   self.skipWaiting();
 });
 
@@ -47,7 +48,7 @@ self.addEventListener("fetch", (event) => {
   url.search = "";
   if (event.request.method !== "GET" || !MINE.has(url.href)) return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-cache" })
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
