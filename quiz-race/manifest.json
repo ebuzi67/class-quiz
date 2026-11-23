@@ -1,0 +1,16 @@
+{
+  "name": "레이싱퀴즈",
+  "short_name": "레이싱퀴즈",
+  "description": "카트를 몰고 정답 길로 달리는 우리 반 퀴즈 경주. 선생님이 방을 만들고 학생은 방 번호로 들어와요.",
+  "lang": "ko",
+  "id": "/class-quiz/quiz-race/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8e7",
+  "theme_color": "#ffd54a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
