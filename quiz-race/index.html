@@ -41,6 +41,8 @@ input.big:focus{border-color:var(--yellow)}
 .btn.green{background:var(--green);box-shadow:0 5px 0 #57a948;color:#fff}
 .btn.ghost{background:#fff;box-shadow:0 4px 0 var(--line);font-size:20px;padding:12px}
 .msg{min-height:26px;text-align:center;color:#d9534f;font-size:17px;margin:10px 0 0}
+.teambadge{display:inline-block;font-family:'Jua';font-size:26px;color:#fff;border-radius:999px;padding:6px 20px;margin:4px 0 8px;text-shadow:0 2px 0 rgba(0,0,0,.18);box-shadow:0 4px 0 rgba(0,0,0,.12)}
+.teamline{font-family:'Jua';font-size:24px;border-radius:16px;padding:10px 12px;margin:10px 0 4px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.18)}
 .small{font-size:15px;color:var(--muted);text-align:center;line-height:1.5}
 .preview{display:flex;justify-content:center;margin:6px 0 4px}
 .bounce{animation:bounce 1.2s ease-in-out infinite}
@@ -126,6 +128,7 @@ input.big:focus{border-color:var(--yellow)}
     <div class="card">
       <div class="preview bounce"><canvas id="kartPrev" width="120" height="150" style="width:96px;height:120px"></canvas></div>
       <h2 id="waitName" style="font-size:32px;margin:6px 0"></h2>
+      <div id="waitTeam" class="teambadge" style="display:none"></div>
       <p style="font-size:20px;margin:6px 0" id="waitText">선생님이 출발을 누르면 시작해요<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
       <p class="small" id="waitRoom"></p>
     </div>
@@ -178,6 +181,7 @@ input.big:focus{border-color:var(--yellow)}
         <div>걸린 시간<b id="doneTime">0초</b></div>
       </div>
       <p style="font-size:19px;margin:6px 0" id="doneMsg"></p>
+      <div id="doneTeam" class="teamline" style="display:none"></div>
     </div>
     <div class="card">
       <p class="jua" style="font-size:20px;margin:0 0 4px">📝 다시 보기</p>
@@ -210,6 +214,8 @@ let myColor=store.get('qr_color')||KART_COLORS[4];
 let myName=store.get('qr_name')||'';
 let sound=store.get('qr_sound')!=='0';
 let tts=store.get('qr_tts')==='1';
+let teamInfo=null; // 팀전이면 선생님이 정해 준 팀 {name, emoji, color}
+function kartColor(){return teamInfo&&mode==='online'?teamInfo.color:myColor}
 
 function show(id){document.querySelectorAll('.screen,#game').forEach(e=>e.classList.remove('on'));$('#'+id).classList.add('on')}
 
@@ -253,7 +259,13 @@ KART_COLORS.forEach(c=>{const b=document.createElement('button');b.style.backgro
 $('#nick').value=myName;
 if(params.get('room'))$('#room').value=params.get('room').replace(/\D/g,'').slice(0,4);
 $('#room').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));
-function drawPrev(){const c=$('#kartPrev'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);drawKart(g,60,70,64,myColor)}
+function drawPrev(){const c=$('#kartPrev'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);drawKart(g,60,70,64,kartColor())}
+function showTeam(){
+  const b=$('#waitTeam');
+  if(teamInfo){b.style.display='inline-block';b.style.background=teamInfo.color;b.textContent=teamInfo.emoji+' 나는 '+teamInfo.name+'!'}
+  else b.style.display='none';
+  drawPrev();
+}
 
 /* ===== 네트워크 (PeerJS) ===== */
 let peer=null,conn=null,mode='none',roomCode='',joinTimer=null,leftOnPurpose=false;
@@ -314,8 +326,16 @@ function onData(m){
   }else if(m.t==='rank'){
     $('#doneRank').textContent=m.rank+'등';
     $('#doneMsg').textContent=m.rank===1?'1등! 정말 멋져요 🏆':m.rank<=3?'우와, '+m.rank+'등! 잘했어요 🎉':'끝까지 잘 달렸어요 👏';
+  }else if(m.t==='team'){
+    const before=teamInfo&&teamInfo.name;
+    teamInfo=m.team>=0?{name:m.name,emoji:m.emoji,color:m.color}:null;
+    showTeam();if(teamInfo&&before!==teamInfo.name)SFX.star();
+  }else if(m.t==='teamResult'){
+    const d=$('#doneTeam');d.style.display='block';d.style.background=m.color||(teamInfo&&teamInfo.color)||'#f08a24';
+    d.innerHTML=m.emoji+' '+esc(m.name)+' '+(m.rank===1?'1등! 우리 팀 최고 🏆':m.rank+'등! 잘했어요 👏')+'<br><small style="font-size:17px">팀원 평균 '+esc(m.avg)+'문제 맞힘</small>';
+    if(m.rank===1)SFX.ok();
   }else if(m.t==='kick'){
-    leftOnPurpose=true;if(game)game.stop();try{peer.destroy()}catch(e){}
+    leftOnPurpose=true;teamInfo=null;showTeam();if(game)game.stop();try{peer.destroy()}catch(e){}
     show('join');joinMsg('선생님이 방에서 내보냈어요. 이름을 확인하고 다시 들어와요');
     setTimeout(()=>leftOnPurpose=false,500);
   }
@@ -504,7 +524,7 @@ class Race{
     if(this.speedMul>1.1){g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=3;for(let i=0;i<8;i++){const x=this.roadX+((i*97+now*0.3)%this.roadW),y=((i*131+now*1.2)%H);g.beginPath();g.moveTo(x,y);g.lineTo(x,y+40);g.stroke()}}
     // 카트
     const lift=this.jumpT>0?Math.sin((1-this.jumpT/0.75)*Math.PI)*this.kw*0.9:0;
-    drawKart(g,this.kx,this.ky,this.kw,myColor,lift,this.tilt);
+    drawKart(g,this.kx,this.ky,this.kw,kartColor(),lift,this.tilt);
     if(this.slowT>0){g.font='22px sans-serif';g.textAlign='center';g.fillText('💫',this.kx,this.ky-this.kw*1.1-lift)}
     for(const p of this.particles){g.globalAlpha=Math.min(1,p.life*2);g.fillStyle=p.c;g.beginPath();g.arc(p.x,p.y,p.r,0,7);g.fill()}
     g.globalAlpha=1;g.restore();
@@ -535,6 +555,7 @@ function finishRace(stopped){
   r.stop();
   if(r.how==='online')send({t:'finish',time:secs,ok:r.score,stopped:!!stopped,p:Math.min(1,r.s/r.finishS)});
   $('#doneOk').textContent=r.score+' / '+r.qs.length;$('#doneStar').textContent=r.stars;$('#doneTime').textContent=secs+'초';
+  const dt=$('#doneTeam');if(r.how==='online'&&teamInfo){dt.style.display='block';dt.style.background=teamInfo.color;dt.textContent=teamInfo.emoji+' '+teamInfo.name+' · 팀 결과를 기다려요'}else dt.style.display='none';
   if(r.how==='online'){$('#doneRank').textContent=stopped?'🏁':'⏳';$('#doneMsg').textContent=stopped?'선생님이 경주를 끝냈어요':'순위를 기다리는 중...';$('#againBtn').style.display='none';$('#homeBtn').style.display='none'}
   else{$('#doneRank').textContent='🎉';$('#doneMsg').textContent=r.score===r.qs.length?'모두 맞혔어요! 최고예요 🏆':'잘했어요! 한 번 더 해 볼까요?';$('#againBtn').style.display='block';$('#homeBtn').style.display='block'}
   $('#review').innerHTML=r.answers.map(a=>'<div><span>'+(a.ok?'⭕':'❌')+'</span><span>'+esc(a.q)+' <b style="color:#2f9e44">'+esc(a.a)+'</b>'+(a.ok?'':' <span style="color:#868e96">(내 답: '+esc(a.pick)+')</span>')+'</span></div>').join('')||'<div>푼 문제가 없어요</div>';
