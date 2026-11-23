@@ -2,7 +2,7 @@
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // 이 주소(/class-quiz/math/) 아래에는 수학 앱들이 따로 있어서, 모음 페이지 자체의 파일만 맡아요.
 // 각 퀴즈(math5/, fraction4/ 등)는 자기 서비스 워커가 따로 맡아요.
-const CACHE = "math-hub-v1";
+const CACHE = "math-hub-v2";
 const FILES = [
   "./",
   "./index.html",
@@ -13,7 +13,8 @@ const FILES = [
   "./math5/icons/icon-192.png",
   "./math1/icons/icon-192.png",
   "./area5/icons/icon-192.png",
-  "./fraction4/icons/icon-192.png"
+  "./fraction4/icons/icon-192.png",
+  "./yulmath/icons/icon-192.png"
 ];
 const SCOPE = self.registration.scope;
 const MINE = new Set(FILES.map((file) => new URL(file, SCOPE).href));
