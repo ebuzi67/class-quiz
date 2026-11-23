@@ -1,12 +1,13 @@
 // 레이싱퀴즈 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // (반 친구들과 경주하기는 인터넷이 있어야 해요. 혼자 연습하기는 저장분으로도 돼요.)
-const CACHE = "quiz-race-v1";
+const CACHE = "quiz-race-v2";
 const FILES = [
   "./",
   "./index.html",
   "./teacher.html",
   "./manifest.json",
+  "./question-template.xlsx",
   "./lib/peerjs.min.js",
   "./lib/qrcode.min.js",
   "./icons/icon-192.png",
