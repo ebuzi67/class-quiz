@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레이싱퀴즈 · 선생님</title>
+<meta name="theme-color" content="#ffd54a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff8e7;--ink:#2d2a26;--muted:#7a7166;--card:#fff;--line:#efe3c8;--yellow:#ffd54a;--green:#7ccf6b;--blue:#5aa9f0;--red:#ff7b72;--purple:#a98bf0}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Gowun Dodum',system-ui,sans-serif}
+h1,h2,h3,.jua,button,select{font-family:'Jua','Gowun Dodum',system-ui,sans-serif;font-weight:400}
+button{cursor:pointer;border:0;color:var(--ink)}
+.view{display:none;max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+.view.on{display:block}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+header h1{font-size:32px;margin:0}
+header h1 span{color:#f08a24}
+.tag{background:var(--ink);color:#fff;border-radius:999px;padding:4px 12px;font-family:'Jua';font-size:15px}
+.card{background:var(--card);border-radius:22px;padding:20px;box-shadow:0 4px 0 var(--line),0 10px 30px rgba(120,90,20,.07);margin-bottom:16px}
+.card h2{font-size:24px;margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 .cnt{font-size:16px;background:#fff3bf;border-radius:999px;padding:3px 12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:10px 16px;border-radius:14px;background:#fff;box-shadow:0 3px 0 var(--line);font-size:17px;border:2px solid var(--line)}
+.btn:active{transform:translateY(2px)}
+.btn.y{background:var(--yellow);border-color:#f2c230;box-shadow:0 3px 0 #e0b422}
+.btn.g{background:var(--green);border-color:#62b853;box-shadow:0 4px 0 #57a948;color:#fff}
+.btn.big{font-size:26px;padding:14px 28px;border-radius:18px}
+.btn.danger{color:#c92a2a}
+textarea{width:100%;min-height:150px;border-radius:14px;border:2px solid var(--line);padding:12px;font-size:16px;font-family:inherit;background:#fffdf7;resize:vertical;color:var(--ink)}
+.help{color:var(--muted);font-size:15px;line-height:1.6;margin:8px 0}
+.help b{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th,td{padding:8px 6px;border-bottom:1px solid #f3ead6;text-align:left;vertical-align:top}
+th{font-family:'Jua';font-weight:400;color:var(--muted);font-size:15px}
+td.ok{color:#2f9e44;font-weight:bold}
+td.warn{color:#e8590c}
+.qlist{max-height:330px;overflow:auto;margin-top:10px;border-radius:12px}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.set{background:#fffaf0;border-radius:16px;padding:12px 14px}
+.set label{display:block;font-family:'Jua';font-size:18px;margin-bottom:8px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{padding:8px 12px;border-radius:12px;background:#fff;border:2px solid var(--line);font-size:16px}
+.seg button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.set small{display:block;color:var(--muted);margin-top:6px;font-size:13px}
+.msg{color:#c92a2a;font-size:16px;min-height:22px;margin-top:8px}
+
+/* 대기실 */
+.lobby{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.lobby{grid-template-columns:1fr}}
+.code{font-family:'Jua';font-size:clamp(72px,14vw,140px);letter-spacing:.08em;line-height:1;text-align:center;margin:6px 0 10px}
+.addr{text-align:center;font-size:clamp(18px,2.6vw,26px);word-break:break-all;background:#fff8e1;border-radius:14px;padding:10px}
+#qr{display:flex;justify-content:center;margin-top:14px}
+#qr img,#qr canvas{border:10px solid #fff;border-radius:10px;width:180px;height:180px}
+.kids{display:flex;flex-wrap:wrap;gap:8px;min-height:60px;align-content:flex-start}
+.kid{display:flex;align-items:center;gap:6px;background:#fff8e1;border-radius:999px;padding:6px 12px 6px 6px;font-family:'Jua';font-size:20px;animation:pop .3s}
+.kid i{width:26px;height:26px;border-radius:50%;display:inline-block;border:3px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.08)}
+.kid button{background:none;padding:0 0 0 4px;font-size:16px;color:#adb5bd}
+.kid.off{opacity:.45}
+@keyframes pop{from{transform:scale(.5)}to{transform:scale(1)}}
+
+/* 경주 */
+.track{display:flex;flex-direction:column;gap:8px}
+.lane{display:grid;grid-template-columns:130px 1fr 90px;gap:10px;align-items:center}
+.lane .nm{font-family:'Jua';font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.road{height:46px;background:#626a78;border-radius:12px;position:relative;overflow:hidden}
+.road:after{content:'';position:absolute;right:0;top:0;bottom:0;width:16px;background:repeating-conic-gradient(#2d2a26 0 25%,#fff 0 50%) 0 0/8px 8px}
+.road .dash{position:absolute;left:0;right:16px;top:50%;border-top:3px dashed rgba(255,255,255,.5)}
+.road .car{position:absolute;top:6px;width:52px;height:34px;border-radius:10px;transition:left .5s linear;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.lane .sc{font-family:'Jua';font-size:20px;text-align:right}
+.lane.fin .nm:before{content:attr(data-rank);display:inline-block;background:var(--yellow);border-radius:8px;padding:0 6px;margin-right:6px}
+
+/* 결과 */
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:14px;margin:10px 0 20px}
+.pod{text-align:center;font-family:'Jua'}
+.pod .blk{border-radius:14px 14px 0 0;width:130px;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;font-size:38px;color:#fff}
+.pod .who{font-size:24px;margin-bottom:6px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:14px;background:#f1ead8;border-radius:8px;overflow:hidden;min-width:120px}
+.bar i{display:block;height:100%;border-radius:8px}
+</style>
+</head>
+<body>
+
+<!-- 1. 준비 -->
+<section class="view on" id="vSetup">
+  <header><h1>레이싱<span>퀴즈</span></h1><span class="tag">선생님</span></header>
+
+  <div class="card">
+    <h2>📝 문제 넣기 <span class="cnt" id="qCount">0문제</span></h2>
+    <div class="row">
+      <button class="btn y" id="sampleBtn">예시 문제 넣기 (1~2학년 30문제)</button>
+      <button class="btn" id="uploadBtn">📤 엑셀 올리기</button>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+      <button class="btn" id="tplBtn">📥 양식 받기</button>
+      <button class="btn danger" id="clearBtn">모두 지우기</button>
+    </div>
+    <p class="help">엑셀에서 <b>문제 · 정답 · 오답1 · 오답2 · 오답3</b> 칸을 그대로 복사해 아래에 붙여넣으면 돼요. 한 줄이 한 문제예요.<br>
+    화면에는 보기가 <b>3개</b>(정답 1 + 오답 2) 길로 나와요. 오답이 3개면 그중 2개를 골라 매번 섞어 보여 줘요.</p>
+    <textarea id="qText" placeholder="3 + 4 = ?	7	6	8	5
+'크다'의 반대말은?	작다	많다	높다	길다"></textarea>
+    <div class="qlist"><table id="qTable"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ 경주 규칙</h2>
+    <div class="settings">
+      <div class="set"><label>한 판 문제 수</label><div class="seg" data-k="count"><button data-v="5">5</button><button data-v="8">8</button><button data-v="10">10</button><button data-v="15">15</button><button data-v="0">전부</button></div><small>문제가 많으면 그중에서 골라 내요</small></div>
+      <div class="set"><label>생각 시간</label><div class="seg" data-k="think"><button data-v="6">6초</button><button data-v="9">9초</button><button data-v="12">12초</button><button data-v="16">16초</button></div><small>문제가 보이고 문까지 오는 시간 · 1학년은 12초 이상 추천</small></div>
+      <div class="set"><label>장애물(고깔)</label><div class="seg" data-k="obstacles"><button data-v="1">있음</button><button data-v="0">없음</button></div><small>점프로 넘어요. 처음엔 '없음'도 좋아요</small></div>
+      <div class="set"><label>틀렸을 때</label><div class="seg" data-k="penalty"><button data-v="slow">잠깐 느려짐</button><button data-v="none">그대로</button></div><small>맞히면 언제나 잠깐 빨라져요</small></div>
+      <div class="set"><label>문제 순서</label><div class="seg" data-k="order"><button data-v="shuffle">섞기</button><button data-v="in">쓴 순서대로</button></div></div>
+      <div class="set"><label>반 이름 (선택)</label><input id="className" placeholder="예: 1학년 방과후" style="width:100%;padding:9px 10px;border-radius:12px;border:2px solid var(--line);font-size:16px;font-family:inherit"></div>
+    </div>
+  </div>
+
+  <div class="row" style="justify-content:center">
+    <button class="btn g big" id="makeBtn">방 만들기 🚦</button>
+  </div>
+  <div class="msg" id="setupMsg" style="text-align:center"></div>
+</section>
+
+<!-- 2. 대기실 -->
+<section class="view" id="vLobby">
+  <header><h1>🚦 <span id="lobbyTitle">대기실</span></h1><span class="tag">선생님</span>
+    <div style="flex:1"></div>
+    <button class="btn" id="backSetup">⚙️ 문제·규칙 바꾸기</button>
+  </header>
+  <div class="lobby">
+    <div class="card">
+      <p class="jua" style="text-align:center;font-size:24px;margin:0">방 번호</p>
+      <div class="code" id="code">----</div>
+      <div class="addr" id="addr"></div>
+      <div id="qr"></div>
+    </div>
+    <div class="card">
+      <h2>들어온 친구 <span class="cnt" id="kidCount">0명</span></h2>
+      <div class="kids" id="kids"><p class="help">학생들이 주소에 들어가서 방 번호와 이름을 쓰면 여기에 나와요.</p></div>
+      <p class="help" style="font-size:13px">이름을 누르면 내보낼 수 있어요 (✕)</p>
+      <div style="height:10px"></div>
+      <button class="btn g big" id="goBtn" style="width:100%">출발! 🏁</button>
+      <p class="help" id="raceInfo" style="text-align:center"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 경주 -->
+<section class="view" id="vRace">
+  <header><h1>🏎️ 경주 중</h1><span class="tag" id="raceTag"></span><div style="flex:1"></div><button class="btn danger" id="endBtn">끝내기</button></header>
+  <div class="card"><div class="track" id="track"></div></div>
+</section>
+
+<!-- 4. 결과 -->
+<section class="view" id="vResult">
+  <header><h1>🏆 결과</h1><div style="flex:1"></div>
+    <button class="btn" id="csvBtn">📥 결과 저장(CSV)</button>
+    <button class="btn" id="toSetup">⚙️ 문제·규칙 바꾸기</button>
+    <button class="btn g" id="againBtn">다시 하기 🔁</button></header>
+  <div class="podium" id="podium"></div>
+  <div class="lobby">
+    <div class="card"><h2>순위</h2><table id="rankTable"></table></div>
+    <div class="card"><h2>문제별 정답률</h2><table id="qStat"></table></div>
+  </div>
+</section>
+
+<script>
+const SAMPLE=[
+["3 + 4 = ?","7","6","8","5"],["9 - 5 = ?","4","3","5","6"],["8 + 7 = ?","15","14","16","13"],["12 - 4 = ?","8","7","9","6"],
+["6에 얼마를 더하면 10?","4","3","5","6"],["가장 큰 수는?","87","78","69","80"],["삼각형의 꼭짓점은 몇 개?","3개","4개","2개","5개"],
+["사각형의 변은 몇 개?","4개","3개","5개","6개"],["짧은바늘 3, 긴바늘 12는 몇 시?","3시","12시","3시 30분","2시"],["1시간은 몇 분?","60분","100분","30분","50분"],
+["5씩 4묶음은?","20","15","25","9"],["2 × 3 = ?","6","5","8","9"],["받침이 있는 낱말은?","강아지","바나나","나비","우유"],["'크다'의 반대말은?","작다","많다","높다","길다"],
+["'덥다'의 반대말은?","춥다","맵다","쉽다","짧다"],["바르게 쓴 낱말은?","깨끗하다","깨끄타다","깨끗아다","개끗하다"],["바르게 쓴 낱말은?","읽어요","일거요","읽어여","일어요"],
+["강아지는 어떻게 짖어요?","멍멍","야옹","꿀꿀","음매"],["고마울 때 하는 말은?","고맙습니다","미안합니다","안녕히 가세요","잘 먹겠습니다"],["사과, 배, 포도는 모두?","과일","채소","동물","꽃"],
+["눈사람을 만드는 계절은?","겨울","봄","여름","가을"],["단풍이 드는 계절은?","가을","봄","여름","겨울"],["길을 건너는 신호등 색은?","초록색","빨간색","노란색","보라색"],
+["불이 나면 몇 번에 전화해요?","119","112","114","110"],["알에서 깨어나는 동물은?","닭","강아지","고양이","소"],["꿀을 모으는 곤충은?","꿀벌","개미","잠자리","무당벌레"],
+["다리가 6개인 동물은?","개미","거미","강아지","오징어"],["우리나라 국기는?","태극기","무궁화","애국가","한복"],["우리나라 꽃은?","무궁화","장미","해바라기","튤립"],
+["밥 먹기 전에 할 일은?","손 씻기","낮잠 자기","게임하기","줄넘기"]
+];
+const $=s=>document.querySelector(s);
+const params=new URLSearchParams(location.search);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function view(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#'+id).classList.add('on');window.scrollTo(0,0)}
+
+/* ===== 문제 ===== */
+let questions=[];
+function parse(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(line=>{
+    if(!line.trim())return;
+    let cells=line.includes('\t')?line.split('\t'):line.split(',');
+    cells=cells.map(c=>c.trim().replace(/^"(.*)"$/,'$1'));
+    if(/^(#|번호)$/.test(cells[0])||(/^\d+$/.test(cells[0])&&cells.length>=4&&!/^\d+$/.test(cells[1]||'x')&&false))cells.shift();
+    if(cells[0]==='문제'||cells[0]==='질문')return;
+    const [q,a,...w]=cells;
+    if(!q)return;
+    out.push({q,a:a||'',w:w.filter(x=>x)});
+  });
+  return out;
+}
+function refreshQ(){
+  questions=parse($('#qText').value);store.set('qr_t_text',$('#qText').value);
+  $('#qCount').textContent=questions.length+'문제';
+  $('#qTable').innerHTML=questions.length?'<tr><th>#</th><th>문제</th><th>정답</th><th>오답</th></tr>'+questions.map((x,i)=>{
+    const bad=!x.a?'정답이 없어요':x.w.length===0?'오답을 1개 이상 써 주세요':'';
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(x.q)+'</td><td class="ok">'+esc(x.a)+'</td><td'+(bad?' class="warn">'+bad:'>'+esc(x.w.join(' · ')))+'</td></tr>'}).join(''):'';
+}
+$('#qText').addEventListener('input',refreshQ);
+$('#sampleBtn').onclick=()=>{const cur=$('#qText').value.trim();$('#qText').value=(cur?cur+'\n':'')+SAMPLE.map(r=>r.join('\t')).join('\n');refreshQ()};
+$('#clearBtn').onclick=()=>{if(confirm('문제를 모두 지울까요?')){$('#qText').value='';refreshQ()}};
+$('#tplBtn').onclick=()=>download('레이싱퀴즈_문제양식.csv','﻿문제,정답,오답 1,오답 2,오답 3\n3 + 4 = ?,7,6,8,5\n\'크다\'의 반대말은?,작다,많다,높다,길다\n');
+$('#uploadBtn').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value='';
+  try{
+    if(/\.csv$/i.test(f.name)){const t=await f.text();appendRows(t.split(/\r?\n/).map(l=>l.split(',')))}
+    else{
+      if(typeof XLSX==='undefined')await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];
+      appendRows(XLSX.utils.sheet_to_json(ws,{header:1,defval:''}));
+    }
+  }catch(err){alert('파일을 읽지 못했어요. 엑셀 내용을 복사해서 붙여넣어 주세요.')}
+};
+function appendRows(rows){
+  const lines=rows.map(r=>r.map(c=>String(c).replace(/\t/g,' ').trim())).filter(r=>r.some(c=>c)).map(r=>{while(r.length&&!r[r.length-1])r.pop();return r.join('\t')});
+  const cur=$('#qText').value.trim();$('#qText').value=(cur?cur+'\n':'')+lines.join('\n');refreshQ();
+}
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$('#qText').value=store.get('qr_t_text')||'';refreshQ();
+
+/* ===== 설정 ===== */
+const settings=Object.assign({count:'8',think:'12',obstacles:'1',penalty:'slow',order:'shuffle'},JSON.parse(store.get('qr_t_set')||'{}'));
+document.querySelectorAll('.seg').forEach(seg=>{
+  const k=seg.dataset.k;
+  const sync=()=>seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===String(settings[k])));
+  seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{settings[k]=b.dataset.v;store.set('qr_t_set',JSON.stringify(settings));sync()});
+  sync();
+});
+$('#className').value=store.get('qr_t_class')||'';
+$('#className').oninput=e=>store.set('qr_t_class',e.target.value);
+
+/* ===== 방 ===== */
+let peer=null,code='',players=new Map(),state='setup',race=null,results=null;
+function peerOpts(){const o={debug:0};if(params.get('peerhost')){o.host=params.get('peerhost');o.port=+params.get('peerport')||9000;o.path=params.get('peerpath')||'/';o.secure=params.get('peersecure')==='1'}return o}
+function hostId(c){return 'class-quiz-race-'+c}
+function studentURL(){
+  const base=location.href.split('#')[0].split('?')[0].replace(/teacher\.html$/i,'');
+  const extra=params.get('peerhost')?'&peerhost='+params.get('peerhost')+'&peerport='+(params.get('peerport')||9000):'';
+  return base+'?room='+code+extra;
+}
+function validQs(){return questions.filter(x=>x.a&&x.w.length>0)}
+
+$('#makeBtn').onclick=()=>{
+  if(validQs().length<1){$('#setupMsg').textContent='문제를 1개 이상 넣어 주세요 (정답과 오답 1개 이상)';return}
+  $('#setupMsg').textContent='';
+  if(peer&&!peer.destroyed&&code){toLobby();return}
+  if(typeof Peer==='undefined'){$('#setupMsg').textContent='연결 도구를 불러오지 못했어요. 인터넷을 확인하고 새로고침해 주세요';return}
+  $('#makeBtn').disabled=true;$('#makeBtn').textContent='방 만드는 중...';
+  openRoom(0);
+};
+function openRoom(tries){
+  code=String(1000+Math.floor(Math.random()*9000));
+  peer=new Peer(hostId(code),peerOpts());
+  peer.on('open',()=>{$('#makeBtn').disabled=false;$('#makeBtn').textContent='대기실로 가기 🚦';toLobby()});
+  peer.on('error',e=>{
+    if(e.type==='unavailable-id'&&tries<5){try{peer.destroy()}catch(_){}openRoom(tries+1);return}
+    if(e.type==='peer-unavailable')return;
+    if(state==='setup'||!peer.open){$('#makeBtn').disabled=false;$('#makeBtn').textContent='방 만들기 🚦';$('#setupMsg').textContent='방을 만들지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요';}
+  });
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(_){}});
+  peer.on('connection',c=>{
+    c.on('data',m=>onMsg(c,m));
+    c.on('close',()=>{const p=players.get(c.peer);if(p){p.online=false;renderKids();renderTrack()}});
+  });
+}
+function toLobby(){
+  state='lobby';view('vLobby');
+  $('#lobbyTitle').textContent=($('#className').value.trim()||'대기실');
+  $('#code').textContent=code;const url=studentURL();$('#addr').textContent=url.replace(/^https?:\/\//,'');
+  makeQR(url);renderKids();
+  const n=settings.count==='0'?validQs().length:Math.min(+settings.count,validQs().length);
+  $('#raceInfo').textContent='한 판 '+n+'문제 · 생각 시간 '+settings.think+'초 · 장애물 '+(settings.obstacles==='1'?'있음':'없음');
+  players.forEach(p=>send(p,{t:'lobby'}));
+}
+async function makeQR(url){
+  const box=$('#qr');box.innerHTML='';
+  try{if(typeof QRCode==='undefined')await loadScript('lib/qrcode.min.js');new QRCode(box,{text:url,width:360,height:360,correctLevel:QRCode.CorrectLevel.M})}catch(e){}
+}
+function send(p,m){try{if(p.conn&&p.conn.open)p.conn.send(m)}catch(e){}}
+function onMsg(c,m){
+  if(!m||!m.t)return;
+  let p=players.get(c.peer);
+  if(m.t==='join'){
+    let name=String(m.name||'친구').slice(0,8);
+    // 같은 이름이 끊겨 있으면 다시 이어 주고, 접속 중이면 번호를 붙여요
+    let old=[...players.values()].find(x=>x.name===name);
+    if(old&&!old.online){players.delete(old.id);old.id=c.peer;old.conn=c;old.online=true;old.color=m.color||old.color;players.set(c.peer,old);p=old}
+    else{
+      if(old){let k=2;while([...players.values()].some(x=>x.name===name+k))k++;name=name+k}
+      p={id:c.peer,name,color:m.color||'#4dabf7',conn:c,online:true,p:0,ok:0,fin:false,time:0,rank:0,ans:{},inRace:false};
+      players.set(c.peer,p);
+    }
+    send(p,{t:'welcome',name:p.name,racing:state==='race'&&!p.inRace});
+    renderKids();renderTrack();
+    return;
+  }
+  if(!p)return;
+  if(state!=='race'||!p.inRace)return;
+  if(m.t==='prog'){p.p=Math.max(p.p,+m.p||0);p.ok=+m.ok||0;renderTrack()}
+  else if(m.t==='ans'){p.ans[m.i]=!!m.ok}
+  else if(m.t==='finish'){
+    p.ok=+m.ok||0;
+    if(!m.stopped&&!p.fin){p.fin=true;p.p=1;p.time=+m.time||0;p.rank=++race.finCount;send(p,{t:'rank',rank:p.rank})}
+    else if(m.stopped){p.p=Math.max(p.p,+m.p||0)}
+    renderTrack();checkAllDone();
+  }
+}
+function renderKids(){
+  const list=[...players.values()];
+  $('#kidCount').textContent=list.filter(p=>p.online).length+'명';
+  $('#kids').innerHTML=list.length?list.map(p=>'<span class="kid'+(p.online?'':' off')+'"><i style="background:'+esc(p.color)+'"></i>'+esc(p.name)+'<button data-id="'+esc(p.id)+'" title="내보내기">✕</button></span>').join(''):'<p class="help">학생들이 주소에 들어가서 방 번호와 이름을 쓰면 여기에 나와요.</p>';
+  $('#kids').querySelectorAll('button').forEach(b=>b.onclick=()=>{const p=players.get(b.dataset.id);if(!p)return;if(confirm(p.name+' 학생을 내보낼까요?')){send(p,{t:'kick'});setTimeout(()=>{try{p.conn.close()}catch(e){}},300);players.delete(p.id);renderKids()}});
+}
+$('#backSetup').onclick=()=>{state='setup';view('vSetup');players.forEach(p=>send(p,{t:'lobby'}))};
+
+/* ===== 경주 ===== */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+$('#goBtn').onclick=()=>{
+  const online=[...players.values()].filter(p=>p.online);
+  if(!online.length){alert('아직 들어온 학생이 없어요');return}
+  let qs=validQs().slice();if(settings.order==='shuffle')shuffle(qs);
+  if(settings.count!=='0')qs=qs.slice(0,+settings.count);
+  race={qs,finCount:0,t0:Date.now()};
+  players.forEach(p=>{p.p=0;p.ok=0;p.fin=false;p.time=0;p.rank=0;p.ans={};p.inRace=p.online});
+  const st={think:+settings.think,obstacles:settings.obstacles==='1',penalty:settings.penalty};
+  online.forEach(p=>send(p,{t:'start',qs:qs.map(x=>({q:x.q,a:x.a,w:x.w})),settings:st}));
+  state='race';view('vRace');$('#raceTag').textContent=qs.length+'문제 · '+online.length+'명';renderTrack();
+};
+function renderTrack(){
+  if(state!=='race')return;
+  const list=[...players.values()].filter(p=>p.inRace).sort((a,b)=>(a.fin&&b.fin)?a.rank-b.rank:(b.fin-a.fin)||(b.p-a.p));
+  const tr=$('#track');
+  // 줄을 재사용해서 자동차가 부드럽게 움직이게 해요
+  const ids=list.map(p=>p.id).join('|');
+  if(tr.dataset.ids!==ids){tr.dataset.ids=ids;tr.innerHTML=list.map(p=>'<div class="lane" data-id="'+esc(p.id)+'"><div class="nm"></div><div class="road"><div class="dash"></div><div class="car"></div></div><div class="sc"></div></div>').join('')}
+  list.forEach(p=>{const el=tr.querySelector('.lane[data-id="'+CSS.escape(p.id)+'"]');if(!el)return;
+    el.classList.toggle('fin',p.fin);el.querySelector('.nm').dataset.rank=p.rank+'등';el.querySelector('.nm').textContent=p.name+(p.online?'':' (끊김)');
+    const car=el.querySelector('.car');car.style.background=p.color;car.style.left='calc('+(p.p*100)+'% - '+(p.p*68)+'px)';car.textContent=p.fin?'🏁':'';
+    el.querySelector('.sc').textContent='✔ '+p.ok+'/'+race.qs.length});
+}
+function checkAllDone(){
+  const list=[...players.values()].filter(p=>p.inRace&&p.online);
+  if(list.length&&list.every(p=>p.fin)){clearTimeout(race.endT);race.endT=setTimeout(showResults,1500)}
+}
+$('#endBtn').onclick=()=>{if(confirm('경주를 끝내고 결과를 볼까요?')){players.forEach(p=>{if(p.inRace&&!p.fin)send(p,{t:'stop'})});setTimeout(showResults,800)}};
+function showResults(){
+  if(state!=='race')return;state='result';
+  const list=[...players.values()].filter(p=>p.inRace);
+  list.sort((a,b)=>(b.fin-a.fin)||(a.fin?a.rank-b.rank:(b.p-a.p))||(b.ok-a.ok));
+  let r=0;list.forEach(p=>{if(!p.fin)p.rank=0;p.finalRank=++r});
+  results={list,qs:race.qs};
+  const medal=['🥇','🥈','🥉'],hs=[150,115,90],col=['#ffc107','#adb5bd','#e8a76b'],order=[1,0,2];
+  $('#podium').innerHTML=order.filter(i=>list[i]).map(i=>'<div class="pod"><div class="who">'+esc(list[i].name)+'</div><div class="blk" style="height:'+hs[i]+'px;background:'+col[i]+'">'+medal[i]+'</div></div>').join('');
+  $('#rankTable').innerHTML='<tr><th>순위</th><th>이름</th><th>맞힌 문제</th><th>기록</th></tr>'+list.map(p=>'<tr><td class="jua" style="font-size:20px">'+p.finalRank+'</td><td>'+esc(p.name)+'</td><td>'+p.ok+' / '+race.qs.length+'</td><td>'+(p.fin?p.time+'초':Math.round(p.p*100)+'% 달림')+'</td></tr>').join('');
+  $('#qStat').innerHTML='<tr><th>#</th><th>문제</th><th>정답률</th></tr>'+race.qs.map((q,i)=>{
+    const tried=list.filter(p=>i in p.ans),ok=tried.filter(p=>p.ans[i]).length;const pct=tried.length?Math.round(ok/tried.length*100):null;
+    const c=pct===null?'#dee2e6':pct>=80?'#69db7c':pct>=50?'#ffd43b':'#ff8787';
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(q.q)+'<br><small style="color:#2f9e44">'+esc(q.a)+'</small></td><td style="min-width:150px"><div class="bar"><i style="width:'+(pct||0)+'%;background:'+c+'"></i></div><small>'+(pct===null?'푼 친구 없음':pct+'% ('+ok+'/'+tried.length+')')+'</small></td></tr>'}).join('');
+  view('vResult');
+}
+$('#againBtn').onclick=()=>toLobby();
+$('#toSetup').onclick=()=>{state='setup';view('vSetup');players.forEach(p=>send(p,{t:'lobby'}))};
+$('#csvBtn').onclick=()=>{
+  if(!results)return;const q=results.qs;const cell=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  let csv='﻿'+['순위','이름','맞힌 문제','기록(초)',...q.map((x,i)=>(i+1)+'. '+x.q)].map(cell).join(',')+'\n';
+  results.list.forEach(p=>{csv+=[p.finalRank,p.name,p.ok,p.fin?p.time:'',...q.map((x,i)=>i in p.ans?(p.ans[i]?'O':'X'):'')].map(cell).join(',')+'\n'});
+  const d=new Date();download('레이싱퀴즈_결과_'+(d.getMonth()+1)+'월'+d.getDate()+'일.csv',csv);
+};
+window.addEventListener('beforeunload',e=>{if(state!=='setup'){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="lib/peerjs.min.js"></script>
+<script>
+// 앱으로 설치하고, 인터넷이 잠깐 끊겨도 화면은 열리게 해요
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
