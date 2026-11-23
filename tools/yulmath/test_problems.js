@@ -1,4 +1,4 @@
-// 율이 꿀벌 수학 문제 검산 테스트
+// 나율이의 달콤 수학 문제 검산 테스트
 // 실행: node tools/yulmath/test_problems.js  (단원·단계마다 기본 1500문제씩)
 // 정답이 맞는지, 오답이 정말 틀린 값인지, 글자가 깨지지 않았는지 확인해요.
 const path = require("path");

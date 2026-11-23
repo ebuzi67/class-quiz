@@ -1,4 +1,4 @@
-// 율이 꿀벌 수학 - 중학교 문제 + 단원 목록
+// 나율이의 달콤 수학 - 중학교 문제 + 단원 목록
 // problems.js 의 도구(YMcore)를 그대로 써요.
 (function (root) {
   "use strict";
