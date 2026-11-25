@@ -306,9 +306,9 @@ const LEVELS = {
   hard:   { name: "어려움", mob: 1.15, hunger: 3,   regen: 0 },
 };
 const MOBS = {
-  wolf:  { img: "wolf",  w: 92,  speed: 192, dmg: 1, detect: 220, cry: "왈왈!",  from: 1, count: 2 },
-  alpha: { img: "alpha", w: 112, speed: 250, dmg: 2, detect: 260, cry: "크르릉!", from: 2, count: 1 },
-  bear:  { img: "bear",  w: 126, speed: 150, dmg: 3, detect: 300, cry: "크아앙!", from: 3, count: 1 },
+  wolf:  { img: "wolf",  w: 92,  speed: 192, dmg: 1, detect: 220, cry: "왈왈!",  from: 1, count: 2, hp: 3 },
+  alpha: { img: "alpha", w: 112, speed: 250, dmg: 2, detect: 260, cry: "크르릉!", from: 2, count: 1, hp: 5 },
+  bear:  { img: "bear",  w: 126, speed: 150, dmg: 3, detect: 300, cry: "크아앙!", from: 3, count: 1, hp: 8 },
 };
 const FOODS = [ // 모양 번호 = 채워 주는 식량
   { img: "meat", value: 1, name: "고기" }, { img: "berry", value: 2, name: "베리" }, { img: "cooked", value: 3, name: "익힌 고기" },
@@ -322,10 +322,10 @@ const needOf = (lv) => lv * 20;                // 레벨 × 20 만큼 불꽃게�
 // ───────── 상점 물건 ─────────
 // slot: 같은 칸의 물건은 하나만 낄 수 있어요
 const SHOP = [
-  { id: "club",  cat: "weapon", slot: "weapon", icon: "🏏", name: "나무 몽둥이", price: 10, desc: "몹을 살짝 밀어내요", range: 95, stun: 1.2, cd: 1.2, push: 70 },
-  { id: "axe",   cat: "weapon", slot: "weapon", icon: "🪓", name: "돌도끼",     price: 25, desc: "더 멀리, 더 오래 기절!", range: 115, stun: 1.8, cd: 1.0, push: 95 },
-  { id: "sword", cat: "weapon", slot: "weapon", icon: "🗡️", name: "철검",       price: 50, desc: "빠르고 넓게 휘둘러요", range: 135, stun: 2.4, cd: 0.8, push: 120 },
-  { id: "flame", cat: "weapon", slot: "weapon", icon: "⚔️", name: "불꽃 쌍검",   price: 90, desc: "가장 강한 전설의 검!", range: 160, stun: 3, cd: 0.6, push: 150 },
+  { id: "club",  cat: "weapon", slot: "weapon", icon: "🏏", name: "나무 몽둥이", price: 10, desc: "공격력 1 · 몹을 살짝 밀어내요", dmg: 1, range: 95, stun: 1.2, cd: 1.2, push: 70 },
+  { id: "axe",   cat: "weapon", slot: "weapon", icon: "🪓", name: "돌도끼",     price: 25, desc: "공격력 2 · 더 오래 기절!", dmg: 2, range: 115, stun: 1.8, cd: 1.0, push: 95 },
+  { id: "sword", cat: "weapon", slot: "weapon", icon: "🗡️", name: "철검",       price: 50, desc: "공격력 3 · 빠르고 넓게!", dmg: 3, range: 135, stun: 2.4, cd: 0.8, push: 120 },
+  { id: "flame", cat: "weapon", slot: "weapon", icon: "⚔️", name: "불꽃 쌍검",   price: 90, desc: "공격력 4 · 전설의 검!", dmg: 4, range: 160, stun: 3, cd: 0.6, push: 150 },
   { id: "leather", cat: "armor", slot: "armor", icon: "🧥", name: "가죽 갑옷",   price: 15, desc: "최대 체력 +3", hp: 3, glow: "rgba(200, 130, 60, .9)" },
   { id: "iron",    cat: "armor", slot: "armor", icon: "🛡️", name: "철 갑옷",     price: 40, desc: "최대 체력 +6", hp: 6, glow: "rgba(210, 225, 240, .95)" },
   { id: "diamond", cat: "armor", slot: "armor", icon: "💎", name: "다이아 갑옷", price: 80, desc: "최대 체력 +10", hp: 10, glow: "rgba(80, 230, 255, .95)" },
@@ -340,7 +340,7 @@ const SHOP = [
   { id: "dragon",cat: "deco", slot: "pet", icon: "🐉", name: "아기 용",  price: 40, desc: "하늘을 날며 따라와요" },
 ];
 const CAT_TIP = {
-  weapon: "⚔️ 무기를 끼면 공격 단추(키보드는 스페이스)로 몹을 밀어내고 잠깐 기절시켜요.",
+  weapon: "⚔️ 공격 단추(키보드는 스페이스)로 몹을 때리면 몹 체력이 줄고 잠깐 기절해요. 체력이 0이 되면 숲 밖으로 도망가요!",
   armor: "🛡️ 갑옷을 입으면 최대 체력이 늘어나요. 몸이 갑옷 색으로 빛나요!",
   tool: "🎒 도구는 칸이 따로라서 모두 같이 쓸 수 있어요.",
   deco: "🎩 꾸미기는 모자 하나, 펫 하나를 고를 수 있어요.",
@@ -359,6 +359,7 @@ const MISSIONS = [
   { id: "safe", icon: "🛡️", name: "한 번도 안 물리고 레벨 3", short: "안 물리고 레벨 3", desc: "몹에게 물리면 실패!", goal: 3, reward: 5,
     progress: () => S.lv, fail: () => S.ms.bitten > 0 },
   { id: "push", icon: "⚔️", name: "몹 3번 쫓아내기", short: "몹 쫓아내기", desc: "상점에서 무기를 사야 할 수 있어요", goal: 3, reward: 3, progress: () => S.ms.push },
+  { id: "beat", icon: "💥", name: "몹 1마리 숲 밖으로 쫓아내기", short: "몹 물리치기", desc: "몹 체력을 0으로 만들어요 (무기 필요)", goal: 1, reward: 5, progress: () => S.ms.beat },
 ];
 const rewardOf = (m) => typeof m.reward === "number" ? m.reward : m.reward[level];
 
@@ -442,7 +443,7 @@ function newGame() {
     player: { x: FIRE.x, y: FIRE.y + 120, face: 1, walk: 0 },
     items: [], mobs: [], texts: [], sparks: [], winT: -1,
     tips: { wood: false, put: false },
-    ms: { eat: 0, wood: 0, bitten: 0, push: 0 }, done: {}, earned: 0,
+    ms: { eat: 0, wood: 0, bitten: 0, push: 0, beat: 0 }, respawn: [], done: {}, earned: 0,
   };
   S.gear = { weapon: equipped("weapon"), armor: equipped("armor"), shoes: equipped("shoes"), light: equipped("light"), bag: equipped("bag"), hat: equipped("hat"), pet: equipped("pet") };
   if (S.gear.armor) S.maxHp = S.hp = MAX_HP + S.gear.armor.hp;
@@ -453,22 +454,31 @@ function newGame() {
 }
 
 // 불빛 밖, 플레이어와 떨어진 곳을 골라요 (엔트리의 '될 때까지 반복하기'와 같아요)
-function freeSpot(margin, fromLight, fromPlayer) {
-  let best = null, bestScore = -1;
-  for (let i = 0; i < 200; i++) {
+// 예전에는 조건에 맞는 첫 자리를 바로 골랐어요. 그러면 다른 몹이 어디 있는지 안 봐서
+// 동전 던지기처럼 같은 쪽에 몰릴 때가 많았어요(2마리면 두 번에 한 번).
+// 지금은 맞는 자리 후보를 여러 개 뽑고, 그중 다른 친구들(others)과 가장 먼 자리를 골라요.
+function freeSpot(margin, fromLight, fromPlayer, others = []) {
+  let best = null, bestScore = -Infinity, pick = null, pickScore = -Infinity, found = 0;
+  for (let i = 0; i < 400 && found < 24; i++) {
     const p = { x: rand(margin, W - margin), y: rand(margin + 20, H - margin) };
     const okLight = dist(p, FIRE) - (S.light + fromLight);
     const okPlayer = dist(p, S.player) - fromPlayer;
-    if (okLight > 0 && okPlayer > 0) return p;
+    if (okLight > 0 && okPlayer > 0) {
+      found++;
+      const far = others.length ? Math.min(...others.map((o) => dist(p, o))) : 0;
+      const score = far + rand(0, 60);           // 조금은 무작위로 섞어요
+      if (score > pickScore) { pick = p; pickScore = score; }
+      continue;
+    }
     const score = Math.min(okLight, okPlayer);
-    if (!best || score > bestScore) { best = p; bestScore = score; }
+    if (score > bestScore) { best = p; bestScore = score; }
   }
-  return best;
+  return pick || best;
 }
 function spawnItem(it) {
   const list = it.kind === "food" ? FOODS : WOODS;
   it.type = list[Math.floor(Math.random() * list.length)];
-  const p = freeSpot(40, 40, 120);
+  const p = freeSpot(40, 40, 120, S.items.filter((o) => o !== it && o.kind === it.kind));
   it.x = p.x; it.y = p.y; it.pop = 0; it.bob = Math.random() * 6;
   return it;
 }
@@ -476,13 +486,15 @@ function spawnMobs() {
   for (const kind in MOBS) {
     const m = MOBS[kind];
     if (S.lv < m.from) continue;
-    const have = S.mobs.filter((x) => x.kind === kind).length;
-    for (let i = have; i < m.count; i++) {
-      const p = freeSpot(60, 100, 300);
-      S.mobs.push({ kind, ...m, x: p.x, y: p.y, ang: rand(0, Math.PI * 2), chase: false, rest: 0, face: 1, appear: 0, say: null });
-      if (S.t > 1) { say(p, { wolf: "늑대가 나타났어!", alpha: "알파늑대가 나타났어!", bear: "곰이 나타났어!" }[kind], "#ff9a9a"); sfx.growl(); }
-    }
+    const have = S.mobs.filter((x) => x.kind === kind).length + S.respawn.filter((x) => x.kind === kind).length;
+    for (let i = have; i < m.count; i++) spawnOne(kind);
   }
+}
+function spawnOne(kind) {
+  const m = MOBS[kind];
+  const p = freeSpot(60, 100, 300, S.mobs);
+  S.mobs.push({ kind, ...m, maxHp: m.hp, x: p.x, y: p.y, ang: rand(0, Math.PI * 2), chase: false, rest: 0, face: 1, appear: 0, say: null, hitT: 0 });
+  if (S.t > 1) { say(p, { wolf: "늑대가 나타났어!", alpha: "알파늑대가 나타났어!", bear: "곰이 나타났어!" }[kind], "#ff9a9a"); sfx.growl(); }
 }
 
 // ───────── 글자 효과 ─────────
@@ -661,6 +673,10 @@ function update(dt) {
     if (m.y > H - my) { m.y = H - my; m.ang = -m.ang; }
     if (Math.abs(Math.cos(m.ang)) > 0.2) m.face = Math.cos(m.ang) < 0 ? -1 : 1;
   }
+  for (const r of S.respawn) r.t -= dt;
+  for (const r of S.respawn.filter((x) => x.t <= 0)) spawnOne(r.kind);
+  S.respawn = S.respawn.filter((x) => x.t > 0);
+  for (const m of S.mobs) if (m.hitT > 0) m.hitT -= dt;
   // 몹끼리 겹치지 않게 살짝 밀어요
   for (let i = 0; i < S.mobs.length; i++) for (let j = i + 1; j < S.mobs.length; j++) {
     const a = S.mobs[i], b = S.mobs[j], dd = dist(a, b), want = (a.w + b.w) * 0.32;
@@ -744,9 +760,18 @@ function attack() {
     m.vx = Math.cos(a) * w.push * 8; m.vy = Math.sin(a) * w.push * 8;
     m.stunT = w.stun; m.chase = false; m.rest = 0;
     hit++; S.ms.push++;
-    say(m, "퍽!", "#ffe08a");
+    m.hp = Math.max(0, m.hp - w.dmg); m.hitT = 4;
+    S.texts.push({ x: m.x + rand(-12, 12), y: m.y - m.w * 0.9, text: `-${w.dmg}`, color: "#ff5a5a", life: 1, max: 1, big: false, dmg: true });
     burst(m.x, m.y - m.w * 0.4, "#fff2b0", 12);
   }
+  // 체력이 0이 된 몹은 숲 밖으로 도망가고, 조금 뒤에 다시 나타나요
+  for (const m of S.mobs.filter((x) => x.hp <= 0)) {
+    burst(m.x, m.y - m.w * 0.4, "#ffffff", 24);
+    say(m, { wolf: "늑대가 도망갔어!", alpha: "알파늑대가 도망갔어!", bear: "곰이 도망갔어!" }[m.kind], "#9dffb0");
+    S.respawn.push({ kind: m.kind, t: 15 });
+    S.ms.beat++;
+  }
+  S.mobs = S.mobs.filter((x) => x.hp > 0);
   if (hit) { tone(150, 0.18, "square", 0.12, -60, 0.03); if (!S.tips.push) { S.tips.push = true; showHint("💫 몹이 기절했어요! 지금 도망가요!", 2.5); } }
 }
 
@@ -850,6 +875,16 @@ function draw() {
     c.fillStyle = m.chase ? "#ff3030" : "rgba(255, 70, 70, .7)";
     c.beginPath(); c.arc(ex - 6, ey, 3.5, 0, Math.PI * 2); c.arc(ex + 6, ey, 3.5, 0, Math.PI * 2); c.fill();
   }
+  // 몹 체력 막대: 보이는 몹과, 최근에 맞은 몹
+  for (const m of S.mobs) {
+    const seen = dist(m, FIRE) < S.lightShow * 0.8 || dist(m, P) < 110;
+    if (!seen && m.hitT <= 0) continue;
+    const bw = Math.max(44, m.w * 0.6), bx = m.x - bw / 2, by = m.y - m.w * 0.78 - 14;
+    c.fillStyle = "rgba(0,0,0,.6)"; c.fillRect(bx - 2, by - 2, bw + 4, 10);
+    c.fillStyle = m.hp / m.maxHp > 0.5 ? "#59d37a" : m.hp / m.maxHp > 0.25 ? "#ffc145" : "#ff4d4d";
+    c.fillRect(bx, by, bw * m.hp / m.maxHp, 6);
+    if (m.hitT > 0) outlineText(`${m.hp}/${m.maxHp}`, m.x, by - 10, 13, "#fff");
+  }
   // 모닥불로 가는 화살표 (장작이 있을 때)
   if (S.wood > 0 && dist(P, FIRE) > 140 && S.winT < 0) {
     const a = Math.atan2(FIRE.y - P.y, FIRE.x - P.x), r = 70 + Math.sin(t * 6) * 5;
@@ -858,10 +893,10 @@ function draw() {
     c.restore();
   }
   // 말풍선과 글자
-  for (const m of S.mobs) if (m.say) bubble(m.x, m.y - m.w * 0.85, m.say.text, "#ffdede");
+  for (const m of S.mobs) if (m.say) bubble(m.x, m.y - m.w * 0.78 - 30, m.say.text, "#ffdede");
   for (const tx of S.texts) {
     c.globalAlpha = Math.min(1, tx.life / tx.max * 2.5);
-    outlineText(tx.text, tx.x, tx.y, tx.big ? 30 : 22, tx.color);
+    outlineText(tx.text, tx.x, tx.y, tx.big || tx.dmg ? 30 : 22, tx.color);
   }
   c.globalAlpha = 1;
   c.restore();
@@ -882,8 +917,8 @@ function drawMob(m) {
   shadow(m.x, m.y, m.w);
   const hop = m.rest > 0 ? 0 : Math.abs(Math.sin(S.t * 10 + m.x * 0.01)) * 3;
   drawSprite(IMG[m.img], m.x, m.y - hop, m.w * (0.6 + 0.4 * m.appear), m.face, m.appear);
-  if (m.stunT > 0) outlineText("💫", m.x + Math.sin(S.t * 8) * 8, m.y - m.w * 0.95, 26, "#fff");
-  else if (m.chase) outlineText("!", m.x, m.y - m.w * 0.95, 26, "#ff5050");
+  if (m.stunT > 0) outlineText("💫", m.x + Math.sin(S.t * 8) * 8, m.y - m.w * 0.78 - 42, 26, "#fff");
+  else if (m.chase) outlineText("!", m.x, m.y - m.w * 0.78 - 42, 26, "#ff5050");
 }
 function drawPlayer() {
   const P = S.player, blink = S.hurtT > 0 && Math.floor(S.hurtT * 12) % 2 === 0;
