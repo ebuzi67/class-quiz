@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>99밤의 숲</title>
+<title>숲에서 99일 살기</title>
 <meta name="description" content="모닥불을 키워 어두운 숲에서 살아남는 생존 게임">
 <meta name="theme-color" content="#14241a">
 <link rel="manifest" href="manifest.json">
@@ -83,6 +83,8 @@
   .wincard .row { margin: 6px 0 0; }
   /* 키가 낮은 화면(가로 휴대폰)에서는 창을 작게 */
   @media (max-height: 520px) {
+    .mlist { gap: 5px; margin: 6px 0; } .mlist div { padding: 6px 10px; font-size: 14px; }
+    #missionBox { font-size: 11px; line-height: 1.35; }
     .card { padding: 10px 16px; border-radius: 20px; }
     h1 { font-size: 34px; } h2 { font-size: 24px; }
     .sub { margin: 2px 0 6px; font-size: 15px; }
@@ -93,6 +95,27 @@
     .help { gap: 6px; margin: 6px 0; } .help div { padding: 6px 10px; font-size: 14px; }
     .small { margin: 4px 0 0; }
   }
+  /* 도전 미션 */
+  #missionBox { margin-top: 6px; padding: 5px 10px; font-size: clamp(12px, 1.9vw, 15px); line-height: 1.5; max-width: clamp(170px, 30vw, 300px); }
+  #missionBox .m { display: flex; gap: 6px; justify-content: space-between; white-space: nowrap; }
+  #missionBox .m span:first-child { overflow: hidden; text-overflow: ellipsis; }
+  #missionBox .m.done { color: #8ff0a8; }
+  #missionBox .m.fail { opacity: .45; text-decoration: line-through; }
+  #toast { position: fixed; left: 50%; top: 22%; transform: translate(-50%, -20px) scale(.9); opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
+    background: linear-gradient(180deg, #fff3c4, #ffd166); color: #5a3300; border: 3px solid #fff; border-radius: 20px; padding: 10px 22px; text-align: center;
+    font-size: clamp(18px, 3.4vw, 28px); box-shadow: 0 8px 30px rgba(255, 190, 60, .6); white-space: nowrap; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #toast small { display: block; font-size: .65em; }
+  .coins { display: inline-block; background: rgba(255, 209, 102, .16); border: 2px solid #ffd166; color: #ffe39a; border-radius: 99px; padding: 4px 16px; font-size: clamp(16px, 2.8vw, 22px); }
+  .mlist { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; text-align: left; }
+  .mlist div { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.07); border-radius: 16px; padding: 10px 14px; font-size: clamp(15px, 2.5vw, 19px); }
+  .mlist .ico { font-size: 1.6em; }
+  .mlist .txt { flex: 1; line-height: 1.3; }
+  .mlist .txt small { display: block; opacity: .75; font-size: .8em; }
+  .mlist .rw { color: #ffd166; white-space: nowrap; }
+  .mlist .kid { border: 2px solid #ffd166; background: rgba(255, 209, 102, .12); }
+  .tag { display: inline-block; background: #ffd166; color: #5a3300; border-radius: 99px; padding: 0 8px; font-size: .75em; margin-left: 4px; vertical-align: middle; }
+  .earn { color: #8a4b00; }
   #rotate { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 14px; opacity: .7; pointer-events: none; }
   @media (orientation: landscape) { #rotate { display: none; } }
 </style>
@@ -104,6 +127,7 @@
   <div class="box bars">
     <div class="bar" id="hpBar"><span class="ico">❤️</span><span class="track"><span class="fill" id="hpFill"></span></span><span class="num" id="hpNum">10</span></div>
     <div class="bar" id="foodBar"><span class="ico">🍖</span><span class="track"><span class="fill" id="foodFill"></span></span><span class="num" id="foodNum">10</span></div>
+    <div id="missionBox"></div>
   </div>
   <div class="box" id="fireBox">
     <div id="fireLv">🔥 모닥불 레벨 1</div>
@@ -113,18 +137,20 @@
   <div id="rightBox">
     <div class="box">
       <div class="stat">🪵 <b id="woodNum">0</b></div>
-      <div class="stat">🌙 <b id="nightNum">1</b>밤</div>
+      <div class="stat">🌙 <b id="nightNum">1</b>일째</div>
+      <div class="stat">🪙 <b id="coinNum">0</b></div>
     </div>
     <button class="round" id="pauseBtn" aria-label="잠깐 멈추기">⏸</button>
   </div>
 </div>
 <div id="stick" hidden><div id="knob"></div></div>
 <div id="hint" hidden></div>
+<div id="toast"></div>
 
 <!-- 첫 화면 -->
 <div class="screen dim" id="title">
   <div class="card">
-    <h1>🔥 99밤의 숲 🌙</h1>
+    <h1>🔥 숲에서 99일 살기 🌙</h1>
     <p class="sub">모닥불을 키워 어두운 숲에서 살아남아요!</p>
     <div class="cast">
       <img src="img/player.webp" alt="탐험가"><img src="img/campfire.webp" alt="모닥불">
@@ -139,10 +165,23 @@
       <button class="btn go" id="startBtn" disabled>그림 불러오는 중…</button>
     </div>
     <div class="row">
+      <button class="btn" id="missionBtn">🎯 도전 미션</button>
       <button class="btn" id="helpBtn">❓ 하는 법</button>
       <button class="btn" id="soundBtn">🔊 소리 켬</button>
     </div>
+    <div class="coins" id="coinText">🪙 숲 코인 0개</div>
     <p class="small" id="bestText"></p>
+  </div>
+</div>
+
+<!-- 도전 미션 -->
+<div class="screen dim" id="missions" hidden>
+  <div class="card">
+    <h2>🎯 도전 미션</h2>
+    <p class="sub">한 판 안에서 미션을 끝내면 <b style="color:#ffd166;font-weight:400">🪙 숲 코인</b>을 받아요. 판마다 다시 도전할 수 있어요!</p>
+    <div class="mlist" id="mlist"></div>
+    <div class="coins" id="coinText2">🪙 숲 코인 0개</div>
+    <div class="row"><button class="btn go" data-close>알겠어요!</button></div>
   </div>
 </div>
 
@@ -181,6 +220,7 @@
   <div class="card">
     <h2>😵 으앗, 기절했어…</h2>
     <p class="result" id="overText"></p>
+    <p class="result" id="overCoin"></p>
     <p class="sub">장작을 모아 모닥불을 키우고, 불빛 안에서 쉬어 가요!</p>
     <div class="row">
       <button class="btn go" data-retry>🔁 다시 도전</button>
@@ -195,6 +235,7 @@
     <h2 style="color:#e06a00">🌅 숲을 모두 밝혔어! 탈출 성공!</h2>
     <p class="result" id="winText"></p>
     <p class="result" id="winBest"></p>
+    <p class="result earn" id="winCoin"></p>
     <div class="row">
       <button class="btn go" data-retry>🔁 한 번 더</button>
       <button class="btn" data-home style="background:#f1e3c4">🏠 처음으로</button>
@@ -205,6 +246,7 @@
 
 <script>
 "use strict";
+const $ = (id) => document.getElementById(id);
 // ───────── 기본 설정 ─────────
 // 무대 크기: 엔트리 무대(480×270)의 2배예요. 엔트리 숫자를 2배 하면 같은 느낌이 나요.
 const W = 960, H = 540;
@@ -227,6 +269,19 @@ const WOODS = [{ img: "log", value: 1, name: "통나무" }, { img: "coal", value
 const MAX_HP = 10, MAX_FOOD = 20, WIN_LEVEL = 5, NIGHT_SEC = 10;
 const lightOf = (lv) => 160 + 60 * (lv - 1);   // 엔트리: 빛반경 80, 레벨마다 +30 (2배)
 const needOf = (lv) => lv * 20;                // 레벨 × 20 만큼 불꽃게이지가 차면 레벨 업
+
+// ───────── 도전 미션 ─────────
+// 한 판 안에서 끝내면 숲 코인을 받아요. 판마다 다시 받을 수 있어요.
+// progress: 지금까지 한 만큼, fail: 이번 판에 실패했는지
+const MISSIONS = [
+  { id: "maxfire", icon: "🔥", name: "캠프파이어 최대 레벨 달성하기", short: "모닥불 최대 레벨", desc: "모닥불을 레벨 5까지 키워요", goal: WIN_LEVEL,
+    reward: { easy: 5, normal: 10, hard: 15 }, kid: true, progress: () => S.lv },
+  { id: "eat", icon: "🍖", name: "음식 10개 먹기", short: "음식 먹기", desc: "고기·베리·케이크… 무엇이든 좋아요", goal: 10, reward: 3, progress: () => S.ms.eat },
+  { id: "wood", icon: "🪵", name: "장작 15개 모으기", short: "장작 모으기", desc: "통나무는 1개, 석탄은 2개예요", goal: 15, reward: 3, progress: () => S.ms.wood },
+  { id: "safe", icon: "🛡️", name: "한 번도 안 물리고 레벨 3", short: "안 물리고 레벨 3", desc: "몹에게 물리면 실패!", goal: 3, reward: 5,
+    progress: () => S.lv, fail: () => S.ms.bitten > 0 },
+];
+const rewardOf = (m) => typeof m.reward === "number" ? m.reward : m.reward[level];
 
 // ───────── 저장 (안 되는 브라우저도 있어서 조심해서 써요) ─────────
 const store = {
@@ -308,6 +363,7 @@ function newGame() {
     player: { x: FIRE.x, y: FIRE.y + 120, face: 1, walk: 0 },
     items: [], mobs: [], texts: [], sparks: [], winT: -1,
     tips: { wood: false, put: false },
+    ms: { eat: 0, wood: 0, bitten: 0 }, done: {}, earned: 0,
   };
   for (let i = 0; i < 4; i++) { S.items.push(spawnItem({ kind: "food" })); S.items.push(spawnItem({ kind: "wood" })); }
   spawnMobs();
@@ -342,13 +398,14 @@ function spawnMobs() {
     for (let i = have; i < m.count; i++) {
       const p = freeSpot(60, 100, 300);
       S.mobs.push({ kind, ...m, x: p.x, y: p.y, ang: rand(0, Math.PI * 2), chase: false, rest: 0, face: 1, appear: 0, say: null });
-      if (S.t > 1) { say(p, kind === "bear" ? "곰이 나타났어!" : "알파늑대가 나타났어!", "#ff9a9a"); sfx.growl(); }
+      if (S.t > 1) { say(p, { wolf: "늑대가 나타났어!", alpha: "알파늑대가 나타났어!", bear: "곰이 나타났어!" }[kind], "#ff9a9a"); sfx.growl(); }
     }
   }
 }
 
 // ───────── 글자 효과 ─────────
 function say(at, text, color = "#fff", big = false) {
+  if (big) S.texts = S.texts.filter((t) => !t.big);
   S.texts.push({ x: at.x, y: at.y - 50, text, color, life: big ? 2 : 1.3, max: big ? 2 : 1.3, big });
 }
 let hintTimer = 0;
@@ -445,10 +502,10 @@ function update(dt) {
     it.pop = Math.min(1, it.pop + dt * 3);
     if (it.pop > 0.6 && dist(P, it) < 48) {
       if (it.kind === "food") {
-        S.food = Math.min(MAX_FOOD, S.food + it.type.value);
+        S.food = Math.min(MAX_FOOD, S.food + it.type.value); S.ms.eat++;
         say(it, `+${it.type.value} 🍖`, "#ffd166"); sfx.food();
       } else {
-        S.wood += it.type.value;
+        S.wood += it.type.value; S.ms.wood += it.type.value;
         say(it, `+${it.type.value} 🪵`, "#e3b27a"); sfx.wood();
         if (!S.tips.wood) { S.tips.wood = true; showHint("🔥 이제 모닥불로 가져가요!", 3); }
       }
@@ -467,7 +524,7 @@ function update(dt) {
       S.gauge -= needOf(S.lv); S.lv++;
       S.light = lightOf(S.lv); S.fireScale = 1 + 0.12 * (S.lv - 1);
       sfx.level(); burst(FIRE.x, FIRE.y, "#fff1a8", 40);
-      if (S.lv >= WIN_LEVEL) { say(FIRE, "숲이 모두 밝아졌어!", "#fff1a8", true); S.winT = 0; S.gauge = 0; sfx.win(); }
+      if (S.lv >= WIN_LEVEL) { say(FIRE, "숲이 모두 밝아졌어!", "#fff1a8", true); S.winT = 0; S.gauge = 0; sfx.win(); checkMissions(); }
       else { say(FIRE, "레벨 업! 숲이 더 밝아졌어!", "#fff1a8", true); spawnMobs(); }
     }
   }
@@ -515,8 +572,66 @@ function update(dt) {
   }
 
   if (S.hurtT > 0) S.hurtT -= dt;
+  checkMissions();
   updateEffects(dt);
   if (S.hp <= 0) loseGame();
+}
+
+function checkMissions() {
+  for (const m of MISSIONS) {
+    if (S.done[m.id] || (m.fail && m.fail())) continue;
+    if (m.progress() >= m.goal) {
+      S.done[m.id] = true;
+      const c = rewardOf(m);
+      S.earned += c;
+      addCoins(c);
+      const cnt = store.get("mcount", {}); cnt[m.id] = (cnt[m.id] || 0) + 1; store.set("mcount", cnt);
+      toast(`🎯 미션 성공! +${c} 🪙`, m.icon + " " + m.name);
+      tone(1319, 0.15, "triangle", 0.14, 0, 0.45); tone(1568, 0.25, "triangle", 0.14, 0, 0.58);
+    }
+  }
+  renderMissionBox();
+}
+let lastMBox = "";
+function renderMissionBox() {
+  const html = MISSIONS.map((m) => {
+    const done = S.done[m.id], fail = !done && m.fail && m.fail();
+    const n = Math.min(m.goal, m.progress());
+    const right = done ? "✅" : fail ? "❌" : `${n}/${m.goal}`;
+    return `<div class="m${done ? " done" : ""}${fail ? " fail" : ""}"><span>${m.icon} ${m.short}</span><span>${right}</span></div>`;
+  }).join("");
+  if (html !== lastMBox) { lastMBox = html; $("missionBox").innerHTML = html; }
+}
+// 미션이 한꺼번에 여러 개 끝나도 하나씩 차례로 보여 줘요
+const toastQueue = [];
+let toastBusy = false;
+function toast(big, small) { toastQueue.push([big, small]); if (!toastBusy) nextToast(); }
+function nextToast() {
+  const el = $("toast"), item = toastQueue.shift();
+  if (!item) { toastBusy = false; return; }
+  toastBusy = true;
+  el.innerHTML = `${item[0]}<small>${item[1]}</small>`;
+  el.classList.add("on");
+  setTimeout(() => { el.classList.remove("on"); setTimeout(nextToast, 350); }, 2200);
+}
+function addCoins(n) {
+  store.set("coins", store.get("coins", 0) + n);
+  updateCoins();
+}
+function updateCoins() {
+  const c = store.get("coins", 0);
+  $("coinNum").textContent = c;
+  $("coinText").textContent = $("coinText2").textContent = `🪙 숲 코인 ${c}개`;
+}
+function renderMissionList() {
+  const cnt = store.get("mcount", {});
+  $("mlist").innerHTML = MISSIONS.map((m) => {
+    const rw = typeof m.reward === "number" ? `+${m.reward} 🪙` : `+${m.reward[level]} 🪙`;
+    const sub = m.kid ? `쉬움 ${m.reward.easy} · 보통 ${m.reward.normal} · 어려움 ${m.reward.hard}개` : m.desc;
+    return `<div class="${m.kid ? "kid" : ""}"><span class="ico">${m.icon}</span>
+      <span class="txt">${m.name}${m.kid ? '<span class="tag">⭐ 내가 만든 미션</span>' : ""}<small>${sub}${cnt[m.id] ? ` · 지금까지 ${cnt[m.id]}번 성공` : ""}</small></span>
+      <span class="rw">${rw}</span></div>`;
+  }).join("");
 }
 
 function hurt(n, mob) {
@@ -525,6 +640,7 @@ function hurt(n, mob) {
   sfx.hurt();
   try { if (navigator.vibrate) navigator.vibrate(120); } catch (e) {}
   if (mob) {
+    S.ms.bitten++;
     const a = Math.atan2(S.player.y - mob.y, S.player.x - mob.x);
     S.player.x = clamp(S.player.x + Math.cos(a) * 45, 30, W - 30);
     S.player.y = clamp(S.player.y + Math.sin(a) * 45, 50, H - 20);
@@ -720,7 +836,6 @@ function bubble(x, y, text, color) {
 }
 
 // ───────── 위쪽 상태 표시 바꾸기 ─────────
-const $ = (id) => document.getElementById(id);
 const hud = { hp: $("hpFill"), hpN: $("hpNum"), food: $("foodFill"), foodN: $("foodNum"), lv: $("fireLv"), fire: $("fireFill"), need: $("fireNeed"), wood: $("woodNum"), night: $("nightNum") };
 let lastHud = "";
 function updateHud() {
@@ -741,7 +856,7 @@ function updateHud() {
 }
 
 // ───────── 화면 바꾸기 ─────────
-const screens = ["title", "help", "pause", "over", "win"];
+const screens = ["title", "help", "missions", "pause", "over", "win"];
 function showScreen(id) { screens.forEach((s) => { $(s).hidden = s !== id; }); }
 const startBtn = $("startBtn");
 
@@ -750,7 +865,7 @@ function ready() {
 }
 function start() {
   sfx.click(); audio();
-  newGame(); lastHud = "";
+  newGame(); lastHud = ""; lastMBox = ""; renderMissionBox();
   mode = "play"; showScreen(null);
   $("hud").hidden = false;
 }
@@ -767,7 +882,8 @@ function togglePause() {
 function loseGame() {
   mode = "over"; sfx.lose();
   const night = 1 + Math.floor(S.t / NIGHT_SEC);
-  $("overText").innerHTML = `<b>${night}번째 밤</b>까지 버텼어요 · 모닥불 레벨 <b>${S.lv}</b>`;
+  $("overText").innerHTML = `<b>${night}일째</b>까지 버텼어요 · 모닥불 레벨 <b>${S.lv}</b>`;
+  $("overCoin").innerHTML = S.earned ? `🎯 미션으로 <b>🪙 ${S.earned}개</b>를 받았어요! (모두 ${store.get("coins", 0)}개)` : `🎯 도전 미션을 끝내면 🪙 숲 코인을 받아요`;
   $("hud").hidden = true; hintEl.hidden = true; stickEl.hidden = true;
   setTimeout(() => showScreen("over"), 500);
 }
@@ -779,13 +895,14 @@ function winGame() {
   if (isNew) { best[level] = night; store.set("best", best); }
   mode = "win";
   $("hud").hidden = true; hintEl.hidden = true; stickEl.hidden = true;
-  $("winText").innerHTML = `<b>${night}번째 밤</b>에 탈출했어요! (${Math.floor(sec / 60)}분 ${sec % 60}초 · ${LEVELS[level].name})`;
-  $("winBest").innerHTML = isNew ? "🏆 <b>새 기록!</b> 가장 빨리 탈출했어요!" : `🏆 내 최고 기록: <b>${old}번째 밤</b>`;
+  $("winText").innerHTML = `<b>${night}일째</b>에 탈출했어요! (${Math.floor(sec / 60)}분 ${sec % 60}초 · ${LEVELS[level].name})`;
+  $("winBest").innerHTML = isNew ? "🏆 <b>새 기록!</b> 가장 빨리 탈출했어요!" : `🏆 내 최고 기록: <b>${old}일째</b>`;
+  $("winCoin").innerHTML = `🎯 이번 판 미션 보상 <b>🪙 +${S.earned}</b> · 모은 숲 코인 <b>${store.get("coins", 0)}개</b>`;
   showScreen("win");
 }
 function updateBest() {
   const best = store.get("best", {});
-  const parts = Object.keys(LEVELS).filter((k) => best[k]).map((k) => `${LEVELS[k].name} ${best[k]}번째 밤`);
+  const parts = Object.keys(LEVELS).filter((k) => best[k]).map((k) => `${LEVELS[k].name} ${best[k]}일째`);
   $("bestText").textContent = parts.length ? "🏆 최고 기록 · " + parts.join(" · ") : "🏆 모닥불 레벨 5까지 키우면 탈출 성공!";
 }
 function setLevel(lv) {
@@ -800,7 +917,8 @@ function setSound(on) {
 document.querySelectorAll(".lv").forEach((b) => b.addEventListener("click", () => { setLevel(b.dataset.lv); sfx.click(); }));
 startBtn.addEventListener("click", start);
 $("helpBtn").addEventListener("click", () => { sfx.click(); showScreen("help"); });
-document.querySelector("[data-close]").addEventListener("click", () => { sfx.click(); showScreen("title"); });
+$("missionBtn").addEventListener("click", () => { sfx.click(); renderMissionList(); showScreen("missions"); });
+document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => { sfx.click(); showScreen("title"); }));
 $("soundBtn").addEventListener("click", () => { setSound(!soundOn); sfx.click(); });
 $("pauseSound").addEventListener("click", () => { setSound(!soundOn); sfx.click(); });
 $("pauseBtn").addEventListener("click", togglePause);
@@ -812,6 +930,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden && mod
 setLevel(LEVELS[level] ? level : "normal");
 setSound(soundOn);
 updateBest();
+updateCoins();
 
 // ───────── 반복 ─────────
 let last = performance.now();
