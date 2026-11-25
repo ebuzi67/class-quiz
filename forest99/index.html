@@ -581,12 +581,36 @@ function spawnItem(it) {
   it.x = p.x; it.y = p.y; it.pop = 0; it.bob = Math.random() * 6;
   return it;
 }
+// 지금 레벨에 나올 몹 수. 쉬움은 전체를 10%쯤 줄여요(반올림).
+// 줄일 때는 여러 마리 나오는 몹(늑대)부터 한 마리씩 빼요. 보스는 빼지 않아요.
+function mobCounts() {
+  const counts = {};
+  for (const kind in MOBS) if (S.lv >= MOBS[kind].from) counts[kind] = MOBS[kind].count;
+  if (level === "easy") {
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    let cut = total - Math.round(total * 0.9);
+    while (cut > 0) {
+      const k = Object.keys(counts).find((x) => counts[x] > 1);
+      if (!k) break;
+      counts[k]--; cut--;
+    }
+  }
+  return counts;
+}
 function spawnMobs() {
-  for (const kind in MOBS) {
+  const counts = mobCounts();
+  for (const kind in counts) {
     const m = MOBS[kind];
-    if (S.lv < m.from || (m.boss && S.bossDown)) continue;
+    if (m.boss && S.bossDown) continue;
+    // 너무 많으면 빼요: 다시 나오기를 기다리는 것부터, 그다음 플레이어와 가장 먼 몹
+    while (S.mobs.filter((x) => x.kind === kind).length + S.respawn.filter((x) => x.kind === kind).length > counts[kind]) {
+      const r = S.respawn.findIndex((x) => x.kind === kind);
+      if (r >= 0) { S.respawn.splice(r, 1); continue; }
+      const far = S.mobs.filter((x) => x.kind === kind).sort((a, b) => dist(b, S.player) - dist(a, S.player))[0];
+      S.mobs = S.mobs.filter((x) => x !== far);
+    }
     const have = S.mobs.filter((x) => x.kind === kind).length + S.respawn.filter((x) => x.kind === kind).length;
-    for (let i = have; i < m.count; i++) spawnOne(kind);
+    for (let i = have; i < counts[kind]; i++) spawnOne(kind);
   }
 }
 function spawnOne(kind) {
