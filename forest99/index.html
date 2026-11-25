@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>99밤의 숲</title>
+<meta name="description" content="모닥불을 키워 어두운 숲에서 살아남는 생존 게임">
+<meta name="theme-color" content="#14241a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #fff7e6; --dark: #10190f; --panel: rgba(20, 30, 22, .82); --line: #f3c26b; --fire: #ff8a2a; --red: #ff5d5d; --green: #59d37a; --food: #ffb347; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--dark); color: var(--ink); overscroll-behavior: none;
+    font-family: Jua, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; user-select: none; -webkit-user-select: none; }
+  button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+  [hidden] { display: none !important; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* 위쪽 상태 표시 */
+  #hud { position: fixed; left: 0; right: 0; top: 0; padding: calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left));
+    display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; pointer-events: none; }
+  .box { background: var(--panel); border: 2px solid rgba(243, 194, 107, .55); border-radius: 16px; padding: 6px 10px; box-shadow: 0 4px 12px rgba(0,0,0,.35); }
+  .bars { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .bar { display: flex; align-items: center; gap: 6px; font-size: clamp(13px, 2.2vw, 18px); }
+  .bar .ico { width: 1.5em; text-align: center; }
+  .bar .track { position: relative; width: clamp(90px, 18vw, 190px); height: 14px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 99px; transition: width .25s; }
+  .bar .num { min-width: 2.2em; }
+  #hpFill { background: linear-gradient(90deg, #ff4d6d, #ff8fa3); }
+  #foodFill { background: linear-gradient(90deg, #ff9f1c, #ffd166); }
+  .bar.warn .track { animation: warn .6s infinite alternate; }
+  @keyframes warn { to { box-shadow: 0 0 0 3px var(--red); } }
+  #fireBox { text-align: center; min-width: 0; }
+  #fireLv { font-size: clamp(15px, 2.6vw, 22px); color: #ffd28a; }
+  #fireTrack { width: clamp(110px, 22vw, 240px); height: 14px; margin: 4px auto 2px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
+  #fireFill { height: 100%; width: 0; background: linear-gradient(90deg, #ff6a00, #ffd000); border-radius: 99px; transition: width .3s; }
+  #fireNeed { font-size: clamp(11px, 1.8vw, 14px); opacity: .85; }
+  #rightBox { display: flex; gap: 8px; align-items: flex-start; pointer-events: auto; }
+  .stat { font-size: clamp(14px, 2.4vw, 20px); white-space: nowrap; }
+  .stat b { color: #ffd28a; font-weight: 400; }
+  .round { width: 48px; height: 48px; border-radius: 14px; border: 2px solid rgba(243,194,107,.6); background: var(--panel); font-size: 22px; padding: 0; }
+
+  /* 조이스틱 */
+  #stick { position: fixed; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%; background: rgba(255,255,255,.12); border: 3px solid rgba(255,255,255,.35); pointer-events: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(255,226,170,.8); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
+  #hint { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--panel); border-radius: 99px; padding: 8px 18px;
+    font-size: clamp(14px, 2.4vw, 20px); pointer-events: none; white-space: nowrap; max-width: 94vw; overflow: hidden; text-overflow: ellipsis; transition: opacity .4s; }
+
+  /* 화면 위에 뜨는 창 */
+  .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom)); overflow: auto; }
+  .screen.dim { background: rgba(6, 10, 8, .62); }
+  .card { width: min(720px, 100%); background: rgba(22, 32, 24, .92); border: 3px solid var(--line); border-radius: 26px; padding: clamp(14px, 3vw, 28px); text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,.5); margin: auto; }
+  h1 { margin: 0; font-weight: 400; font-size: clamp(38px, 8vw, 72px); color: #ffd28a; text-shadow: 0 0 24px rgba(255,138,42,.7), 0 4px 0 #6b2f00; letter-spacing: 2px; }
+  h2 { margin: 0 0 8px; font-weight: 400; font-size: clamp(26px, 5vw, 40px); color: #ffd28a; }
+  .sub { margin: 6px 0 14px; font-size: clamp(16px, 2.8vw, 22px); opacity: .92; }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+  .btn { border: 0; border-radius: 16px; padding: 12px 22px; min-height: 52px; font-size: clamp(18px, 3vw, 24px); background: #33463a; box-shadow: 0 4px 0 rgba(0,0,0,.4); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+  .btn.go { background: linear-gradient(180deg, #ff9a3c, #f06b00); color: #fff; font-size: clamp(22px, 4vw, 30px); padding: 14px 34px; }
+  .btn.lv { background: #2b3a30; border: 3px solid transparent; }
+  .btn.lv.sel { border-color: var(--line); background: #3d5243; }
+  .cast { display: flex; justify-content: center; gap: clamp(4px, 2vw, 16px); align-items: flex-end; margin: 8px 0 4px; flex-wrap: wrap; }
+  .cast img { height: clamp(40px, 9vw, 72px); filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
+  .small { font-size: clamp(13px, 2.2vw, 16px); opacity: .8; }
+  .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; text-align: left; margin: 10px 0; }
+  .help div { background: rgba(255,255,255,.07); border-radius: 16px; padding: 10px 12px; font-size: clamp(15px, 2.4vw, 18px); line-height: 1.4; }
+  .help b { display: block; color: #ffd28a; font-weight: 400; font-size: 1.15em; margin-bottom: 2px; }
+  .help img { height: 1.6em; vertical-align: middle; }
+  .result { font-size: clamp(18px, 3.2vw, 26px); margin: 6px 0; }
+  .result b { color: #ffd28a; font-weight: 400; }
+  #win { align-items: flex-end; }
+  .wincard { background: rgba(255, 252, 238, .94); color: #3b2a12; border-color: #ffb648; margin: auto auto 0; padding: clamp(10px, 2vw, 18px); }
+  .wincard h2 { color: #e06a00; font-size: clamp(22px, 4vw, 34px); margin-bottom: 2px; }
+  .wincard .result { font-size: clamp(16px, 2.6vw, 22px); margin: 2px 0; }
+  .wincard .result b { color: #d95f00; }
+  .wincard .row { margin: 6px 0 0; }
+  /* 키가 낮은 화면(가로 휴대폰)에서는 창을 작게 */
+  @media (max-height: 520px) {
+    .card { padding: 10px 16px; border-radius: 20px; }
+    h1 { font-size: 34px; } h2 { font-size: 24px; }
+    .sub { margin: 2px 0 6px; font-size: 15px; }
+    .cast img { height: 40px; }
+    .row { margin: 6px 0; gap: 8px; }
+    .btn { min-height: 44px; padding: 8px 16px; font-size: 17px; }
+    .btn.go { font-size: 21px; padding: 8px 26px; }
+    .help { gap: 6px; margin: 6px 0; } .help div { padding: 6px 10px; font-size: 14px; }
+    .small { margin: 4px 0 0; }
+  }
+  #rotate { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 14px; opacity: .7; pointer-events: none; }
+  @media (orientation: landscape) { #rotate { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" hidden>
+  <div class="box bars">
+    <div class="bar" id="hpBar"><span class="ico">❤️</span><span class="track"><span class="fill" id="hpFill"></span></span><span class="num" id="hpNum">10</span></div>
+    <div class="bar" id="foodBar"><span class="ico">🍖</span><span class="track"><span class="fill" id="foodFill"></span></span><span class="num" id="foodNum">10</span></div>
+  </div>
+  <div class="box" id="fireBox">
+    <div id="fireLv">🔥 모닥불 레벨 1</div>
+    <div id="fireTrack"><div id="fireFill"></div></div>
+    <div id="fireNeed">장작 2개 더 넣으면 레벨 업!</div>
+  </div>
+  <div id="rightBox">
+    <div class="box">
+      <div class="stat">🪵 <b id="woodNum">0</b></div>
+      <div class="stat">🌙 <b id="nightNum">1</b>밤</div>
+    </div>
+    <button class="round" id="pauseBtn" aria-label="잠깐 멈추기">⏸</button>
+  </div>
+</div>
+<div id="stick" hidden><div id="knob"></div></div>
+<div id="hint" hidden></div>
+
+<!-- 첫 화면 -->
+<div class="screen dim" id="title">
+  <div class="card">
+    <h1>🔥 99밤의 숲 🌙</h1>
+    <p class="sub">모닥불을 키워 어두운 숲에서 살아남아요!</p>
+    <div class="cast">
+      <img src="img/player.webp" alt="탐험가"><img src="img/campfire.webp" alt="모닥불">
+      <img src="img/wolf.webp" alt="늑대"><img src="img/alpha.webp" alt="알파늑대"><img src="img/bear.webp" alt="곰">
+    </div>
+    <div class="row" id="levels">
+      <button class="btn lv" data-lv="easy">🐢 쉬움</button>
+      <button class="btn lv" data-lv="normal">🙂 보통</button>
+      <button class="btn lv" data-lv="hard">🐇 어려움</button>
+    </div>
+    <div class="row">
+      <button class="btn go" id="startBtn" disabled>그림 불러오는 중…</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="helpBtn">❓ 하는 법</button>
+      <button class="btn" id="soundBtn">🔊 소리 켬</button>
+    </div>
+    <p class="small" id="bestText"></p>
+  </div>
+</div>
+
+<!-- 하는 법 -->
+<div class="screen dim" id="help" hidden>
+  <div class="card">
+    <h2>❓ 이렇게 놀아요</h2>
+    <div class="help">
+      <div><b>🕹️ 움직이기</b>화면을 누른 채로 밀어요. 키보드는 화살표나 W·A·S·D!</div>
+      <div><b><img src="img/log.webp" alt=""><img src="img/coal.webp" alt=""> 장작 모으기</b>통나무는 1개, 석탄은 2개! 주워서 모닥불에 닿으면 쏙 들어가요.</div>
+      <div><b>🔥 모닥불 키우기</b>장작을 넣으면 레벨이 올라요. 불빛이 넓어지고 <b style="display:inline">레벨 5면 탈출 성공!</b></div>
+      <div><b><img src="img/berry.webp" alt=""><img src="img/cake.webp" alt=""> 배고픔 참기</b>시간이 가면 식량이 줄어요. 0이 되면 체력이 줄어요. 음식은 1~5만큼 채워 줘요.</div>
+      <div><b><img src="img/wolf.webp" alt=""> 몹 피하기</b>가까이 가면 계속 따라와요! 늑대 −1, 알파늑대 −2, 곰 −3.</div>
+      <div><b>✨ 불빛 안은 안전</b>몹은 불을 무서워해요. 불 옆에 있으면 체력도 조금씩 차요.</div>
+    </div>
+    <div class="row"><button class="btn go" data-close>알겠어요!</button></div>
+  </div>
+</div>
+
+<!-- 잠깐 멈춤 -->
+<div class="screen dim" id="pause" hidden>
+  <div class="card">
+    <h2>⏸ 잠깐 쉬는 중</h2>
+    <div class="row">
+      <button class="btn go" id="resumeBtn">▶ 계속하기</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="pauseSound">🔊 소리 켬</button>
+      <button class="btn" data-home>🏠 처음으로</button>
+    </div>
+  </div>
+</div>
+
+<!-- 기절 -->
+<div class="screen dim" id="over" hidden>
+  <div class="card">
+    <h2>😵 으앗, 기절했어…</h2>
+    <p class="result" id="overText"></p>
+    <p class="sub">장작을 모아 모닥불을 키우고, 불빛 안에서 쉬어 가요!</p>
+    <div class="row">
+      <button class="btn go" data-retry>🔁 다시 도전</button>
+      <button class="btn" data-home>🏠 처음으로</button>
+    </div>
+  </div>
+</div>
+
+<!-- 탈출 성공 -->
+<div class="screen" id="win" hidden>
+  <div class="card wincard">
+    <h2 style="color:#e06a00">🌅 숲을 모두 밝혔어! 탈출 성공!</h2>
+    <p class="result" id="winText"></p>
+    <p class="result" id="winBest"></p>
+    <div class="row">
+      <button class="btn go" data-retry>🔁 한 번 더</button>
+      <button class="btn" data-home style="background:#f1e3c4">🏠 처음으로</button>
+    </div>
+  </div>
+</div>
+<div id="rotate">📱 휴대폰을 가로로 돌리면 더 크게 보여요</div>
+
+<script>
+"use strict";
+// ───────── 기본 설정 ─────────
+// 무대 크기: 엔트리 무대(480×270)의 2배예요. 엔트리 숫자를 2배 하면 같은 느낌이 나요.
+const W = 960, H = 540;
+const FIRE = { x: W / 2, y: H / 2 };
+const LEVELS = {
+  easy:   { name: "쉬움",   mob: 0.72, hunger: 4.5, regen: 3 },
+  normal: { name: "보통",   mob: 0.9,  hunger: 3.5, regen: 4 },
+  hard:   { name: "어려움", mob: 1.15, hunger: 3,   regen: 0 },
+};
+const MOBS = {
+  wolf:  { img: "wolf",  w: 92,  speed: 192, dmg: 1, detect: 220, cry: "왈왈!",  from: 1, count: 2 },
+  alpha: { img: "alpha", w: 112, speed: 250, dmg: 2, detect: 260, cry: "크르릉!", from: 2, count: 1 },
+  bear:  { img: "bear",  w: 126, speed: 150, dmg: 3, detect: 300, cry: "크아앙!", from: 3, count: 1 },
+};
+const FOODS = [ // 모양 번호 = 채워 주는 식량
+  { img: "meat", value: 1, name: "고기" }, { img: "berry", value: 2, name: "베리" }, { img: "cooked", value: 3, name: "익힌 고기" },
+  { img: "stew", value: 4, name: "스튜" }, { img: "cake", value: 5, name: "케이크" },
+];
+const WOODS = [{ img: "log", value: 1, name: "통나무" }, { img: "coal", value: 2, name: "석탄" }];
+const MAX_HP = 10, MAX_FOOD = 20, WIN_LEVEL = 5, NIGHT_SEC = 10;
+const lightOf = (lv) => 160 + 60 * (lv - 1);   // 엔트리: 빛반경 80, 레벨마다 +30 (2배)
+const needOf = (lv) => lv * 20;                // 레벨 × 20 만큼 불꽃게이지가 차면 레벨 업
+
+// ───────── 저장 (안 되는 브라우저도 있어서 조심해서 써요) ─────────
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("forest99-" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("forest99-" + k, JSON.stringify(v)); } catch (e) {} },
+};
+let level = store.get("level", "normal");
+let soundOn = store.get("sound", true);
+
+// ───────── 그림 불러오기 ─────────
+const IMG = {};
+const imgNames = ["player", "campfire", "wolf", "alpha", "bear", "meat", "berry", "cooked", "stew", "cake", "log", "coal", "forest", "morning"];
+let loaded = 0;
+imgNames.forEach((n) => {
+  const im = new Image();
+  im.onload = im.onerror = () => { if (++loaded === imgNames.length) ready(); };
+  im.src = "img/" + n + ".webp";
+  IMG[n] = im;
+});
+
+// ───────── 소리 (파일 없이 만들어요) ─────────
+let actx = null;
+function audio() {
+  if (!soundOn) return null;
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(freq, dur, type = "sine", vol = 0.15, slide = 0, delay = 0) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  food() { tone(660, 0.1, "triangle", 0.15); tone(990, 0.12, "triangle", 0.12, 0, 0.07); },
+  wood() { tone(220, 0.08, "square", 0.08); tone(330, 0.1, "square", 0.07, 0, 0.06); },
+  put()  { tone(300, 0.25, "sawtooth", 0.06, 300); },
+  level() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "triangle", 0.14, 0, i * 0.1)); },
+  hurt() { tone(200, 0.25, "sawtooth", 0.12, -120); },
+  growl() { tone(110, 0.3, "sawtooth", 0.07, -40); },
+  win()  { [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, "triangle", 0.15, 0, i * 0.13)); },
+  lose() { [392, 330, 262, 196].forEach((f, i) => tone(f, 0.28, "triangle", 0.13, 0, i * 0.18)); },
+  click() { tone(880, 0.05, "sine", 0.08); },
+};
+
+// ───────── 화면 크기 맞추기 ─────────
+const cv = document.getElementById("game");
+const ctx = cv.getContext("2d");
+const fogCv = document.createElement("canvas");
+const fog = fogCv.getContext("2d");
+let dpr = 1, scale = 1, ox = 0, oy = 0;
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const vw = window.innerWidth, vh = window.innerHeight;
+  cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
+  scale = Math.min(vw / W, vh / H);
+  ox = (vw - W * scale) / 2; oy = (vh - H * scale) / 2;
+  fogCv.width = Math.max(1, Math.round(W * scale * dpr));
+  fogCv.height = Math.max(1, Math.round(H * scale * dpr));
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ───────── 게임 상태 ─────────
+let S = null;          // 지금 판의 모든 값
+let mode = "title";    // title | play | pause | over | win
+const rand = (a, b) => a + Math.random() * (b - a);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function newGame() {
+  S = {
+    t: 0, hp: MAX_HP, food: 10, wood: 0, lv: 1, gauge: 0,
+    light: lightOf(1), lightShow: lightOf(1), fireScale: 1,
+    hungerT: 0, regenT: 0, hurtT: 0,
+    player: { x: FIRE.x, y: FIRE.y + 120, face: 1, walk: 0 },
+    items: [], mobs: [], texts: [], sparks: [], winT: -1,
+    tips: { wood: false, put: false },
+  };
+  for (let i = 0; i < 4; i++) { S.items.push(spawnItem({ kind: "food" })); S.items.push(spawnItem({ kind: "wood" })); }
+  spawnMobs();
+  showHint("🪵 통나무·석탄을 주워서 모닥불에 넣어요!", 5);
+}
+
+// 불빛 밖, 플레이어와 떨어진 곳을 골라요 (엔트리의 '될 때까지 반복하기'와 같아요)
+function freeSpot(margin, fromLight, fromPlayer) {
+  let best = null, bestScore = -1;
+  for (let i = 0; i < 200; i++) {
+    const p = { x: rand(margin, W - margin), y: rand(margin + 20, H - margin) };
+    const okLight = dist(p, FIRE) - (S.light + fromLight);
+    const okPlayer = dist(p, S.player) - fromPlayer;
+    if (okLight > 0 && okPlayer > 0) return p;
+    const score = Math.min(okLight, okPlayer);
+    if (!best || score > bestScore) { best = p; bestScore = score; }
+  }
+  return best;
+}
+function spawnItem(it) {
+  const list = it.kind === "food" ? FOODS : WOODS;
+  it.type = list[Math.floor(Math.random() * list.length)];
+  const p = freeSpot(40, 40, 120);
+  it.x = p.x; it.y = p.y; it.pop = 0; it.bob = Math.random() * 6;
+  return it;
+}
+function spawnMobs() {
+  for (const kind in MOBS) {
+    const m = MOBS[kind];
+    if (S.lv < m.from) continue;
+    const have = S.mobs.filter((x) => x.kind === kind).length;
+    for (let i = have; i < m.count; i++) {
+      const p = freeSpot(60, 100, 300);
+      S.mobs.push({ kind, ...m, x: p.x, y: p.y, ang: rand(0, Math.PI * 2), chase: false, rest: 0, face: 1, appear: 0, say: null });
+      if (S.t > 1) { say(p, kind === "bear" ? "곰이 나타났어!" : "알파늑대가 나타났어!", "#ff9a9a"); sfx.growl(); }
+    }
+  }
+}
+
+// ───────── 글자 효과 ─────────
+function say(at, text, color = "#fff", big = false) {
+  S.texts.push({ x: at.x, y: at.y - 50, text, color, life: big ? 2 : 1.3, max: big ? 2 : 1.3, big });
+}
+let hintTimer = 0;
+const hintEl = document.getElementById("hint");
+function showHint(text, sec = 3) {
+  hintEl.textContent = text; hintEl.hidden = false; hintEl.style.opacity = 1; hintTimer = sec;
+}
+
+// ───────── 조작 ─────────
+const keys = {};
+window.addEventListener("keydown", (e) => {
+  keys[e.key.toLowerCase()] = true;
+  if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(e.key.toLowerCase())) e.preventDefault();
+  if ((e.key === "Escape" || e.key === "p") && (mode === "play" || mode === "pause")) togglePause();
+  if (e.key === "Enter" && mode === "title" && !startBtn.disabled) start();
+});
+window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+window.addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+const stick = { on: false, id: null, bx: 0, by: 0, dx: 0, dy: 0 };
+const stickEl = document.getElementById("stick"), knobEl = document.getElementById("knob");
+cv.addEventListener("pointerdown", (e) => {
+  if (mode !== "play" || stick.on) return;
+  stick.on = true; stick.id = e.pointerId; stick.bx = e.clientX; stick.by = e.clientY; stick.dx = stick.dy = 0;
+  stickEl.style.left = e.clientX + "px"; stickEl.style.top = e.clientY + "px"; stickEl.hidden = false;
+  knobEl.style.transform = "";
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  audio();
+});
+cv.addEventListener("pointermove", (e) => {
+  if (!stick.on || e.pointerId !== stick.id) return;
+  let dx = e.clientX - stick.bx, dy = e.clientY - stick.by;
+  const len = Math.hypot(dx, dy), max = 55;
+  if (len > max) { dx = dx / len * max; dy = dy / len * max; }
+  stick.dx = dx / max; stick.dy = dy / max;
+  knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
+});
+function stickEnd(e) {
+  if (e.pointerId !== stick.id) return;
+  stick.on = false; stick.id = null; stick.dx = stick.dy = 0; stickEl.hidden = true;
+}
+cv.addEventListener("pointerup", stickEnd);
+cv.addEventListener("pointercancel", stickEnd);
+
+function inputDir() {
+  let x = 0, y = 0;
+  if (keys.arrowleft || keys.a) x -= 1;
+  if (keys.arrowright || keys.d) x += 1;
+  if (keys.arrowup || keys.w) y -= 1;
+  if (keys.arrowdown || keys.s) y += 1;
+  if (x || y) { const l = Math.hypot(x, y); return { x: x / l, y: y / l }; }
+  const l = Math.hypot(stick.dx, stick.dy);
+  if (l < 0.15) return { x: 0, y: 0 };
+  return { x: stick.dx, y: stick.dy };
+}
+
+// ───────── 한 번 움직이기 (1초에 60번쯤) ─────────
+function update(dt) {
+  S.t += dt;
+  const L = LEVELS[level], P = S.player;
+
+  // 탈출 성공을 기다리는 중
+  if (S.winT >= 0) {
+    S.winT += dt;
+    S.lightShow += (700 - S.lightShow) * Math.min(1, dt * 1.5);
+    updateEffects(dt);
+    if (S.winT > 2) winGame();
+    return;
+  }
+
+  // 1단계: 이동
+  const d = inputDir();
+  P.x = clamp(P.x + d.x * 330 * dt, 30, W - 30);
+  P.y = clamp(P.y + d.y * 330 * dt, 50, H - 20);
+  if (d.x < -0.1) P.face = -1; else if (d.x > 0.1) P.face = 1;
+  P.walk = (d.x || d.y) ? P.walk + dt * 12 : 0;
+
+  // 2단계: 배고픔 — 몇 초마다 식량 −1, 식량이 0이면 체력 −1
+  S.hungerT += dt;
+  if (S.hungerT >= L.hunger) {
+    S.hungerT = 0;
+    if (S.food > 0) S.food--;
+    else { hurt(1, null); say(P, "배고파…", "#ffd166"); showHint("🍖 배고파요! 숲에서 음식을 찾아요", 3); }
+  }
+  // 불빛 안에서 쉬면 체력이 조금씩 차요
+  const nearFire = dist(P, FIRE) < S.light * 0.85;
+  if (L.regen && nearFire && S.food > 0 && S.hp < MAX_HP) {
+    S.regenT += dt;
+    if (S.regenT >= L.regen) { S.regenT = 0; S.hp++; say(P, "+1 ❤️", "#ff8fa3"); }
+  } else S.regenT = 0;
+
+  // 3단계: 아이템 줍기
+  for (const it of S.items) {
+    it.pop = Math.min(1, it.pop + dt * 3);
+    if (it.pop > 0.6 && dist(P, it) < 48) {
+      if (it.kind === "food") {
+        S.food = Math.min(MAX_FOOD, S.food + it.type.value);
+        say(it, `+${it.type.value} 🍖`, "#ffd166"); sfx.food();
+      } else {
+        S.wood += it.type.value;
+        say(it, `+${it.type.value} 🪵`, "#e3b27a"); sfx.wood();
+        if (!S.tips.wood) { S.tips.wood = true; showHint("🔥 이제 모닥불로 가져가요!", 3); }
+      }
+      burst(it.x, it.y, it.kind === "food" ? "#ffd166" : "#c8925a", 10);
+      spawnItem(it);
+    }
+  }
+
+  // 4단계: 모닥불에 장작 넣기 → 레벨 업
+  if (S.wood > 0 && dist(P, FIRE) < 70 * S.fireScale) {
+    S.gauge += S.wood * 10;
+    say(FIRE, `장작 ${S.wood}개 넣었어!`, "#ffb36b");
+    burst(FIRE.x, FIRE.y - 10, "#ffb000", 18 + S.wood * 2);
+    S.wood = 0; sfx.put();
+    while (S.gauge >= needOf(S.lv) && S.lv < WIN_LEVEL) {
+      S.gauge -= needOf(S.lv); S.lv++;
+      S.light = lightOf(S.lv); S.fireScale = 1 + 0.12 * (S.lv - 1);
+      sfx.level(); burst(FIRE.x, FIRE.y, "#fff1a8", 40);
+      if (S.lv >= WIN_LEVEL) { say(FIRE, "숲이 모두 밝아졌어!", "#fff1a8", true); S.winT = 0; S.gauge = 0; sfx.win(); }
+      else { say(FIRE, "레벨 업! 숲이 더 밝아졌어!", "#fff1a8", true); spawnMobs(); }
+    }
+  }
+  // 5단계: 안개 구멍(불빛)이 부드럽게 넓어져요
+  S.lightShow += (S.light - S.lightShow) * Math.min(1, dt * 2.5);
+
+  // 6단계: 몹 — 어슬렁 / 따라가기 / 공격 / 불빛 안에서는 도망
+  const spd = L.mob;
+  for (const m of S.mobs) {
+    m.appear = Math.min(1, m.appear + dt * 2);
+    if (m.say) { m.say.t -= dt; if (m.say.t <= 0) m.say = null; }
+    if (m.rest > 0) { m.rest -= dt; continue; }
+    const dP = dist(m, P), dF = dist(m, FIRE);
+    if (dP < m.detect) m.chase = true;
+    let v;
+    if (dF < S.lightShow) {             // 불이 무서워서 도망가요
+      m.chase = false;
+      m.ang = Math.atan2(m.y - FIRE.y, m.x - FIRE.x);
+      v = m.speed * spd;
+    } else if (m.chase) {                // 한 번 보면 계속 따라와요
+      m.ang = Math.atan2(P.y - m.y, P.x - m.x);
+      v = m.speed * spd;
+      if (dP < (m.w * 0.42 + 26) && S.hurtT <= 0) {
+        hurt(m.dmg, m);
+        m.say = { text: m.cry, t: 0.8 };
+        m.rest = 0.9;                    // 물고 나서 잠깐 쉬어요 (엔트리의 1초 기다리기)
+      }
+    } else {                             // 어슬렁어슬렁
+      m.ang += rand(-0.35, 0.35) * Math.sqrt(dt * 60);
+      v = 110 * spd;
+    }
+    m.x += Math.cos(m.ang) * v * dt; m.y += Math.sin(m.ang) * v * dt;
+    // 벽에 닿으면 튕기기
+    const mx = m.w / 2, my = 40;
+    if (m.x < mx) { m.x = mx; m.ang = Math.PI - m.ang; }
+    if (m.x > W - mx) { m.x = W - mx; m.ang = Math.PI - m.ang; }
+    if (m.y < my + 20) { m.y = my + 20; m.ang = -m.ang; }
+    if (m.y > H - my) { m.y = H - my; m.ang = -m.ang; }
+    if (Math.abs(Math.cos(m.ang)) > 0.2) m.face = Math.cos(m.ang) < 0 ? -1 : 1;
+  }
+  // 몹끼리 겹치지 않게 살짝 밀어요
+  for (let i = 0; i < S.mobs.length; i++) for (let j = i + 1; j < S.mobs.length; j++) {
+    const a = S.mobs[i], b = S.mobs[j], dd = dist(a, b), want = (a.w + b.w) * 0.32;
+    if (dd > 0 && dd < want) { const k = (want - dd) / dd / 2; a.x += (a.x - b.x) * k; a.y += (a.y - b.y) * k; b.x -= (a.x - b.x) * k; b.y -= (a.y - b.y) * k; }
+  }
+
+  if (S.hurtT > 0) S.hurtT -= dt;
+  updateEffects(dt);
+  if (S.hp <= 0) loseGame();
+}
+
+function hurt(n, mob) {
+  S.hp = Math.max(0, S.hp - n);
+  S.hurtT = 1;
+  sfx.hurt();
+  try { if (navigator.vibrate) navigator.vibrate(120); } catch (e) {}
+  if (mob) {
+    const a = Math.atan2(S.player.y - mob.y, S.player.x - mob.x);
+    S.player.x = clamp(S.player.x + Math.cos(a) * 45, 30, W - 30);
+    S.player.y = clamp(S.player.y + Math.sin(a) * 45, 50, H - 20);
+    say(S.player, `−${n} ❤️`, "#ff6b6b");
+  }
+}
+
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2), v = rand(60, 220);
+    S.sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: rand(0.4, 0.9), color });
+  }
+}
+function updateEffects(dt) {
+  for (const t of S.texts) { t.life -= dt; t.y -= 30 * dt; }
+  S.texts = S.texts.filter((t) => t.life > 0);
+  for (const p of S.sparks) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; }
+  S.sparks = S.sparks.filter((p) => p.life > 0);
+  // 모닥불 불티
+  if (Math.random() < dt * 14) S.sparks.push({ x: FIRE.x + rand(-20, 20) * S.fireScale, y: FIRE.y - 10, vx: rand(-15, 15), vy: rand(-90, -40), life: rand(0.6, 1.3), color: "#ffb347", ember: true });
+  if (hintTimer > 0) { hintTimer -= dt; if (hintTimer <= 0) hintEl.style.opacity = 0; }
+}
+
+// ───────── 그리기 ─────────
+function drawSprite(im, x, y, w, face = 1, alpha = 1, bottom = true) {
+  if (!im.naturalWidth) return;
+  const h = w * im.naturalHeight / im.naturalWidth;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, y);
+  ctx.scale(face, 1);
+  ctx.drawImage(im, -w / 2, bottom ? -h : -h / 2, w, h);
+  ctx.restore();
+  return h;
+}
+function shadow(x, y, w) {
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.beginPath(); ctx.ellipse(x, y, w * 0.38, w * 0.11, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+function draw() {
+  const c = ctx;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = "#0b140d"; c.fillRect(0, 0, cv.width, cv.height);
+  c.setTransform(dpr * scale, 0, 0, dpr * scale, ox * dpr, oy * dpr);
+  c.save();
+  c.beginPath(); c.rect(0, 0, W, H); c.clip();
+
+  if (mode === "win") { drawWinScene(); c.restore(); return; }
+  if (IMG.forest.naturalWidth) c.drawImage(IMG.forest, 0, 0, W, H);
+  if (!S) { drawTitleFog(); c.restore(); return; }
+
+  const P = S.player, t = S.t;
+  // 아이템
+  for (const it of S.items) {
+    const im = IMG[it.type.img], s = it.pop < 1 ? 0.5 + it.pop / 2 : 1;
+    const w = (it.kind === "food" ? 48 : 54) * s, bob = Math.sin(t * 3 + it.bob) * 3;
+    shadow(it.x, it.y + 4, w);
+    drawSprite(im, it.x, it.y + bob, w, 1, it.pop);
+  }
+  // 모닥불 불빛 원 (안전 구역)
+  c.save();
+  c.strokeStyle = "rgba(255, 200, 110, .35)"; c.lineWidth = 3; c.setLineDash([10, 12]);
+  c.beginPath(); c.arc(FIRE.x, FIRE.y, S.lightShow * 0.85, 0, Math.PI * 2); c.stroke();
+  c.restore();
+  // 모닥불, 몹, 플레이어를 아래쪽에 있는 것부터 그려요
+  const list = [{ y: FIRE.y + 30, draw: drawFire }];
+  for (const m of S.mobs) list.push({ y: m.y, draw: () => drawMob(m) });
+  list.push({ y: P.y, draw: drawPlayer });
+  list.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
+  // 불티
+  for (const p of S.sparks) {
+    c.globalAlpha = Math.max(0, Math.min(1, p.life * 1.5));
+    c.fillStyle = p.color;
+    c.beginPath(); c.arc(p.x, p.y, p.ember ? 2.2 : 3.5, 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+
+  drawFog();
+
+  // 어둠 속에서도 반짝이는 아이템, 빨갛게 빛나는 몹 눈
+  for (const it of S.items) {
+    if (dist(it, FIRE) < S.lightShow * 0.8 || dist(it, P) < 90) continue;
+    const a = 0.35 + 0.35 * Math.sin(t * 4 + it.bob * 3);
+    star(it.x, it.y - 20, 7 + 3 * a, it.kind === "food" ? `rgba(255,214,102,${a})` : `rgba(255,190,130,${a})`);
+  }
+  for (const m of S.mobs) {
+    if (dist(m, FIRE) < S.lightShow * 0.8 || dist(m, P) < 100) continue;
+    const ex = m.x + m.face * m.w * 0.3, ey = m.y - m.w * 0.55;
+    c.fillStyle = m.chase ? "#ff3030" : "rgba(255, 70, 70, .7)";
+    c.beginPath(); c.arc(ex - 6, ey, 3.5, 0, Math.PI * 2); c.arc(ex + 6, ey, 3.5, 0, Math.PI * 2); c.fill();
+  }
+  // 모닥불로 가는 화살표 (장작이 있을 때)
+  if (S.wood > 0 && dist(P, FIRE) > 140 && S.winT < 0) {
+    const a = Math.atan2(FIRE.y - P.y, FIRE.x - P.x), r = 70 + Math.sin(t * 6) * 5;
+    c.save(); c.translate(P.x + Math.cos(a) * r, P.y - 45 + Math.sin(a) * r); c.rotate(a);
+    c.fillStyle = "rgba(255, 190, 90, .9)"; c.beginPath(); c.moveTo(14, 0); c.lineTo(-8, -10); c.lineTo(-3, 0); c.lineTo(-8, 10); c.closePath(); c.fill();
+    c.restore();
+  }
+  // 말풍선과 글자
+  for (const m of S.mobs) if (m.say) bubble(m.x, m.y - m.w * 0.85, m.say.text, "#ffdede");
+  for (const tx of S.texts) {
+    c.globalAlpha = Math.min(1, tx.life / tx.max * 2.5);
+    outlineText(tx.text, tx.x, tx.y, tx.big ? 30 : 22, tx.color);
+  }
+  c.globalAlpha = 1;
+  c.restore();
+}
+
+function drawFire() {
+  const s = S.fireScale, fl = 1 + Math.sin(S.t * 13) * 0.025 + Math.sin(S.t * 7.3) * 0.02;
+  const g = ctx.createRadialGradient(FIRE.x, FIRE.y, 10, FIRE.x, FIRE.y, 120 * s);
+  g.addColorStop(0, "rgba(255, 170, 60, .45)"); g.addColorStop(1, "rgba(255, 120, 30, 0)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(FIRE.x, FIRE.y, 120 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); ctx.translate(FIRE.x, FIRE.y + 30); ctx.scale(1, fl);
+  drawSprite(IMG.campfire, 0, 0, 136 * s);
+  ctx.restore();
+  // 장작이 있으면 "여기 넣어요" 표시
+  if (S.wood > 0 && S.winT < 0) outlineText("🪵 여기에 넣어요", FIRE.x, FIRE.y + 58 * s, 16, "#ffd28a");
+}
+function drawMob(m) {
+  shadow(m.x, m.y, m.w);
+  const hop = m.rest > 0 ? 0 : Math.abs(Math.sin(S.t * 10 + m.x * 0.01)) * 3;
+  drawSprite(IMG[m.img], m.x, m.y - hop, m.w * (0.6 + 0.4 * m.appear), m.face, m.appear);
+  if (m.chase) outlineText("!", m.x, m.y - m.w * 0.95, 26, "#ff5050");
+}
+function drawPlayer() {
+  const P = S.player, blink = S.hurtT > 0 && Math.floor(S.hurtT * 12) % 2 === 0;
+  shadow(P.x, P.y, 72);
+  const bob = P.walk ? Math.abs(Math.sin(P.walk)) * 4 : 0;
+  drawSprite(IMG.player, P.x, P.y - bob, 72, P.face, blink ? 0.35 : 1);
+}
+function drawFog() {
+  const f = fog, k = W * scale * dpr / W, P = S.player;
+  f.setTransform(1, 0, 0, 1, 0, 0);
+  f.globalCompositeOperation = "source-over";
+  f.clearRect(0, 0, fogCv.width, fogCv.height);
+  f.fillStyle = "rgba(10, 8, 28, .9)";
+  f.fillRect(0, 0, fogCv.width, fogCv.height);
+  f.setTransform(k, 0, 0, k, 0, 0);
+  f.globalCompositeOperation = "destination-out";
+  const r = S.lightShow * (1 + Math.sin(S.t * 9) * 0.012);
+  hole(f, FIRE.x, FIRE.y, r, 0.72);
+  hole(f, P.x, P.y - 35, 105, 0.35);       // 탐험가 손전등
+  f.globalCompositeOperation = "source-over";
+  ctx.drawImage(fogCv, 0, 0, W, H);
+}
+function hole(f, x, y, r, inner) {
+  const g = f.createRadialGradient(x, y, r * inner, x, y, r);
+  g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+  f.fillStyle = g; f.beginPath(); f.arc(x, y, r, 0, Math.PI * 2); f.fill();
+}
+function drawTitleFog() {
+  const t = performance.now() / 1000;
+  ctx.drawImage(IMG.campfire, FIRE.x - 75, FIRE.y - 30, 150, 150 * IMG.campfire.naturalHeight / (IMG.campfire.naturalWidth || 1));
+  const g = ctx.createRadialGradient(FIRE.x, FIRE.y + 30, 80, FIRE.x, FIRE.y + 30, 330 + Math.sin(t * 8) * 4);
+  g.addColorStop(0, "rgba(10,8,28,0)"); g.addColorStop(1, "rgba(10,8,28,.92)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function drawWinScene() {
+  if (IMG.morning.naturalWidth) ctx.drawImage(IMG.morning, 0, 0, W, H);
+  const t = performance.now() / 1000;
+  shadow(390, 300, 110);
+  drawSprite(IMG.player, 390, 300 - Math.abs(Math.sin(t * 5)) * 14, 110, 1);
+  drawSprite(IMG.campfire, 570, 315, 180);
+  for (const p of confetti) {
+    p.y += p.v / 60; p.x += Math.sin(t * 2 + p.s) * 0.6; if (p.y > H + 10) p.y = -10;
+    ctx.fillStyle = p.c; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(t * 3 + p.s); ctx.fillRect(-5, -3, 10, 6); ctx.restore();
+  }
+}
+const confetti = Array.from({ length: 70 }, () => ({ x: rand(0, W), y: rand(-H, 0), v: rand(60, 140), s: rand(0, 6),
+  c: ["#ff6b6b", "#ffd166", "#06d6a0", "#4cc9f0", "#f72585", "#ff9f1c"][Math.floor(Math.random() * 6)] }));
+
+function star(x, y, r, color) {
+  ctx.fillStyle = color; ctx.beginPath();
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * 0.35 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fill();
+}
+function outlineText(text, x, y, size, color) {
+  ctx.font = `${size}px Jua, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = size / 5; ctx.strokeStyle = "rgba(0,0,0,.75)"; ctx.lineJoin = "round";
+  ctx.strokeText(text, x, y); ctx.fillStyle = color; ctx.fillText(text, x, y);
+}
+function bubble(x, y, text, color) {
+  ctx.font = `20px Jua, "Apple SD Gothic Neo", sans-serif`;
+  const w = ctx.measureText(text).width + 22, h = 34;
+  ctx.fillStyle = color; ctx.strokeStyle = "#5a1f1f"; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - w / 2, y - h, w, h, 12) : ctx.rect(x - w / 2, y - h, w, h);
+  ctx.moveTo(x - 6, y); ctx.lineTo(x, y + 9); ctx.lineTo(x + 6, y);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#5a1f1f"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, x, y - h / 2);
+}
+
+// ───────── 위쪽 상태 표시 바꾸기 ─────────
+const $ = (id) => document.getElementById(id);
+const hud = { hp: $("hpFill"), hpN: $("hpNum"), food: $("foodFill"), foodN: $("foodNum"), lv: $("fireLv"), fire: $("fireFill"), need: $("fireNeed"), wood: $("woodNum"), night: $("nightNum") };
+let lastHud = "";
+function updateHud() {
+  const night = 1 + Math.floor(S.t / NIGHT_SEC);
+  const need = needOf(S.lv), left = Math.max(0, Math.ceil((need - S.gauge - S.wood * 10) / 10));
+  const key = [S.hp, S.food, S.lv, S.gauge, S.wood, night].join();
+  if (key === lastHud) return;
+  lastHud = key;
+  hud.hp.style.width = (S.hp / MAX_HP * 100) + "%"; hud.hpN.textContent = S.hp;
+  hud.food.style.width = (Math.min(S.food, 10) / 10 * 100) + "%"; hud.foodN.textContent = S.food;
+  $("foodBar").classList.toggle("warn", S.food === 0);
+  $("hpBar").classList.toggle("warn", S.hp <= 3);
+  hud.lv.textContent = S.lv >= WIN_LEVEL ? "🔥 모닥불 레벨 5 · 탈출!" : `🔥 모닥불 레벨 ${S.lv} / ${WIN_LEVEL}`;
+  hud.fire.style.width = (S.lv >= WIN_LEVEL ? 100 : S.gauge / need * 100) + "%";
+  hud.need.textContent = S.lv >= WIN_LEVEL ? "숲이 밝아졌어요!" : left === 0 ? "모닥불에 장작을 넣어요!" : `장작 ${left}개 더 모으면 레벨 업!`;
+  hud.wood.textContent = S.wood;
+  hud.night.textContent = night;
+}
+
+// ───────── 화면 바꾸기 ─────────
+const screens = ["title", "help", "pause", "over", "win"];
+function showScreen(id) { screens.forEach((s) => { $(s).hidden = s !== id; }); }
+const startBtn = $("startBtn");
+
+function ready() {
+  startBtn.disabled = false; startBtn.textContent = "▶ 시작하기";
+}
+function start() {
+  sfx.click(); audio();
+  newGame(); lastHud = "";
+  mode = "play"; showScreen(null);
+  $("hud").hidden = false;
+}
+function goHome() {
+  mode = "title"; S = null; showScreen("title");
+  $("hud").hidden = true; hintEl.hidden = true; stickEl.hidden = true;
+  updateBest();
+}
+function togglePause() {
+  if (mode === "play") { mode = "pause"; showScreen("pause"); stick.on = false; stickEl.hidden = true; }
+  else if (mode === "pause") { mode = "play"; showScreen(null); }
+  sfx.click();
+}
+function loseGame() {
+  mode = "over"; sfx.lose();
+  const night = 1 + Math.floor(S.t / NIGHT_SEC);
+  $("overText").innerHTML = `<b>${night}번째 밤</b>까지 버텼어요 · 모닥불 레벨 <b>${S.lv}</b>`;
+  $("hud").hidden = true; hintEl.hidden = true; stickEl.hidden = true;
+  setTimeout(() => showScreen("over"), 500);
+}
+function winGame() {
+  const night = 1 + Math.floor(S.t / NIGHT_SEC), sec = Math.round(S.t);
+  const best = store.get("best", {});
+  const old = best[level];
+  const isNew = !old || night < old;
+  if (isNew) { best[level] = night; store.set("best", best); }
+  mode = "win";
+  $("hud").hidden = true; hintEl.hidden = true; stickEl.hidden = true;
+  $("winText").innerHTML = `<b>${night}번째 밤</b>에 탈출했어요! (${Math.floor(sec / 60)}분 ${sec % 60}초 · ${LEVELS[level].name})`;
+  $("winBest").innerHTML = isNew ? "🏆 <b>새 기록!</b> 가장 빨리 탈출했어요!" : `🏆 내 최고 기록: <b>${old}번째 밤</b>`;
+  showScreen("win");
+}
+function updateBest() {
+  const best = store.get("best", {});
+  const parts = Object.keys(LEVELS).filter((k) => best[k]).map((k) => `${LEVELS[k].name} ${best[k]}번째 밤`);
+  $("bestText").textContent = parts.length ? "🏆 최고 기록 · " + parts.join(" · ") : "🏆 모닥불 레벨 5까지 키우면 탈출 성공!";
+}
+function setLevel(lv) {
+  level = lv; store.set("level", lv);
+  document.querySelectorAll(".lv").forEach((b) => b.classList.toggle("sel", b.dataset.lv === lv));
+}
+function setSound(on) {
+  soundOn = on; store.set("sound", on);
+  $("soundBtn").textContent = $("pauseSound").textContent = on ? "🔊 소리 켬" : "🔇 소리 끔";
+}
+
+document.querySelectorAll(".lv").forEach((b) => b.addEventListener("click", () => { setLevel(b.dataset.lv); sfx.click(); }));
+startBtn.addEventListener("click", start);
+$("helpBtn").addEventListener("click", () => { sfx.click(); showScreen("help"); });
+document.querySelector("[data-close]").addEventListener("click", () => { sfx.click(); showScreen("title"); });
+$("soundBtn").addEventListener("click", () => { setSound(!soundOn); sfx.click(); });
+$("pauseSound").addEventListener("click", () => { setSound(!soundOn); sfx.click(); });
+$("pauseBtn").addEventListener("click", togglePause);
+$("resumeBtn").addEventListener("click", togglePause);
+document.querySelectorAll("[data-home]").forEach((b) => b.addEventListener("click", () => { sfx.click(); goHome(); }));
+document.querySelectorAll("[data-retry]").forEach((b) => b.addEventListener("click", start));
+document.addEventListener("visibilitychange", () => { if (document.hidden && mode === "play") togglePause(); });
+
+setLevel(LEVELS[level] ? level : "normal");
+setSound(soundOn);
+updateBest();
+
+// ───────── 반복 ─────────
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (mode === "play" && S) { update(dt); if (mode === "play") updateHud(); }
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ───────── 설치하고 인터넷 없이도 열 수 있게 ─────────
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>

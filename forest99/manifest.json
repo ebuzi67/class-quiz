@@ -1,0 +1,17 @@
+{
+  "name": "99밤의 숲",
+  "short_name": "99밤의 숲",
+  "description": "모닥불을 키워 어두운 숲에서 살아남는 생존 게임",
+  "lang": "ko",
+  "id": "/class-quiz/forest99/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#14241a",
+  "theme_color": "#14241a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
