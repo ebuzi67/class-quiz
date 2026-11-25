@@ -1,6 +1,6 @@
 // 숲에서 99일 살기 오프라인 지원
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-const CACHE = "forest99-v5";
+const CACHE = "forest99-v6";
 const FILES = [
   "./",
   "./index.html",
@@ -19,6 +19,13 @@ const FILES = [
   "./img/coal.webp",
   "./img/forest.webp",
   "./img/morning.webp",
+  "./img/alien.webp",
+  "./img/cultist.webp",
+  "./img/crossbow.webp",
+  "./img/polar.webp",
+  "./img/mammoth.webp",
+  "./img/king.webp",
+  "./img/laser.webp",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-180.png"

@@ -103,7 +103,7 @@
   #missionBox .m span:first-child { overflow: hidden; text-overflow: ellipsis; }
   #missionBox .m.done { color: #8ff0a8; }
   #missionBox .m.fail { opacity: .45; text-decoration: line-through; }
-  #toast { position: fixed; z-index: 50; left: 50%; top: 22%; transform: translate(-50%, -20px) scale(.9); opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
+  #toast { position: fixed; z-index: 50; left: 50%; top: 34%; transform: translate(-50%, -20px) scale(.9); opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
     background: linear-gradient(180deg, #fff3c4, #ffd166); color: #5a3300; border: 3px solid #fff; border-radius: 20px; padding: 10px 22px; text-align: center;
     font-size: clamp(18px, 3.4vw, 28px); box-shadow: 0 8px 30px rgba(255, 190, 60, .6); white-space: nowrap; }
   #toast.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
@@ -189,7 +189,7 @@
     <p class="sub">모닥불을 키워 어두운 숲에서 살아남아요!</p>
     <div class="cast">
       <img src="img/player.webp" alt="탐험가"><img src="img/campfire.webp" alt="모닥불">
-      <img src="img/wolf.webp" alt="늑대"><img src="img/alpha.webp" alt="알파늑대"><img src="img/bear.webp" alt="곰">
+      <img src="img/wolf.webp" alt="늑대"><img src="img/alpha.webp" alt="알파늑대"><img src="img/bear.webp" alt="곰"><img src="img/alien.webp" alt="외계인"><img src="img/king.webp" alt="신도왕">
     </div>
     <div class="row" id="levels">
       <button class="btn lv" data-lv="easy">🐢 쉬움</button>
@@ -260,7 +260,7 @@
       <div><b><img src="img/log.webp" alt=""><img src="img/coal.webp" alt=""> 장작 모으기</b>통나무는 1개, 석탄은 2개! 주워서 모닥불에 닿으면 쏙 들어가요.</div>
       <div><b>🔥 모닥불 키우기</b>장작을 넣으면 레벨이 올라요. 불빛이 넓어지고 <b style="display:inline">레벨 5면 탈출 성공!</b></div>
       <div><b><img src="img/berry.webp" alt=""><img src="img/cake.webp" alt=""> 배고픔 참기</b>시간이 가면 식량이 줄어요. 0이 되면 체력이 줄어요. 음식은 1~5만큼 채워 줘요.</div>
-      <div><b><img src="img/wolf.webp" alt=""> 몹 피하기</b>가까이 가면 계속 따라와요! 늑대 −1, 알파늑대 −2, 곰 −3.</div>
+      <div><b><img src="img/wolf.webp" alt=""> 몹 피하기</b>가까이 가면 계속 따라와요! 레벨이 오를수록 센 몹이 나와요. 석궁신도는 멀리서 쏘고, 레벨 4엔 보스 👑 신도왕!</div>
       <div><b>🛒 상점</b>미션으로 받은 🪙 숲 코인으로 무기·갑옷·도구·꾸미기를 사요. 무기가 있으면 ⚔️ 단추(스페이스)로 몹을 공격해요! 🏅 배지는 여러 판 기록을 쌓으면 받아요.</div>
       <div><b>✨ 불빛 안은 안전</b>몹은 불을 무서워해요. 불 옆에 있으면 체력도 조금씩 차요.</div>
     </div>
@@ -325,10 +325,17 @@ const LEVELS = {
   normal: { name: "보통",   mob: 0.9,  hunger: 3.5, regen: 4 },
   hard:   { name: "어려움", mob: 1.15, hunger: 3,   regen: 0 },
 };
+// flip: 그림이 왼쪽을 보고 있으면 -1 (오른쪽 보는 그림이 기본)
 const MOBS = {
-  wolf:  { img: "wolf",  w: 92,  speed: 192, dmg: 1, detect: 220, cry: "왈왈!",  from: 1, count: 2, hp: 3 },
-  alpha: { img: "alpha", w: 112, speed: 250, dmg: 2, detect: 260, cry: "크르릉!", from: 2, count: 1, hp: 5 },
-  bear:  { img: "bear",  w: 126, speed: 150, dmg: 3, detect: 300, cry: "크아앙!", from: 3, count: 1, hp: 8 },
+  alien:    { name: "외계인",   img: "alien",    w: 52,  speed: 150, dmg: 1, detect: 170, cry: "삐리리!",  from: 1, count: 1, hp: 2, flip: -1 },
+  wolf:     { name: "늑대",     img: "wolf",     w: 92,  speed: 192, dmg: 1, detect: 220, cry: "왈왈!",    from: 1, count: 2, hp: 3 },
+  alpha:    { name: "알파늑대", img: "alpha",    w: 112, speed: 250, dmg: 2, detect: 260, cry: "크르릉!",  from: 2, count: 1, hp: 5 },
+  cultist:  { name: "신도",     img: "cultist",  w: 60,  speed: 205, dmg: 2, detect: 240, cry: "숲의 왕을 위하여!", from: 2, count: 1, hp: 4 },
+  bear:     { name: "곰",       img: "bear",     w: 126, speed: 150, dmg: 3, detect: 300, cry: "크아앙!",  from: 3, count: 1, hp: 8 },
+  crossbow: { name: "석궁신도", img: "crossbow", w: 64,  speed: 170, dmg: 1, detect: 340, cry: "받아라!",  from: 3, count: 1, hp: 4, shooter: true },
+  polar:    { name: "북극곰",   img: "polar",    w: 120, speed: 175, dmg: 3, detect: 280, cry: "크오오!",  from: 4, count: 1, hp: 10, flip: -1 },
+  mammoth:  { name: "매머드",   img: "mammoth",  w: 156, speed: 120, dmg: 4, detect: 260, cry: "뿌우우!",  from: 4, count: 1, hp: 14, flip: -1 },
+  king:     { name: "신도왕",   img: "king",     w: 104, speed: 125, dmg: 4, detect: 9999, cry: "내 숲에서 나가라!", from: 4, count: 1, hp: 30, boss: true },
 };
 const FOODS = [ // 모양 번호 = 채워 주는 식량
   { img: "meat", value: 1, name: "고기" }, { img: "berry", value: 2, name: "베리" }, { img: "cooked", value: 3, name: "익힌 고기" },
@@ -352,6 +359,8 @@ const SHOP = [
     shot: { kind: "boomerang", speed: 520, reach: 320 } },
   { id: "staff", cat: "weapon", slot: "weapon", icon: "🪄", name: "불꽃 지팡이", price: 70, desc: "공격력 3 · 펑! 터져서 주변 몹까지", dmg: 3, stun: 2, cd: 1.2, push: 90,
     shot: { kind: "fireball", speed: 460, reach: 460, boom: 110 } },
+  { id: "laser", cat: "weapon", slot: "weapon", img: "laser", icon: "🔫", name: "레이저 캐논", price: 120, desc: "공격력 4 · 일직선 위 몹을 모두 뚫어요!", dmg: 4, stun: 1.6, cd: 1.1, push: 80,
+    beam: { reach: 640 } },
   { id: "leather", cat: "armor", slot: "armor", icon: "🧥", name: "가죽 갑옷",   price: 15, desc: "최대 체력 +3", hp: 3, glow: "rgba(200, 130, 60, .9)" },
   { id: "iron",    cat: "armor", slot: "armor", icon: "🛡️", name: "철 갑옷",     price: 40, desc: "최대 체력 +6", hp: 6, glow: "rgba(210, 225, 240, .95)" },
   { id: "diamond", cat: "armor", slot: "armor", icon: "💎", name: "다이아 갑옷", price: 80, desc: "최대 체력 +10", hp: 10, glow: "rgba(80, 230, 255, .95)" },
@@ -390,6 +399,7 @@ const MISSIONS = [
   { id: "fast", icon: "⏱️", name: "3분 안에 탈출하기", short: "3분 안에 탈출", desc: "모닥불 레벨 5를 빨리!", goal: 1, reward: 8,
     progress: () => (S.lv >= WIN_LEVEL && S.t <= 180 ? 1 : 0), fail: () => S.t > 180 && S.lv < WIN_LEVEL },
   { id: "snipe", icon: "🎯", name: "멀리서 몹 3번 맞히기", short: "멀리서 맞히기", desc: "🏹🪃🪄 원거리 무기가 필요해요", goal: 3, reward: 4, progress: () => S.ms.shot },
+  { id: "boss", icon: "👑", name: "보스 신도왕 물리치기", short: "신도왕 물리치기", desc: "모닥불 레벨 4에 나타나요 (무기 필요)", goal: 1, reward: 10, progress: () => S.ms.boss },
   { id: "beat", icon: "💥", name: "몹 1마리 숲 밖으로 쫓아내기", short: "몹 물리치기", desc: "몹 체력을 0으로 만들어요 (무기 필요)", goal: 1, reward: 5, progress: () => S.ms.beat },
 ];
 // ───────── 배지 ─────────
@@ -406,9 +416,10 @@ const BADGES = [
   { id: "brave",   icon: "🐇", name: "용감한 탐험가", desc: "어려움에서 탈출하기",             goal: 1,   reward: 15, stat: (t) => t.hardEscapes },
   { id: "untouch", icon: "🛡️", name: "무적",          desc: "한 번도 안 물리고 탈출하기",       goal: 1,   reward: 15, stat: (t) => t.cleanEscapes },
   { id: "collect", icon: "🛒", name: "수집가",        desc: "상점 물건 10개 갖기",             goal: 10,  reward: 10, stat: () => store.get("owned", []).length },
+  { id: "slayer",  icon: "👑", name: "보스 사냥꾼",   desc: "신도왕 3번 물리치기",             goal: 3,   reward: 20, stat: (t) => t.boss },
   { id: "days99",  icon: "🌳", name: "숲에서 99일",   desc: "모든 판을 합쳐 99일 살기",         goal: 99,  reward: 20, stat: (t) => t.days },
 ];
-const STAT_KEYS = ["escapes", "eat", "wood", "beat", "shot", "missions", "hardEscapes", "cleanEscapes", "days"];
+const STAT_KEYS = ["boss", "escapes", "eat", "wood", "beat", "shot", "missions", "hardEscapes", "cleanEscapes", "days"];
 // 저장된 기록 + 아직 저장 안 한 이번 판 기록
 function totals() {
   const t = store.get("stats", {}), out = {};
@@ -417,7 +428,7 @@ function totals() {
 }
 function gameStats() {
   const won = S.lv >= WIN_LEVEL;
-  return { escapes: won ? 1 : 0, eat: S.ms.eat, wood: S.ms.wood, beat: S.ms.beat, shot: S.ms.shot, missions: Object.keys(S.done).length,
+  return { boss: S.ms.boss, escapes: won ? 1 : 0, eat: S.ms.eat, wood: S.ms.wood, beat: S.ms.beat, shot: S.ms.shot, missions: Object.keys(S.done).length,
     hardEscapes: won && level === "hard" ? 1 : 0, cleanEscapes: won && S.ms.bitten === 0 ? 1 : 0, days: 1 + Math.floor(S.t / NIGHT_SEC) };
 }
 // 판이 끝나면 이번 판 기록을 저장해요 (한 번만)
@@ -461,7 +472,7 @@ let soundOn = store.get("sound", true);
 
 // ───────── 그림 불러오기 ─────────
 const IMG = {};
-const imgNames = ["player", "campfire", "wolf", "alpha", "bear", "meat", "berry", "cooked", "stew", "cake", "log", "coal", "forest", "morning"];
+const imgNames = ["player", "campfire", "wolf", "alpha", "bear", "alien", "cultist", "crossbow", "polar", "mammoth", "king", "laser", "meat", "berry", "cooked", "stew", "cake", "log", "coal", "forest", "morning"];
 let loaded = 0;
 imgNames.forEach((n) => {
   const im = new Image();
@@ -531,7 +542,7 @@ function newGame() {
     player: { x: FIRE.x, y: FIRE.y + 120, face: 1, walk: 0 },
     items: [], mobs: [], texts: [], sparks: [], winT: -1,
     tips: { wood: false, put: false },
-    ms: { eat: 0, wood: 0, bitten: 0, push: 0, beat: 0, cake: 0, shot: 0 }, respawn: [], shots: [], aim: { x: 1, y: 0 }, statsSaved: false, done: {}, earned: 0,
+    ms: { eat: 0, wood: 0, bitten: 0, push: 0, beat: 0, cake: 0, shot: 0, boss: 0 }, respawn: [], shots: [], eshots: [], beams: [], bossDown: false, aim: { x: 1, y: 0 }, statsSaved: false, done: {}, earned: 0,
   };
   S.gear = { weapon: equipped("weapon"), armor: equipped("armor"), shoes: equipped("shoes"), light: equipped("light"), bag: equipped("bag"), hat: equipped("hat"), pet: equipped("pet") };
   if (S.gear.armor) S.maxHp = S.hp = MAX_HP + S.gear.armor.hp;
@@ -573,7 +584,7 @@ function spawnItem(it) {
 function spawnMobs() {
   for (const kind in MOBS) {
     const m = MOBS[kind];
-    if (S.lv < m.from) continue;
+    if (S.lv < m.from || (m.boss && S.bossDown)) continue;
     const have = S.mobs.filter((x) => x.kind === kind).length + S.respawn.filter((x) => x.kind === kind).length;
     for (let i = have; i < m.count; i++) spawnOne(kind);
   }
@@ -581,8 +592,14 @@ function spawnMobs() {
 function spawnOne(kind) {
   const m = MOBS[kind];
   const p = freeSpot(60, 100, 300, S.mobs);
-  S.mobs.push({ kind, ...m, maxHp: m.hp, x: p.x, y: p.y, ang: rand(0, Math.PI * 2), chase: false, rest: 0, face: 1, appear: 0, say: null, hitT: 0 });
-  if (S.t > 1) { say(p, { wolf: "늑대가 나타났어!", alpha: "알파늑대가 나타났어!", bear: "곰이 나타났어!" }[kind], "#ff9a9a"); sfx.growl(); }
+  const im = IMG[m.img], h = im.naturalWidth ? m.w * im.naturalHeight / im.naturalWidth : m.w;
+  S.mobs.push({ kind, ...m, h, r: (m.w + h) * 0.21, maxHp: m.hp, x: p.x, y: p.y, ang: rand(0, Math.PI * 2), chase: !!m.boss, rest: 0, face: 1, appear: 0, say: null, hitT: 0,
+    fireT: 2, slamT: 4, charge: 0 });
+  if (m.boss) {
+    say(FIRE, "👑 보스 신도왕이 나타났어!", "#ff7070", true);
+    toast("👑 보스 등장!", "신도왕을 물리치면 🪙 15개!");
+    tone(110, 0.6, "sawtooth", 0.12, -50); tone(82, 0.8, "sawtooth", 0.12, -30, 0.3);
+  } else if (S.t > 1) { say(p, `${m.name} 등장!`, "#ff9a9a"); sfx.growl(); }
 }
 
 // ───────── 글자 효과 ─────────
@@ -730,7 +747,7 @@ function update(dt) {
     if (m.say) { m.say.t -= dt; if (m.say.t <= 0) m.say = null; }
     if (m.stunT > 0) {                   // 무기에 맞아서 밀려나고 기절했어요
       m.stunT -= dt;
-      m.x = clamp(m.x + m.vx * dt, m.w / 2, W - m.w / 2); m.y = clamp(m.y + m.vy * dt, 60, H - 40);
+      m.x = clamp(m.x + m.vx * dt, m.w / 2, W - m.w / 2); m.y = clamp(m.y + m.vy * dt, 40 + m.h * 0.5, H - 20);
       const k = Math.exp(-8 * dt); m.vx *= k; m.vy *= k;
       continue;
     }
@@ -742,10 +759,36 @@ function update(dt) {
       m.chase = false;
       m.ang = Math.atan2(m.y - FIRE.y, m.x - FIRE.x);
       v = m.speed * spd;
+    } else if (m.boss && m.charge > 0) {  // 보스가 지팡이를 내리치려고 힘을 모아요
+      m.charge -= dt; v = 0;
+      if (m.charge <= 0) {
+        m.slamT = 5;
+        burst(m.x, m.y - 10, "#ff5050", 30);
+        S.sparks.push({ x: m.x, y: m.y - 10, vx: 0, vy: 0, life: 0.35, color: "boom", r: 150 });
+        tone(70, 0.4, "sawtooth", 0.15, -30);
+        if (dist(P, m) < 150 && S.hurtT <= 0) hurt(2, m);
+      }
+    } else if (m.shooter && m.chase) {   // 석궁신도: 거리를 두고 석궁을 쏴요
+      const a = Math.atan2(P.y - m.y, P.x - m.x);
+      if (dP < 170) { m.ang = a + Math.PI; v = m.speed * spd; }
+      else if (dP > 290) { m.ang = a; v = m.speed * spd; }
+      else { m.ang = a + Math.PI / 2 * (Math.sin(S.t * 0.7 + m.x) > 0 ? 1 : -1); v = 70 * spd; }
+      m.fireT -= dt;
+      if (m.fireT <= 0 && dP < 430) {
+        m.fireT = 2.4 / Math.max(0.8, spd);
+        const fx = m.x, fy = m.y - m.h * 0.45, b = Math.atan2(P.y - 40 - fy, P.x - fx);
+        S.eshots.push({ x: fx, y: fy, vx: Math.cos(b) * 360 * spd, vy: Math.sin(b) * 360 * spd, life: 2 });
+        m.say = { text: m.cry, t: 0.6 }; tone(700, 0.08, "square", 0.06, -300);
+      }
+      m.face = Math.cos(a) < 0 ? -1 : 1;
+      m.x += Math.cos(m.ang) * v * dt; m.y += Math.sin(m.ang) * v * dt;
+      m.x = clamp(m.x, m.w / 2, W - m.w / 2); m.y = clamp(m.y, 40 + m.h * 0.5, H - 20);
+      continue;
     } else if (m.chase) {                // 한 번 보면 계속 따라와요
       m.ang = Math.atan2(P.y - m.y, P.x - m.x);
       v = m.speed * spd;
-      if (dP < (m.w * 0.42 + 26) && S.hurtT <= 0) {
+      if (m.boss) { m.slamT -= dt; if (m.slamT <= 0 && dP < 240) { m.charge = 0.9; m.say = { text: "받아라!", t: 0.9 }; } }
+      if (dP < (m.r + 26) && S.hurtT <= 0) {
         hurt(m.dmg, m);
         m.say = { text: m.cry, t: 0.8 };
         m.rest = 0.9;                    // 물고 나서 잠깐 쉬어요 (엔트리의 1초 기다리기)
@@ -756,20 +799,30 @@ function update(dt) {
     }
     m.x += Math.cos(m.ang) * v * dt; m.y += Math.sin(m.ang) * v * dt;
     // 벽에 닿으면 튕기기
-    const mx = m.w / 2, my = 40;
+    const mx = m.w / 2, top = 40 + m.h * 0.5;
     if (m.x < mx) { m.x = mx; m.ang = Math.PI - m.ang; }
     if (m.x > W - mx) { m.x = W - mx; m.ang = Math.PI - m.ang; }
-    if (m.y < my + 20) { m.y = my + 20; m.ang = -m.ang; }
-    if (m.y > H - my) { m.y = H - my; m.ang = -m.ang; }
+    if (m.y < top) { m.y = top; m.ang = -m.ang; }
+    if (m.y > H - 20) { m.y = H - 20; m.ang = -m.ang; }
     if (Math.abs(Math.cos(m.ang)) > 0.2) m.face = Math.cos(m.ang) < 0 ? -1 : 1;
   }
+  // 석궁 화살: 불빛 안으로 들어오면 타서 없어져요 (불빛 안은 안전!)
+  for (const b of S.eshots) {
+    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+    if (dist(b, FIRE) < S.lightShow * 0.8) { b.life = 0; burst(b.x, b.y, "#ffb347", 5); continue; }
+    if (dist(b, { x: P.x, y: P.y - 40 }) < 30) {
+      b.life = 0;
+      if (S.hurtT <= 0) { hurt(1, null); S.ms.bitten++; say(P, "−1 ❤️", "#ff6b6b"); }
+    }
+  }
+  S.eshots = S.eshots.filter((b) => b.life > 0 && b.x > -20 && b.x < W + 20 && b.y > -20 && b.y < H + 20);
   for (const r of S.respawn) r.t -= dt;
   for (const r of S.respawn.filter((x) => x.t <= 0)) spawnOne(r.kind);
   S.respawn = S.respawn.filter((x) => x.t > 0);
   for (const m of S.mobs) if (m.hitT > 0) m.hitT -= dt;
   // 몹끼리 겹치지 않게 살짝 밀어요
   for (let i = 0; i < S.mobs.length; i++) for (let j = i + 1; j < S.mobs.length; j++) {
-    const a = S.mobs[i], b = S.mobs[j], dd = dist(a, b), want = (a.w + b.w) * 0.32;
+    const a = S.mobs[i], b = S.mobs[j], dd = dist(a, b), want = (a.r + b.r) * 0.8;
     if (dd > 0 && dd < want) { const k = (want - dd) / dd / 2; a.x += (a.x - b.x) * k; a.y += (a.y - b.y) * k; b.x -= (a.x - b.x) * k; b.y -= (a.y - b.y) * k; }
   }
 
@@ -849,11 +902,12 @@ function attack() {
   const w = S.gear.weapon, P = S.player;
   S.cd = w.cd;
   if (w.shot) { shoot(w); return; }
+  if (w.beam) { fireLaser(w); return; }
   S.swing = 0.25; S.swingRange = w.range;
   tone(520, 0.12, "triangle", 0.1, -260);
   let hit = 0;
   for (const m of S.mobs) {
-    if (dist(m, P) > w.range + m.w * 0.3) continue;
+    if (dist(m, P) > w.range + m.r * 0.7) continue;
     hitMob(m, w, P.x, P.y); hit++;
   }
   afterHits(hit);
@@ -861,19 +915,33 @@ function attack() {
 // 몹 한 마리를 맞혀요: 체력 줄이기, 밀어내기, 기절
 function hitMob(m, w, fx, fy, ranged = false) {
   const a = Math.atan2(m.y - fy, m.x - fx);
-  m.vx = Math.cos(a) * w.push * 8; m.vy = Math.sin(a) * w.push * 8;
-  m.stunT = w.stun; m.chase = false; m.rest = 0;
+  const tough = m.boss ? 0.35 : 1;
+  m.vx = Math.cos(a) * w.push * 8 * tough; m.vy = Math.sin(a) * w.push * 8 * tough;
+  m.stunT = w.stun * tough; m.chase = !!m.boss; m.rest = 0; m.charge = 0;
   S.ms.push++; if (ranged) S.ms.shot++;
   m.hp = Math.max(0, m.hp - w.dmg); m.hitT = 4;
-  S.texts.push({ x: m.x + rand(-12, 12), y: m.y - m.w * 0.9, text: `-${w.dmg}`, color: "#ff5a5a", life: 1, max: 1, big: false, dmg: true });
-  burst(m.x, m.y - m.w * 0.4, "#fff2b0", 12);
+  S.texts.push({ x: m.x + rand(-12, 12), y: m.y - m.h - 10, text: `-${w.dmg}`, color: "#ff5a5a", life: 1, max: 1, big: false, dmg: true });
+  burst(m.x, m.y - m.h * 0.45, "#fff2b0", 12);
 }
 // 체력이 0이 된 몹은 숲 밖으로 도망가고, 조금 뒤에 다시 나타나요
+// 받침이 있으면 '이', 없으면 '가' (외계인이, 늑대가)
+const iga = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c < 11172 && c % 28 ? "이" : "가"); };
 function afterHits(hit) {
+  const down = S.mobs.filter((x) => x.hp <= 0 && !x.boss);
+  if (down.length > 1) say(S.player, `몹 ${down.length}마리가 도망갔어!`, "#9dffb0");
   for (const m of S.mobs.filter((x) => x.hp <= 0)) {
-    burst(m.x, m.y - m.w * 0.4, "#ffffff", 24);
-    say(m, { wolf: "늑대가 도망갔어!", alpha: "알파늑대가 도망갔어!", bear: "곰이 도망갔어!" }[m.kind], "#9dffb0");
-    S.respawn.push({ kind: m.kind, t: 15 });
+    burst(m.x, m.y - m.h * 0.45, "#ffffff", 24);
+    if (m.boss) {
+      S.bossDown = true; S.ms.boss = 1;
+      say(FIRE, "👑 신도왕을 물리쳤어!", "#9dffb0", true);
+      addCoins(15); S.earned += 15;
+      toast("👑 보스를 물리쳤다! +15 🪙", "신도왕이 숲에서 도망갔어요");
+      [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.2, "triangle", 0.14, 0, i * 0.1));
+      burst(m.x, m.y - m.h * 0.45, "#ffd166", 50);
+    } else {
+      if (down.length === 1) say(m, `${iga(m.name)} 도망갔어!`, "#9dffb0");
+      S.respawn.push({ kind: m.kind, t: 15 });
+    }
     S.ms.beat++;
   }
   S.mobs = S.mobs.filter((x) => x.hp > 0);
@@ -890,7 +958,28 @@ function shoot(w) {
   S.shots.push({ ...w.shot, w, x: from.x, y: from.y, vx: dx * w.shot.speed, vy: dy * w.shot.speed, went: 0, back: false, hits: new Set(), spin: 0 });
   if (w.shot.kind === "fireball") tone(300, 0.25, "sawtooth", 0.08, 400); else tone(900, 0.1, "triangle", 0.1, -500);
 }
+// 레이저 캐논: 가장 가까운 몹 쪽으로 곧은 빛줄기! 줄 위의 몹은 모두 맞아요
+function fireLaser(w) {
+  const P = S.player, fx = P.x + P.face * 30, fy = P.y - 38;
+  let target = null, best = w.beam.reach;
+  for (const m of S.mobs) { const d = dist(m, P); if (d < best) { best = d; target = m; } }
+  let dx = S.aim.x, dy = S.aim.y;
+  if (target) { const a = Math.atan2(target.y - target.h * 0.45 - fy, target.x - fx); dx = Math.cos(a); dy = Math.sin(a); }
+  if (dx < -0.1) P.face = -1; else if (dx > 0.1) P.face = 1;
+  const x2 = fx + dx * w.beam.reach, y2 = fy + dy * w.beam.reach;
+  S.beams.push({ x1: fx, y1: fy, x2, y2, life: 0.3 });
+  tone(1400, 0.3, "sawtooth", 0.08, -1100); tone(220, 0.25, "square", 0.06, -100, 0.02);
+  let hit = 0;
+  for (const m of S.mobs) {
+    const cx = m.x, cy = m.y - m.h * 0.45;
+    const t = clamp(((cx - fx) * dx + (cy - fy) * dy), 0, w.beam.reach);
+    if (Math.hypot(fx + dx * t - cx, fy + dy * t - cy) < m.r + 14) { hitMob(m, w, fx, fy, true); hit++; }
+  }
+  afterHits(hit);
+}
 function updateShots(dt) {
+  for (const b of S.beams) b.life -= dt;
+  S.beams = S.beams.filter((b) => b.life > 0);
   const P = S.player;
   for (const sh of S.shots) {
     sh.spin += dt * 18;
@@ -908,7 +997,7 @@ function updateShots(dt) {
     if (sh.x < -40 || sh.x > W + 40 || sh.y < -40 || sh.y > H + 40) { if (sh.kind === "boomerang") sh.back = true; else sh.dead = true; }
     if (sh.dead) continue;
     for (const m of S.mobs) {
-      if (sh.hits.has(m) || dist(sh, { x: m.x, y: m.y - m.w * 0.4 }) > m.w * 0.38 + 14) continue;
+      if (sh.hits.has(m) || dist(sh, { x: m.x, y: m.y - m.h * 0.45 }) > m.r * 0.9 + 14) continue;
       if (sh.kind === "fireball") { explode(sh); break; }
       sh.hits.add(m); hitMob(m, sh.w, sh.x - sh.vx, sh.y - sh.vy, true); afterHits(1);
       if (sh.kind === "arrow") { sh.dead = true; break; }
@@ -922,10 +1011,26 @@ function explode(sh) {
   S.sparks.push({ x: sh.x, y: sh.y, vx: 0, vy: 0, life: 0.35, color: "boom", r: sh.boom });
   tone(90, 0.35, "sawtooth", 0.14, -40);
   let hit = 0;
-  for (const m of S.mobs) if (dist(m, sh) < sh.boom + m.w * 0.3) { hitMob(m, sh.w, sh.x, sh.y, true); hit++; }
+  for (const m of S.mobs) if (dist({ x: m.x, y: m.y - m.h * 0.45 }, sh) < sh.boom + m.r * 0.7) { hitMob(m, sh.w, sh.x, sh.y, true); hit++; }
   afterHits(hit);
 }
 function drawShots() {
+  for (const b of S.beams) {
+    const k = b.life / 0.3;
+    ctx.save(); ctx.lineCap = "round";
+    ctx.strokeStyle = `rgba(60, 230, 255, ${0.5 * k})`; ctx.lineWidth = 22 * k;
+    ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
+    ctx.strokeStyle = `rgba(150, 255, 120, ${0.9 * k})`; ctx.lineWidth = 9 * k; ctx.stroke();
+    ctx.strokeStyle = `rgba(255, 255, 255, ${k})`; ctx.lineWidth = 3; ctx.stroke();
+    ctx.restore();
+  }
+  // 석궁 화살
+  for (const b of S.eshots) {
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
+    ctx.strokeStyle = "#3a2a1a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(10, 0); ctx.stroke();
+    ctx.fillStyle = "#ff4040"; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(8, -5); ctx.lineTo(8, 5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
   for (const sh of S.shots) {
     const a = Math.atan2(sh.vy, sh.vx);
     ctx.save(); ctx.translate(sh.x, sh.y);
@@ -1044,16 +1149,28 @@ function draw() {
   }
   for (const m of S.mobs) {
     if (dist(m, FIRE) < S.lightShow * 0.8 || dist(m, P) < 100) continue;
-    const ex = m.x + m.face * m.w * 0.3, ey = m.y - m.w * 0.55;
+    const ex = m.x + m.face * m.w * (m.h > m.w ? 0.05 : 0.3), ey = m.y - m.h * (m.h > m.w ? 0.75 : 0.62);
     c.fillStyle = m.chase ? "#ff3030" : "rgba(255, 70, 70, .7)";
     c.beginPath(); c.arc(ex - 6, ey, 3.5, 0, Math.PI * 2); c.arc(ex + 6, ey, 3.5, 0, Math.PI * 2); c.fill();
   }
   drawShots();
+  for (const m of S.mobs) if (m.boss && m.charge > 0) {
+    const k = 1 - m.charge / 0.9;
+    c.save(); c.strokeStyle = `rgba(255, 60, 60, ${0.4 + 0.5 * k})`; c.fillStyle = `rgba(255, 60, 60, ${0.15 + 0.2 * k})`; c.lineWidth = 4; c.setLineDash([10, 8]);
+    c.beginPath(); c.arc(m.x, m.y - 10, 150, 0, Math.PI * 2); c.fill(); c.stroke(); c.restore();
+  }
+  const boss = S.mobs.find((m) => m.boss);
+  if (boss) {
+    const bw = 300, bx = W / 2 - bw / 2, by = 112;
+    c.fillStyle = "rgba(0,0,0,.65)"; c.fillRect(bx - 4, by - 4, bw + 8, 18);
+    c.fillStyle = "#ff3b3b"; c.fillRect(bx, by, bw * boss.hp / boss.maxHp, 10);
+    outlineText(`👑 보스 신도왕  ${boss.hp} / ${boss.maxHp}`, W / 2, by + 28, 16, "#ffd0d0");
+  }
   // 몹 체력 막대: 보이는 몹과, 최근에 맞은 몹
   for (const m of S.mobs) {
     const seen = dist(m, FIRE) < S.lightShow * 0.8 || dist(m, P) < 110;
     if (!seen && m.hitT <= 0) continue;
-    const bw = Math.max(44, m.w * 0.6), bx = m.x - bw / 2, by = m.y - m.w * 0.78 - 14;
+    const bw = Math.max(44, m.w * 0.6), bx = m.x - bw / 2, by = m.y - m.h - 8;
     c.fillStyle = "rgba(0,0,0,.6)"; c.fillRect(bx - 2, by - 2, bw + 4, 10);
     c.fillStyle = m.hp / m.maxHp > 0.5 ? "#59d37a" : m.hp / m.maxHp > 0.25 ? "#ffc145" : "#ff4d4d";
     c.fillRect(bx, by, bw * m.hp / m.maxHp, 6);
@@ -1067,7 +1184,7 @@ function draw() {
     c.restore();
   }
   // 말풍선과 글자
-  for (const m of S.mobs) if (m.say) bubble(m.x, m.y - m.w * 0.78 - 30, m.say.text, "#ffdede");
+  for (const m of S.mobs) if (m.say) bubble(m.x, m.y - m.h - 24, m.say.text, "#ffdede");
   for (const tx of S.texts) {
     c.globalAlpha = Math.min(1, tx.life / tx.max * 2.5);
     outlineText(tx.text, tx.x, tx.y, tx.big || tx.dmg ? 30 : 22, tx.color);
@@ -1090,9 +1207,9 @@ function drawFire() {
 function drawMob(m) {
   shadow(m.x, m.y, m.w);
   const hop = m.rest > 0 ? 0 : Math.abs(Math.sin(S.t * 10 + m.x * 0.01)) * 3;
-  drawSprite(IMG[m.img], m.x, m.y - hop, m.w * (0.6 + 0.4 * m.appear), m.face, m.appear);
-  if (m.stunT > 0) outlineText("💫", m.x + Math.sin(S.t * 8) * 8, m.y - m.w * 0.78 - 42, 26, "#fff");
-  else if (m.chase) outlineText("!", m.x, m.y - m.w * 0.78 - 42, 26, "#ff5050");
+  drawSprite(IMG[m.img], m.x, m.y - hop, m.w * (0.6 + 0.4 * m.appear), m.face * (m.flip || 1), m.appear);
+  if (m.stunT > 0) outlineText("💫", m.x + Math.sin(S.t * 8) * 8, m.y - m.h - 36, 26, "#fff");
+  else if (m.chase && !m.boss) outlineText("!", m.x, m.y - m.h - 36, 26, "#ff5050");
 }
 function drawPlayer() {
   const P = S.player, blink = S.hurtT > 0 && Math.floor(S.hurtT * 12) % 2 === 0;
@@ -1115,8 +1232,10 @@ function drawPlayer() {
       ctx.save(); ctx.translate(P.x, y - 38); ctx.rotate(sw * Math.PI * 2 * P.face);
       emoji(G.weapon.icon, P.face * 40, 0, 32); ctx.restore();
     } else {
-      ctx.save(); ctx.translate(P.x + P.face * 30, y - 34); ctx.scale(P.face, 1); ctx.rotate(-0.4);
-      emoji(G.weapon.icon, 0, 0, 30); ctx.restore();
+      ctx.save(); ctx.translate(P.x + P.face * 30, y - 34); ctx.scale(P.face, 1);
+      if (G.weapon.img) { const im = IMG[G.weapon.img]; ctx.drawImage(im, -10, -14, 56, 56 * im.naturalHeight / im.naturalWidth); }
+      else { ctx.rotate(-0.4); emoji(G.weapon.icon, 0, 0, 30); }
+      ctx.restore();
     }
   }
 }
@@ -1239,7 +1358,7 @@ function renderShop() {
     else if (have) btn = `<button class="btn wear" data-act="on" data-id="${it.id}">끼기</button>`;
     else if (askId === it.id) btn = `<button class="btn ask" data-act="buy" data-id="${it.id}">정말 살까요?</button>`;
     else btn = `<button class="btn buy" data-act="ask" data-id="${it.id}" ${coins < it.price ? "disabled" : ""}>🪙 ${it.price}${coins < it.price ? " (부족)" : " 사기"}</button>`;
-    return `<div class="item${on ? " on" : ""}"><div class="big">${it.icon}</div><div class="nm">${it.name}</div><div class="ds">${it.desc}</div>${btn}</div>`;
+    return `<div class="item${on ? " on" : ""}"><div class="big">${it.img ? `<img src="img/${it.img}.webp" alt="" style="height:1em;width:auto;max-width:2.4em;object-fit:contain">` : it.icon}</div><div class="nm">${it.name}</div><div class="ds">${it.desc}</div>${btn}</div>`;
   }).join("");
 }
 function shopAction(act, id) {
@@ -1278,7 +1397,7 @@ function start() {
   mode = "play"; showScreen(null);
   $("hud").hidden = false;
   atkBtn.hidden = !S.gear.weapon;
-  if (S.gear.weapon) $("atkIco").textContent = S.gear.weapon.icon;
+  if (S.gear.weapon) $("atkIco").innerHTML = S.gear.weapon.img ? `<img src="img/${S.gear.weapon.img}.webp" alt="" style="width:62px">` : S.gear.weapon.icon;
 }
 function goHome() {
   saveStats();
