@@ -10,7 +10,7 @@ GitHub Pages로 `https://ebuzi67.github.io/class-quiz/`에 올라가는 학습 �
 ├─ europe/              유럽 탐방 모음 → europe/london/ 등 나라 10개
 ├─ pe/                  체육시간 모음 → pe/mugunghwa/ 등 게임 5개
 ├─ numberblocks/        넘버블럭스 모음 → numberblocks/one-chat/(원), numberblocks/two-chat/(투)
-├─ roblox/  village/  motion/  island/  pixel-lab/  gacha/  quiz-race/  forest99/   (모음 없이 따로 있는 앱. island/는 집에서 쓰는 섬 생활 게임 "몽글몽글 섬", pixel-lab/은 코딩 수업용 "픽셀 마법사 연구소", gacha/는 휴대폰 리모컨으로 돌리는 수업용 뽑기 "두근두근 가챠샵", quiz-race/는 선생님이 방을 만들고 학생들이 카트로 정답 길을 달리는 "레이싱퀴즈"(학생 화면 index.html, 선생님 화면 teacher.html), forest99/는 엔트리 수업 작품을 옮긴 집에서 하는 생존 게임 "숲에서 99일 살기"(도전 미션, 숲 코인, 무기·갑옷 상점 있음)(그림은 tools/forest99/make_assets.py가 .ent 파일에서 꺼내요))
+├─ roblox/  village/  motion/  island/  pixel-lab/  gacha/  quiz-race/  forest99/   (모음 없이 따로 있는 앱. island/는 집에서 쓰는 섬 생활 게임 "몽글몽글 섬", pixel-lab/은 코딩 수업용 "픽셀 마법사 연구소", gacha/는 휴대폰 리모컨으로 돌리는 수업용 뽑기 "두근두근 가챠샵", quiz-race/는 선생님이 방을 만들고 학생들이 카트로 정답 길을 달리는 "레이싱퀴즈"(학생 화면 index.html, 선생님 화면 teacher.html), forest99/는 엔트리 수업 작품을 옮긴 집에서 하는 생존 게임 "숲에서 99일 살기"(도전 미션, 배지, 숲 코인, 무기·갑옷 상점 있음)(그림은 tools/forest99/make_assets.py가 .ent 파일에서 꺼내요))
 ```
 
 - **새 앱은 주제에 맞는 모음 폴더 안에** 만들어요. 수학 앱은 `math/새앱/`, 유럽 나라는 `europe/나라/`, 몸놀이는 `pe/게임/`.
