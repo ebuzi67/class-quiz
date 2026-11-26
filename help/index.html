@@ -35,6 +35,25 @@
     <div class="error-bar" id="error-bar" hidden style="margin-top:16px"></div>
     <div class="conn-bar" id="conn-bar" hidden></div>
 
+    <!-- 첫 화면: 학생인지 선생님인지 골라요 -->
+    <section class="screen" id="screen-start" hidden>
+      <div class="panel start-box">
+        <div class="start-icons" aria-hidden="true">🙋🏫💬</div>
+        <h1>저요! 저요!<br>도와주세요</h1>
+        <p>도움이 필요할 때 선생님께 바로 알려요</p>
+        <div class="start-choices">
+          <button class="choice" id="start-student">
+            <span class="choice-ico c-yellow">🎒</span>
+            <span><b>학생으로 들어가기</b><small>선생님이 알려 준 숫자로 들어가요</small></span>
+          </button>
+          <a class="choice" id="start-teacher" href="admin.html">
+            <span class="choice-ico c-blue">🧑‍🏫</span>
+            <span><b>선생님: 방 만들기</b><small>이 기기가 선생님 화면이 되어 학생들의 요청을 받아요</small></span>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- 0. 방 번호 넣기 (처음 한 번) -->
     <section class="screen" id="screen-join" hidden>
       <div class="panel join-box">
@@ -44,7 +63,7 @@
         <div class="code-slots" id="code-slots" aria-live="polite"></div>
         <div class="keypad" id="keypad"></div>
         <p class="join-msg" id="join-msg"></p>
-        <button class="btn btn-ghost btn-sm" id="join-cancel" hidden>← 원래 방으로 돌아가기</button>
+        <button class="btn btn-ghost btn-sm" id="join-cancel">← 처음으로</button>
       </div>
     </section>
 
