@@ -58,7 +58,8 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   ok((await p.evaluate(() => app.world.highlighted.size)) >= 1, '누른 가구가 강조돼요');
   await p.click('#menu [data-action="cream"]');
   ok(await p.isHidden('#menu'), '고르면 메뉴가 닫혀요');
-  await tapThing('furniture', 'vanity');
+  await p.click('[data-act="things"]');
+  await p.click('#menu li:has-text("화장대") button');
   await p.click('#menu [data-action="cream"]');
   await p.waitForSelector('.toast:has-text("이미")', { timeout: 3000 }).catch(() => {});
   ok(await p.isVisible('.toast:has-text("이미")'), '같은 부탁을 두 번 하면 한 번만 들어가요');

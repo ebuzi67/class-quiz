@@ -42,8 +42,9 @@ export class RunController {
     if (starts.length) this.hooks.onState?.('▶ 실행 중…', '');
     else this.hooks.onState?.(this.waitingText(), '');
     for (const s of starts) this.enqueue(s);
+    const token = this.run;
     this.chain.then(() => {
-      if (!this.running) return;
+      if (!this.running || this.run !== token) return;
       this.run.completed = true;
       this.lastRun = this.run;
       this.hooks.onRunEnd?.(this.run);
@@ -62,8 +63,9 @@ export class RunController {
     if (this.pendingScripts.has(script.id)) return false;
     this.pendingScripts.add(script.id);
     const via = script.event.type;
+    const token = this.run;
     this.chain = this.chain.then(async () => {
-      if (!this.running) return;
+      if (!this.running || this.run !== token) return;
       const runner = createRunner({
         signal: this.ctrl.signal,
         perform: async (id) => {
