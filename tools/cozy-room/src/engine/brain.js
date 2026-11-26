@@ -57,7 +57,7 @@ export class Brain {
     if (!action) return Promise.reject(new Error(`"${actionId}" 행동이 없어요`));
     if (source === 'click') {
       const dup = this.queue.find((r) => r.action.id === actionId && r.source === 'click');
-      if (dup) return dup.promise.then(() => 'duplicate');
+      if (dup) return Promise.resolve('duplicate');
       if (this.current?.action.id === actionId && this.current.source === 'click') return Promise.resolve('duplicate');
       if (this.queue.filter((r) => r.source === 'click').length >= 4) return Promise.resolve('full');
     }
