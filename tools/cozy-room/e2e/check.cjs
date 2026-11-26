@@ -64,6 +64,7 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   await p.waitForSelector('.toast:has-text("이미")', { timeout: 3000 }).catch(() => {});
   ok(await p.isVisible('.toast:has-text("이미")'), '같은 부탁을 두 번 하면 한 번만 들어가요');
   await waitDoing('cream');
+  await p.waitForFunction(() => !!app.char.held && !app.char.hopping, null, { timeout: 10000 }).catch(() => {});
   const seatOk = await p.evaluate(() => app.char.sitting && Math.abs(app.char.position.x - (-3.06)) < 0.2);
   ok(seatOk, '화장대 의자에 앉아서 해요');
   ok(await p.evaluate(() => !!app.char.held), '크림을 손에 들어요');
