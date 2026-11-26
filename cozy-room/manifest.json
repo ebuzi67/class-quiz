@@ -1,0 +1,16 @@
+{
+  "name": "모모의 코딩 하루",
+  "short_name": "모모의 하루",
+  "description": "3D 방에서 모모의 하루를 블록 코딩으로 정해 보는 코딩 수업 앱",
+  "lang": "ko",
+  "id": "/class-quiz/cozy-room/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fdeee6",
+  "theme_color": "#ff9a8f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
