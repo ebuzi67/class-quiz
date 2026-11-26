@@ -1,0 +1,17 @@
+{
+  "name": "저요! 저요! 도와주세요",
+  "short_name": "저요 저요",
+  "description": "도움이 필요할 때 선생님께 바로 알리는 우리 반 도움 요청 앱",
+  "lang": "ko",
+  "id": "/class-quiz/help/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F8FC",
+  "theme_color": "#5B91D6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

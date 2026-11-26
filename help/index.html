@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>저요! 저요! 도와주세요</title>
+  <meta name="description" content="도움이 필요할 때 선생님께 바로 알리는 우리 반 도움 요청 앱">
+  <meta name="theme-color" content="#5B91D6">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="저요 저요">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="#" data-go="main">
+        <img src="icons/icon-192.png" alt="">
+        <span>저요! 저요! 도와주세요<small>우리 반 도움 요청</small></span>
+      </a>
+      <span class="mode-chip hide-sm" id="mode-chip" hidden></span>
+      <button class="btn btn-white btn-sm" id="mine-btn" data-go="mine" style="position:relative">
+        📋 <span class="hide-sm">내 요청</span><span class="badge-count" id="mine-count" hidden>0</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <main class="wrap">
+    <div class="error-bar" id="error-bar" hidden style="margin-top:16px"></div>
+
+    <!-- 1. 메인: 도움 요청 카드 6개 -->
+    <section class="screen" id="screen-main">
+      <div class="hero">
+        <div class="hello" id="hello" hidden>🙂 <span id="hello-name"></span><button id="switch-btn">바꾸기</button></div>
+        <h1>무엇을 도와줄까요?</h1>
+        <p>도움이 필요할 때 언제든지 편하게 알려주세요!</p>
+      </div>
+      <div class="help-grid" id="help-grid"></div>
+      <div class="student-foot">
+        <button class="btn btn-white" data-go="mine">📋 내 요청 확인하기</button>
+        <button class="btn btn-white" id="install-btn" hidden>📲 앱으로 설치하기</button>
+        <a class="btn btn-ghost btn-sm" href="admin.html">🔒 선생님 화면</a>
+      </div>
+    </section>
+
+    <!-- 2. 상세 요청 -->
+    <section class="screen" id="screen-detail" hidden>
+      <form class="panel" id="request-form" novalidate>
+        <div class="panel-head">
+          <div class="card-icon" id="d-icon"></div>
+          <div>
+            <h2 id="d-title"></h2>
+            <p>선생님께 전하고 싶은 내용을 적어주세요.</p>
+          </div>
+        </div>
+
+        <div class="privacy-note" id="d-private" hidden>🔒 <span>이 요청은 <b>선생님만</b> 볼 수 있어요. 친구들에게는 보이지 않아요.</span></div>
+
+        <div class="field">
+          <span class="field-label">어떤 도움이 필요한가요? <span class="opt">하나 골라요</span></span>
+          <div class="chips" id="d-options" role="group" aria-label="세부 항목"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="d-message">더 하고 싶은 말 <span class="opt">(안 적어도 돼요)</span></label>
+          <textarea id="d-message" maxlength="300" placeholder="선생님께 전하고 싶은 내용을 적어주세요."></textarea>
+          <div class="count"><span id="d-count">0</span> / 300</div>
+        </div>
+
+        <div class="field">
+          <label class="urgent-toggle"><input type="checkbox" id="d-urgent"> 🚨 급해요! 빨리 와 주세요</label>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="d-name">내 이름 또는 번호</label>
+          <input class="input" id="d-name" maxlength="20" autocomplete="off" placeholder="예: 12번 또는 김하늘">
+          <div class="count">선생님만 볼 수 있어요. 다음에는 자동으로 적혀 있어요.</div>
+        </div>
+
+        <p class="form-error" id="d-error" role="alert"></p>
+
+        <div class="panel-actions">
+          <button type="button" class="btn btn-lg" data-go="main">← 이전으로</button>
+          <button type="submit" class="btn btn-primary btn-lg" id="d-send">📨 요청 보내기</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 3. 요청 완료 -->
+    <section class="screen" id="screen-done" hidden>
+      <div class="panel done-box">
+        <div class="done-check"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M16 33 l11 11 l21 -23"/></svg></div>
+        <h2>도움 요청이 전달되었어요!</h2>
+        <p>선생님이 확인할 수 있도록 보냈어요.</p>
+        <span class="done-code" id="done-code"></span>
+        <div class="done-actions">
+          <button class="btn btn-primary btn-lg" data-go="mine">📋 내 요청 확인하기</button>
+          <button class="btn btn-lg" data-go="main">🏠 처음으로</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 내 요청 확인 -->
+    <section class="screen" id="screen-mine" hidden>
+      <div class="section-title">
+        <h2>📋 내가 보낸 요청</h2>
+        <button class="btn btn-sm" data-go="main">← 처음으로</button>
+      </div>
+      <div class="mine-list" id="mine-list"></div>
+      <p style="text-align:center;color:var(--gray);font-size:.85rem;margin-top:22px">
+        내가 보낸 요청만 보여요. 다른 친구의 요청은 볼 수 없어요.
+      </p>
+    </section>
+  </main>
+
+  <!-- 다른 친구로 바꾸기 창 -->
+  <div class="modal" id="switch-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="switch-title">
+      <h3 id="switch-title">다른 친구가 쓰나요?</h3>
+      <p>바꾸면 이 기기에서 지금까지 보낸 요청은 더 이상 보이지 않아요. (선생님께는 그대로 전달돼 있어요)</p>
+      <div class="modal-actions">
+        <button class="btn" id="switch-cancel">아니요</button>
+        <button class="btn btn-primary" id="switch-ok">네, 바꿀게요</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

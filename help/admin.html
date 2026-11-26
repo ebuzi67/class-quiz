@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>선생님 화면 · 저요! 저요! 도와주세요</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#253B5B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="admin.html">
+        <img src="icons/icon-192.png" alt="">
+        <span>선생님 화면<small>저요! 저요! 도와주세요</small></span>
+      </a>
+      <span class="mode-chip hide-sm" id="mode-chip" hidden></span>
+      <div class="admin-tools" id="admin-tools" hidden>
+        <span class="pill tone-yellow privacy-on hide-sm">🙈 가리는 중</span>
+        <button class="icon-btn" id="sound-btn" title="알림음 켜기/끄기" aria-label="알림음 켜기/끄기">🔔</button>
+        <div class="bell-wrap">
+          <button class="icon-btn" id="bell-btn" title="새 알림" aria-label="새 알림" aria-expanded="false">📥<span class="badge-count" id="bell-count" hidden>0</span></button>
+          <div class="bell-menu" id="bell-menu" hidden>
+            <h4>📥 확인하지 않은 요청</h4>
+            <div id="bell-list"></div>
+          </div>
+        </div>
+        <div class="bell-wrap">
+          <button class="icon-btn" id="menu-btn" title="설정" aria-label="설정" aria-expanded="false">⚙️</button>
+          <div class="menu" id="menu" hidden>
+            <button id="m-notify">🖥️ <span id="m-notify-text">브라우저 알림 켜기</span></button>
+            <button id="m-sound-test">🎵 알림음 들어 보기</button>
+            <button id="m-privacy">🙈 <span id="m-privacy-text">화면 가리기 (전자칠판용)</span></button>
+            <hr>
+            <button id="m-test">🧪 테스트 요청 받아 보기</button>
+            <button id="m-samples">📦 샘플 데이터 넣기</button>
+            <button id="m-clean">🧹 해결된 요청 모두 지우기</button>
+            <hr>
+            <a class="btn btn-ghost btn-sm btn-block" href="./" style="justify-content:flex-start">👀 학생 화면 열기</a>
+            <button id="m-logout">🚪 로그아웃</button>
+            <div class="menu-note" id="m-who"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- 로그인 -->
+  <section class="login" id="login" hidden>
+    <div class="login-card">
+      <div class="lock-ico">🔒</div>
+      <h1>선생님 로그인</h1>
+      <p id="login-desc">선생님만 학생들의 도움 요청을 볼 수 있어요.</p>
+      <form id="login-form">
+        <label id="email-row">이메일
+          <input class="input" type="email" id="login-email" autocomplete="username" required>
+        </label>
+        <label>비밀번호
+          <input class="input" type="password" id="login-pw" autocomplete="current-password" required minlength="4">
+        </label>
+        <p class="login-msg" id="login-msg" role="alert"></p>
+        <button class="btn btn-navy btn-lg btn-block" id="login-btn">로그인</button>
+      </form>
+      <button class="link-btn" id="reset-btn">비밀번호를 잊었어요</button>
+      <div class="uid-box" id="not-admin" hidden></div>
+      <p style="margin:18px 0 0"><a class="link-btn" href="./">← 학생 화면으로</a></p>
+    </div>
+  </section>
+
+  <!-- 대시보드 -->
+  <main class="dash wrap" id="dash" hidden>
+    <div class="error-bar" id="error-bar" hidden></div>
+    <div class="sound-hint" id="sound-hint" hidden>
+      🔇 브라우저가 소리를 막고 있어요. 버튼을 한 번 누르면 새 요청이 올 때 알림음이 나요.
+      <button class="btn btn-sm btn-white" id="sound-unlock">🔔 알림음 켜기</button>
+    </div>
+
+    <div class="summary" id="summary">
+      <button class="sum-card" data-filter="all" aria-pressed="false">
+        <span class="sum-ico tone-gray">📋</span><span><span class="sum-num" id="n-all">0</span><span class="sum-label">전체 요청</span></span>
+      </button>
+      <button class="sum-card new" data-filter="new" aria-pressed="false">
+        <span class="sum-ico">🔔</span><span><span class="sum-num" id="n-new">0</span><span class="sum-label">새로운 요청</span></span>
+      </button>
+      <button class="sum-card" data-filter="active" aria-pressed="false">
+        <span class="sum-ico tone-yellow">👀</span><span><span class="sum-num" id="n-active">0</span><span class="sum-label">확인 중</span></span>
+      </button>
+      <button class="sum-card" data-filter="done" aria-pressed="false">
+        <span class="sum-ico tone-green">✅</span><span><span class="sum-num" id="n-done">0</span><span class="sum-label">해결 완료</span></span>
+      </button>
+    </div>
+
+    <div class="filters" id="filters">
+      <div id="type-filters" style="display:contents"></div>
+      <span class="spacer"></span>
+      <select id="status-filter" aria-label="상태로 거르기">
+        <option value="all">모든 상태</option>
+        <option value="new">🔵 새로운 요청 (미확인)</option>
+        <option value="active">👀 확인 중·처리 중</option>
+        <option value="done">✅ 해결 완료</option>
+      </select>
+    </div>
+
+    <div class="board">
+      <div class="list" id="list"></div>
+      <div class="detail-backdrop" id="detail-backdrop" hidden></div>
+      <aside class="detail" id="detail" aria-live="polite">
+        <div class="detail-empty"><span class="big">👈</span>요청을 누르면 자세한 내용이 여기에 나와요.</div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- 확인 창 -->
+  <div class="modal" id="confirm" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h3 id="confirm-title"></h3>
+      <p id="confirm-text"></p>
+      <div class="modal-actions">
+        <button class="btn" id="confirm-no">취소</button>
+        <button class="btn btn-danger" id="confirm-yes">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// 저요! 저요! 도와주세요 — Firestore 보안 규칙
+// Firebase 콘솔 → Firestore Database → 규칙(Rules) 탭에 이 내용을 통째로 붙여 넣고 "게시"를 눌러요.
+//
+//  · 선생님(관리자): admins/{내 uid} 문서가 있는 이메일 로그인 계정 → 모든 요청을 읽고, 바꾸고, 지울 수 있어요.
+//  · 학생: 익명 로그인 → 자기 uid로 된 요청만 만들고 읽을 수 있어요. 바꾸거나 지울 수 없어요.
+//  · 그 밖의 사람(로그인 안 함): 아무것도 못 해요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isShortString(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // 학생이 새 요청을 만들 때 지켜야 할 모양 (store.js / firebase.js와 같아요)
+    function validNewRequest() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['code', 'type', 'detail', 'message', 'urgent', 'studentName',
+                               'studentUid', 'status', 'read', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['code', 'type', 'studentName', 'studentUid', 'status', 'read', 'createdAt'])
+        && d.studentUid == request.auth.uid
+        && d.type in ['teacher', 'study', 'supplies', 'friend', 'health', 'etc']
+        && d.status == 'sent'
+        && d.read == false
+        && d.createdAt == request.time
+        && d.updatedAt == request.time
+        && isShortString(d.code, 8)
+        && isShortString(d.detail, 40)
+        && isShortString(d.message, 300)
+        && isShortString(d.studentName, 20) && d.studentName.size() > 0
+        && d.urgent is bool;
+    }
+
+    match /requests/{requestId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.studentUid == request.auth.uid);
+      allow create: if isAdmin() || (signedIn() && validNewRequest());
+      allow update, delete: if isAdmin();
+    }
+
+    // 관리자 명단: 콘솔에서만 만들어요. 앱에서는 "내가 관리자인지"만 읽을 수 있어요.
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // 그 밖의 모든 곳은 막아요
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,13 @@
+# 비밀 정보와 필요 없는 파일은 GitHub에 올리지 않아요
+.env
+.env.*
+*.local
+serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+node_modules/
+.DS_Store
+Thumbs.db

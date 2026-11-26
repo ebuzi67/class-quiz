@@ -2,7 +2,7 @@
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
 // 이 주소(/class-quiz/) 아래에는 다른 앱들이 모두 있어서, 전체 메뉴 자체의 파일만 맡아요.
 // 각 앱은 자기 서비스 워커가 따로 맡아요.
-const CACHE = "home-v9";
+const CACHE = "home-v10";
 const FILES = [
   "./",
   "./index.html",
@@ -22,7 +22,8 @@ const FILES = [
   "./cozy-room/icons/icon-192.png",
   "./gacha/icons/icon-192.png",
   "./quiz-race/icons/icon-192.png",
-  "./forest99/icons/icon-192.png"
+  "./forest99/icons/icon-192.png",
+  "./help/icons/icon-192.png"
 ];
 const SCOPE = self.registration.scope;
 const MINE = new Set(FILES.map((file) => new URL(file, SCOPE).href));

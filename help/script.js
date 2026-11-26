@@ -1,0 +1,286 @@
+// 학생 화면: 도움 요청 고르기 → 자세히 적기 → 보내기 → 내 요청 진행 상황 보기
+import { TYPES, TYPE_BY_ID, STATUSES, STATUS_BY_ID, escapeHtml, formatAgo, showToast, safeStorage } from "./common.js";
+import { openStore } from "./store.js";
+
+const $ = (sel) => document.querySelector(sel);
+const NAME_KEY = "helpme.studentName";
+
+const screens = ["main", "detail", "done", "mine"];
+let store = null;
+let current = null;        // 지금 고른 요청 종류
+let chosenOption = "";
+let myRequests = [];
+let lastStatuses = null;   // 상태가 바뀌면 알려 주려고 기억해요
+let stopWatch = null;
+
+// ── 화면 바꾸기 (주소 뒤 #으로 기억해서 뒤로 가기 버튼도 돼요) ──
+function show(name) {
+  for (const s of screens) $(`#screen-${s}`).hidden = s !== name;
+  scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+}
+
+function route() {
+  const hash = location.hash.slice(1);
+  if (hash.startsWith("help-") && TYPE_BY_ID[hash.slice(5)]) {
+    openDetail(hash.slice(5));
+  } else if (hash === "mine") {
+    renderMine();
+    show("mine");
+  } else if (hash === "done") {
+    show("done");
+  } else {
+    renderHello();
+    show("main");
+  }
+}
+
+function go(name) {
+  const target = name === "main" ? "" : name;
+  if (location.hash.slice(1) === target) {
+    route();
+  } else if (!target) {
+    history.pushState(null, "", location.pathname + location.search);  // 주소에서 #을 지워요
+    route();
+  } else {
+    location.hash = target;
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-go]");
+  if (!btn) return;
+  e.preventDefault();
+  go(btn.dataset.go);
+});
+addEventListener("hashchange", route);
+addEventListener("popstate", route);
+
+// ── 1. 메인 카드 ──
+function renderGrid() {
+  $("#help-grid").innerHTML = TYPES.map((t) => `
+    <button class="help-card" data-type="${t.id}">
+      ${t.private ? '<span class="lock pill tone-gray">🔒 비밀</span>' : ""}
+      <span class="card-icon c-${t.color}" aria-hidden="true">${t.icon}</span>
+      <b>${t.title}</b>
+      <small>${t.desc}</small>
+      <span class="arrow" aria-hidden="true">→</span>
+    </button>`).join("");
+  $("#help-grid").addEventListener("click", (e) => {
+    const card = e.target.closest(".help-card");
+    if (card) location.hash = `help-${card.dataset.type}`;
+  });
+}
+
+function renderHello() {
+  const name = safeStorage.get(NAME_KEY, "");
+  $("#hello").hidden = !name;
+  $("#hello-name").textContent = name ? `${name} 학생, 안녕하세요!` : "";
+}
+
+// ── 2. 상세 요청 ──
+function openDetail(typeId) {
+  current = TYPE_BY_ID[typeId];
+  chosenOption = "";
+  $("#d-icon").className = `card-icon c-${current.color}`;
+  $("#d-icon").textContent = current.icon;
+  $("#d-title").textContent = current.title;
+  $("#d-private").hidden = !current.private;
+  $("#d-options").innerHTML = current.options
+    .map((o) => `<button type="button" class="chip" aria-pressed="false">${escapeHtml(o)}</button>`).join("");
+  $("#d-message").value = "";
+  $("#d-count").textContent = "0";
+  $("#d-urgent").checked = false;
+  $("#d-name").value = safeStorage.get(NAME_KEY, "");
+  $("#d-error").textContent = "";
+  $("#d-send").disabled = false;
+  show("detail");
+}
+
+$("#d-options").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  const on = chip.getAttribute("aria-pressed") !== "true";
+  for (const c of $("#d-options").children) c.setAttribute("aria-pressed", "false");
+  chip.setAttribute("aria-pressed", String(on));
+  chosenOption = on ? chip.textContent : "";
+  $("#d-error").textContent = "";
+});
+$("#d-message").addEventListener("input", (e) => {
+  $("#d-count").textContent = e.target.value.length;
+  $("#d-error").textContent = "";
+});
+
+$("#request-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const message = $("#d-message").value.trim();
+  const studentName = $("#d-name").value.trim();
+  if (!chosenOption && !message) {
+    $("#d-error").textContent = "👆 위에서 하나를 고르거나, 하고 싶은 말을 적어 주세요.";
+    return;
+  }
+  if (!studentName) {
+    $("#d-error").textContent = "✏️ 이름 또는 번호를 적어 주세요.";
+    $("#d-name").focus();
+    return;
+  }
+  if (!store) {
+    $("#d-error").textContent = "아직 준비 중이에요. 잠시 뒤에 다시 눌러 주세요.";
+    return;
+  }
+  $("#d-send").disabled = true;
+  $("#d-send").textContent = "보내는 중…";
+  try {
+    safeStorage.set(NAME_KEY, studentName);
+    const { code } = await store.addRequest({
+      type: current.id, detail: chosenOption, message, studentName, urgent: $("#d-urgent").checked,
+    });
+    $("#done-code").textContent = `요청 번호 #${code}`;
+    location.hash = "done";
+    confetti();
+  } catch (err) {
+    $("#d-error").textContent = `😢 보내지 못했어요. ${err.message}`;
+  } finally {
+    $("#d-send").disabled = false;
+    $("#d-send").textContent = "📨 요청 보내기";
+  }
+});
+
+// ── 3. 완료 화면의 작은 축하 효과 ──
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const box = document.createElement("div");
+  box.className = "confetti";
+  const colors = ["#5B91D6", "#FFD77A", "#DDF2EA", "#253B5B", "#F7B2A8"];
+  for (let i = 0; i < 36; i++) {
+    const p = document.createElement("i");
+    p.style.left = `${Math.random() * 100}%`;
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = `${Math.random() * 0.5}s`;
+    p.style.animationDuration = `${1.4 + Math.random()}s`;
+    box.appendChild(p);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3200);
+}
+
+// ── 4. 내 요청 확인 ──
+function renderMine() {
+  const list = $("#mine-list");
+  if (!myRequests.length) {
+    list.innerHTML = `<div class="empty"><span class="big">📭</span>아직 보낸 요청이 없어요.<br>
+      <button class="btn btn-primary" data-go="main" style="margin-top:16px">도움 요청하러 가기</button></div>`;
+    return;
+  }
+  list.innerHTML = myRequests.map((r) => {
+    const type = TYPE_BY_ID[r.type] || TYPE_BY_ID.etc;
+    const status = STATUS_BY_ID[r.status] || STATUSES[0];
+    const nowIdx = STATUSES.findIndex((s) => s.id === status.id);
+    const text = [r.detail, r.message].filter(Boolean).join(" · ");
+    return `<article class="mine-item st-${status.id}">
+      <div class="mine-top">
+        <span class="ico" aria-hidden="true">${type.icon}</span>
+        <b>${type.title}</b>
+        <span class="pill tone-${status.tone}">${status.icon} ${status.label}</span>
+      </div>
+      ${text ? `<p class="mine-detail">${escapeHtml(text)}</p>` : ""}
+      <div class="mine-time">${formatAgo(r.createdAt)} · 요청 번호 #${escapeHtml(r.code || "")}</div>
+      <div class="steps" aria-label="진행 상황: ${status.label}">
+        ${STATUSES.map((s, i) => `<div class="step s-${s.id} ${i <= nowIdx ? "on" : ""} ${i === nowIdx ? "now" : ""}">
+          <span class="dot">${s.icon}</span>${s.label}</div>`).join("")}
+      </div>
+    </article>`;
+  }).join("");
+}
+
+function updateMineCount() {
+  const active = myRequests.filter((r) => r.status !== "done").length;
+  $("#mine-count").hidden = active === 0;
+  $("#mine-count").textContent = active;
+}
+
+function onMine(list) {
+  // 선생님이 상태를 바꾸면 학생 화면에도 알려 줘요
+  if (lastStatuses) {
+    for (const r of list) {
+      const before = lastStatuses.get(r.id);
+      if (before && before !== r.status) {
+        const s = STATUS_BY_ID[r.status];
+        const type = TYPE_BY_ID[r.type] || TYPE_BY_ID.etc;
+        const msg = {
+          checking: "선생님이 요청을 확인했어요!",
+          progress: "선생님이 도와주는 중이에요!",
+          done: "요청이 해결되었어요!",
+          sent: "요청 상태가 바뀌었어요.",
+        }[r.status];
+        showToast($("#toasts"), {
+          title: msg, text: type.title, icon: s?.icon || "🔔",
+          tone: s?.tone === "purple" ? "blue" : s?.tone || "blue",
+          onClick: () => go("mine"),
+        });
+      }
+    }
+  }
+  lastStatuses = new Map(list.map((r) => [r.id, r.status]));
+  myRequests = list;
+  updateMineCount();
+  if (!$("#screen-mine").hidden) renderMine();
+}
+
+function startWatching() {
+  stopWatch?.();
+  lastStatuses = null;
+  stopWatch = store.watchMine(onMine, (err) => showError(err.message));
+}
+
+// ── 다른 친구로 바꾸기 (여러 학생이 한 기기를 쓸 때) ──
+$("#switch-btn").addEventListener("click", () => { $("#switch-modal").hidden = false; });
+$("#switch-cancel").addEventListener("click", () => { $("#switch-modal").hidden = true; });
+$("#switch-ok").addEventListener("click", async () => {
+  $("#switch-modal").hidden = true;
+  safeStorage.remove(NAME_KEY);
+  try {
+    await store.newStudentIdentity();
+    startWatching();
+  } catch (err) {
+    showError(err.message);
+  }
+  renderHello();
+  showToast($("#toasts"), { title: "새 친구로 바뀌었어요", text: "이제 새로 보내는 요청만 보여요.", icon: "👋", tone: "green", duration: 3500 });
+});
+
+function showError(text) {
+  $("#error-bar").textContent = `⚠️ ${text}`;
+  $("#error-bar").hidden = false;
+}
+
+// ── 앱 설치 버튼 ──
+let installPrompt = null;
+addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  $("#install-btn").hidden = false;
+});
+$("#install-btn").addEventListener("click", async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  $("#install-btn").hidden = true;
+});
+
+// ── 시작 ──
+renderGrid();
+route();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+
+try {
+  store = await openStore("student");
+  const chip = $("#mode-chip");
+  chip.hidden = false;
+  chip.textContent = store.mode === "firebase" ? "● 실시간 연결" : "로컬 테스트 모드";
+  chip.classList.toggle("live", store.mode === "firebase");
+  await store.ensureStudent();
+  startWatching();
+} catch (err) {
+  showError(`선생님과 연결하지 못했어요. ${err.message}`);
+}
