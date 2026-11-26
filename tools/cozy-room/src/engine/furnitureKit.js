@@ -191,6 +191,7 @@ const builders = {
     const beamMat = new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide });
     const beam = add(g, plane(0.9, 2.2), beamMat, { p: [-0.1, 0.75, 0.9], r: [-1.05, 0, 0.12], shadow: false });
     beam.raycast = () => {};
+    beam.userData.noPick = true;
     return { group: g, slots: [], parts: { curtains, beam, beamMat } };
   },
 

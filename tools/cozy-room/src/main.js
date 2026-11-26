@@ -171,9 +171,14 @@ function boot() {
     const r = canvas.getBoundingClientRect();
     ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    const hits = raycaster.intersectObjects(pickTargets, true);
-    for (const h of hits) {
-      if (!h.object.visible) continue;
+    const hits = raycaster.intersectObjects(pickTargets, true).filter((h) => h.object.visible);
+    // 진짜 모양을 먼저 써요. 단, 진짜 모양이 앞 가구의 누르기 영역보다 한참 뒤에 있으면(빈틈으로 뒤가 보일 때) 앞 가구를 골라요
+    const real = hits.find((h) => !h.object.userData.proxy);
+    const proxy = hits.find((h) => h.object.userData.proxy);
+    const ordered = [];
+    if (real && proxy && real.distance - proxy.distance > 0.5) ordered.push(proxy);
+    ordered.push(...hits.filter((h) => !h.object.userData.proxy), ...hits.filter((h) => h.object.userData.proxy));
+    for (const h of ordered) {
       let o = h.object;
       while (o && !o.userData.pick) o = o.parent;
       if (o) return { ...o.userData.pick, obj: o };

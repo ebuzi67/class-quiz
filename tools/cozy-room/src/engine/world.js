@@ -126,6 +126,16 @@ export class World {
     g.rotation.y = (f.rot * Math.PI) / 180;
     g.userData.pick = { kind: 'furniture', id: f.id };
     this.root.add(g);
+    // 보이지 않는 넉넉한 누르기 영역 (잎 사이 같은 빈틈을 눌러도 가구가 골라져요)
+    g.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    g.traverse((o) => { if (o.isMesh && !o.userData.noPick) box.expandByObject(o, false); });
+    const size = box.getSize(new THREE.Vector3()).max(new THREE.Vector3(0.3, 0.12, 0.3));
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.userData.proxy = true;
+    hit.position.copy(g.worldToLocal(box.getCenter(new THREE.Vector3())));
+    hit.rotation.y = -g.rotation.y;
+    g.add(hit);
     this.pickables.push(g);
     blockFurniture(this.grid, f);
     this.furniture.set(f.id, { cfg: f, group: g, slots: built.slots, parts: built.parts });
