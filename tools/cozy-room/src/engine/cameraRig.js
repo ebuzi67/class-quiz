@@ -33,22 +33,24 @@ export class CameraRig {
 
   // 세로 화면(휴대폰)에서는 조금 멀리서 봐요
   fitAspect(aspect) {
-    this.homeDist = aspect < 0.8 ? 1.45 : aspect < 1.2 ? 1.2 : 1;
+    this.homeDist = aspect < 0.6 ? 2.15 : aspect < 0.8 ? 1.75 : aspect < 1.2 ? 1.3 : 1;
+    this.homeTarget = HOME.target.clone();
+    if (aspect < 0.8) this.homeTarget.x -= 0.9; // 세로 화면은 왼쪽 벽 가구까지 보이게
   }
 
   homePos() {
-    return HOME.target.clone().add(HOME.pos.clone().sub(HOME.target).multiplyScalar(this.homeDist));
+    return this.homeTarget.clone().add(HOME.pos.clone().sub(HOME.target).multiplyScalar(this.homeDist));
   }
 
   reset(instant = false) {
     const to = this.homePos();
     if (instant || this.reduced) {
       this.camera.position.copy(to);
-      this.controls.target.copy(HOME.target);
+      this.controls.target.copy(this.homeTarget);
       this.controls.update();
       return;
     }
-    this.anim = { t: 0, fromP: this.camera.position.clone(), fromT: this.controls.target.clone(), toP: to, toT: HOME.target.clone() };
+    this.anim = { t: 0, fromP: this.camera.position.clone(), fromT: this.controls.target.clone(), toP: to, toT: this.homeTarget.clone() };
   }
 
   // 키보드로 돌리기 (화살표, +, -)

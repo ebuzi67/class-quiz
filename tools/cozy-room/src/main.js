@@ -564,7 +564,7 @@ function boot() {
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     const before = rig.homeDist;
-    rig.fitAspect((w - panelW) / Math.max(1, h - panelH));
+    rig.fitAspect((w - panelW) / h);
     if (before !== rig.homeDist) rig.reset(true);
   }
   addEventListener('resize', onResize);
