@@ -5,7 +5,7 @@ import { openStore } from "./store.js";
 const $ = (sel) => document.querySelector(sel);
 const NAME_KEY = "helpme.studentName";
 
-const screens = ["main", "detail", "done", "mine"];
+const screens = ["join", "main", "detail", "done", "mine"];
 let store = null;
 let current = null;        // 지금 고른 요청 종류
 let chosenOption = "";
@@ -21,7 +21,10 @@ function show(name) {
 
 function route() {
   const hash = location.hash.slice(1);
-  if (hash.startsWith("help-") && TYPE_BY_ID[hash.slice(5)]) {
+  // 방 번호 모드에서 아직 방 번호가 없으면 먼저 방 번호를 받아요
+  if (store?.mode === "room" && (!store.room || hash === "join")) {
+    openJoin();
+  } else if (hash.startsWith("help-") && TYPE_BY_ID[hash.slice(5)]) {
     openDetail(hash.slice(5));
   } else if (hash === "mine") {
     renderMine();
@@ -253,6 +256,98 @@ function showError(text) {
   $("#error-bar").hidden = false;
 }
 
+// ── 0. 방 번호 넣기 (방 번호 모드) ──
+let pendingCode = "";
+let joining = false;
+let previousRoom = "";
+
+function openJoin() {
+  previousRoom = store.room || "";
+  pendingCode = "";
+  joining = false;
+  $("#join-msg").textContent = "";
+  $("#join-msg").className = "join-msg";
+  $("#join-cancel").hidden = !previousRoom;
+  drawCode();
+  show("join");
+}
+
+function drawCode() {
+  $("#code-slots").innerHTML = [0, 1, 2, 3]
+    .map((i) => `<span class="slot ${pendingCode[i] ? "filled" : ""}">${pendingCode[i] || ""}</span>`).join("");
+}
+
+$("#keypad").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "지우기", "0", "⌫"]
+  .map((k) => `<button type="button" class="key ${/\d/.test(k) ? "" : "key-fn"}" data-key="${k}">${k}</button>`).join("");
+$("#keypad").addEventListener("click", (e) => {
+  const key = e.target.closest(".key")?.dataset.key;
+  if (!key || joining) return;
+  if (/\d/.test(key)) { if (pendingCode.length < 4) pendingCode += key; }
+  else if (key === "⌫") pendingCode = pendingCode.slice(0, -1);
+  else pendingCode = "";
+  $("#join-msg").textContent = "";
+  drawCode();
+  if (pendingCode.length === 4) {
+    joining = true;
+    $("#join-msg").className = "join-msg wait";
+    $("#join-msg").textContent = "🔌 선생님 방을 찾는 중…";
+    store.setRoom(pendingCode);
+  }
+});
+// 키보드로도 넣을 수 있어요
+addEventListener("keydown", (e) => {
+  if ($("#screen-join").hidden) return;
+  const map = { Backspace: "⌫", Escape: "지우기" };
+  const key = /^\d$/.test(e.key) ? e.key : map[e.key];
+  if (key) $(`#keypad [data-key="${key}"]`)?.click();
+});
+$("#join-cancel").addEventListener("click", () => {
+  if (previousRoom && previousRoom !== store.room) store.setRoom(previousRoom);
+  go("main");
+});
+
+function onConnStatus(st) {
+  const chip = $("#conn-chip");
+  const label = {
+    online: `🟢 방 ${st.room}`,
+    connecting: "🟡 연결 중…",
+    offline: "🔴 연결 끊김",
+    notfound: "🔴 연결 안 됨",
+    noroom: "🚪 방 번호 넣기",
+  }[st.state];
+  chip.textContent = label;
+  chip.className = `conn-chip ${{ online: "on", connecting: "wait", noroom: "" }[st.state] ?? "off"}`;
+
+  // 메인·상세 화면 위의 안내 띠
+  const bar = $("#conn-bar");
+  if (st.state === "offline" || st.state === "notfound") {
+    bar.hidden = false;
+    bar.innerHTML = `🔴 <span><b>선생님 화면과 연결되지 않았어요.</b> 선생님 화면이 켜지면 자동으로 연결돼요. (방 ${st.room})${st.error ? ` ${st.error}` : ""}</span>`;
+  } else {
+    bar.hidden = true;
+  }
+
+  // 방 번호를 넣는 중이었다면 결과를 알려 줘요
+  if (joining) {
+    const msg = $("#join-msg");
+    if (st.state === "online") {
+      joining = false;
+      msg.className = "join-msg good";
+      msg.textContent = "✅ 연결됐어요!";
+      setTimeout(() => go("main"), 600);
+    } else if (st.state === "notfound" || st.state === "offline") {
+      joining = false;
+      msg.className = "join-msg bad";
+      msg.textContent = st.state === "notfound"
+        ? "😢 그런 방이 없어요. 숫자를 다시 확인하거나, 선생님 화면이 켜져 있는지 물어봐요."
+        : `😢 연결이 안 돼요. 선생님께 알려 주세요.${st.error ? ` (${st.error})` : ""}`;
+      pendingCode = "";
+      drawCode();
+    }
+  }
+}
+$("#conn-chip").addEventListener("click", () => { if (store?.mode === "room") location.hash = "join"; });
+
 // ── 앱 설치 버튼 ──
 let installPrompt = null;
 addEventListener("beforeinstallprompt", (e) => {
@@ -275,12 +370,18 @@ if ("serviceWorker" in navigator) addEventListener("load", () => navigator.servi
 
 try {
   store = await openStore("student");
-  const chip = $("#mode-chip");
+  const chip = $("#conn-chip");
   chip.hidden = false;
-  chip.textContent = store.mode === "firebase" ? "● 실시간 연결" : "로컬 테스트 모드";
-  chip.classList.toggle("live", store.mode === "firebase");
+  if (store.mode === "room") {
+    store.onStatus(onConnStatus);
+  } else {
+    chip.textContent = store.mode === "firebase" ? "🟢 실시간 연결" : "한 브라우저 시험 모드";
+    chip.className = `conn-chip ${store.mode === "firebase" ? "on" : "wait"}`;
+    chip.disabled = true;
+  }
   await store.ensureStudent();
   startWatching();
+  route();
 } catch (err) {
   showError(`선생님과 연결하지 못했어요. ${err.message}`);
 }

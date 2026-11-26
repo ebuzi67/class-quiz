@@ -13,6 +13,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="저요 저요">
   <link rel="stylesheet" href="style.css">
+  <script src="lib/peerjs.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -21,7 +22,7 @@
         <img src="icons/icon-192.png" alt="">
         <span>저요! 저요! 도와주세요<small>우리 반 도움 요청</small></span>
       </a>
-      <span class="mode-chip hide-sm" id="mode-chip" hidden></span>
+      <button class="conn-chip" id="conn-chip" hidden title="방 번호 바꾸기"></button>
       <button class="btn btn-white btn-sm" id="mine-btn" data-go="mine" style="position:relative">
         📋 <span class="hide-sm">내 요청</span><span class="badge-count" id="mine-count" hidden>0</span>
       </button>
@@ -32,6 +33,20 @@
 
   <main class="wrap">
     <div class="error-bar" id="error-bar" hidden style="margin-top:16px"></div>
+    <div class="conn-bar" id="conn-bar" hidden></div>
+
+    <!-- 0. 방 번호 넣기 (처음 한 번) -->
+    <section class="screen" id="screen-join" hidden>
+      <div class="panel join-box">
+        <div class="join-ico">🚪</div>
+        <h2>선생님 방 번호를 넣어 주세요</h2>
+        <p>선생님 화면에 나온 <b>숫자 4개</b>예요. 한 번 넣으면 기억해요.</p>
+        <div class="code-slots" id="code-slots" aria-live="polite"></div>
+        <div class="keypad" id="keypad"></div>
+        <p class="join-msg" id="join-msg"></p>
+        <button class="btn btn-ghost btn-sm" id="join-cancel" hidden>← 원래 방으로 돌아가기</button>
+      </div>
+    </section>
 
     <!-- 1. 메인: 도움 요청 카드 6개 -->
     <section class="screen" id="screen-main">

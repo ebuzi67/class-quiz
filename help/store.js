@@ -1,10 +1,10 @@
 // 요청 데이터를 저장하고 읽는 곳이에요. 학생 화면과 선생님 화면은 이 파일만 써요.
 //
-// 두 가지 방식이 같은 모양(같은 함수 이름)으로 움직여요.
-//  · 로컬 테스트 모드: localStorage에 저장. 같은 브라우저의 다른 탭끼리만 바로 전달돼요.
-//  · Firebase 모드: Firestore에 저장. 여러 기기 사이에 실시간으로 전달돼요. (firebase.js)
-// firebase-config.js가 채워져 있으면 Firebase 모드, 비어 있으면 로컬 테스트 모드예요.
-// 주소 뒤에 ?local=1 을 붙이면 설정이 있어도 로컬 테스트 모드로 열려요.
+// 세 가지 방식이 같은 모양(같은 함수 이름)으로 움직여요.
+//  · 방 번호 모드 (기본): 선생님 화면이 방을 열고, 학생 기기가 숫자 4개로 들어와요. (net.js)
+//      요청은 선생님 기기(localStorage)에만 저장돼요. 선생님 화면이 켜져 있을 때 쓸 수 있어요.
+//  · Firebase 모드: firebase-config.js를 채우면 켜져요. Firestore에 저장해요. (firebase.js)
+//  · 한 브라우저 시험 모드: 주소 뒤에 ?local=1. 같은 브라우저의 다른 탭끼리만 전달돼요.
 //
 // ── 요청 한 개의 모양 (Firestore 문서 requests/{id}와 같아요) ──
 //  id          요청 고유번호 (문서 id)
@@ -21,6 +21,7 @@
 
 import { firebaseConfig } from "./firebase-config.js";
 import { makeCode, safeStorage, TYPES, LIMITS } from "./common.js";
+import * as Net from "./net.js";
 
 const forceLocal = new URLSearchParams(location.search).has("local");
 export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
@@ -30,7 +31,8 @@ export async function openStore(role) {
     const { openFirebaseStore } = await import("./firebase.js");
     return openFirebaseStore(firebaseConfig, role);
   }
-  return openLocalStore(role);
+  if (forceLocal) return openLocalStore(role);
+  return role === "admin" ? openRoomHostStore() : openRoomStudentStore();
 }
 
 // 학생이 보낸 값을 정리해요 (길이 제한, 종류 확인). 두 방식이 함께 써요.
@@ -113,7 +115,7 @@ function openLocalStore(role) {
 
   let session = (() => { try { return sessionStorage.getItem(SESSION_KEY) === "1"; } catch { return false; } })();
   const authListeners = new Set();
-  const authState = () => (session ? { state: "admin", email: "로컬 테스트 선생님" } : { state: "signedOut" });
+  const authState = () => (session ? { state: "admin", email: "이 기기 선생님" } : { state: "signedOut" });
   const setSession = (on) => {
     session = on;
     try { on ? sessionStorage.setItem(SESSION_KEY, "1") : sessionStorage.removeItem(SESSION_KEY); } catch { /* 무시 */ }
@@ -170,7 +172,7 @@ function openLocalStore(role) {
     },
     async adminSignOut() { setSession(false); },
     async resetPassword() {
-      throw new Error("로컬 테스트 모드에서는 브라우저 저장소를 지우면 비밀번호도 지워져요.");
+      throw new Error("이 기기 비밀번호를 잊었으면 브라우저의 사이트 데이터를 지운 뒤 새로 정해 주세요. (요청 기록도 함께 지워져요)");
     },
     watchAll(cb) {
       return watch(() => true, cb);
@@ -208,6 +210,9 @@ function openLocalStore(role) {
     async addTestRequest() {
       add({ ...cleanRequestInput(randomTestRequest()), studentUid: "sample" });
     },
+    // 방 번호 모드가 함께 써요
+    _readAll: readAll,
+    _add: add,
   };
 }
 
@@ -220,4 +225,194 @@ async function sha256(text) {
   let h = 0;
   for (const ch of text) h = (Math.imul(31, h) + ch.charCodeAt(0)) | 0;
   return `weak-${h}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  방 번호 모드 — 선생님 쪽
+//  요청 목록은 선생님 기기에 저장하고(로컬 모드와 같아요), 학생 기기와는 방으로 주고받아요.
+//  학생에게는 그 학생(기기)의 요청만 보내 줘요.
+// ─────────────────────────────────────────────────────────────
+const ROOM_KEY = "helpme.room";
+
+function openRoomHostStore() {
+  const base = openLocalStore("admin");
+  const conns = new Map();   // 연결 → 학생 기기 id
+  const roomListeners = new Set();
+  let room = { code: safeStorage.get(ROOM_KEY) || Net.newCode(), state: "off", error: "", students: 0 };
+  let handle = null;
+
+  const setRoom = (patch) => {
+    room = { ...room, ...patch };
+    roomListeners.forEach((fn) => fn(room));
+  };
+  const countStudents = () => new Set([...conns.values()].filter(Boolean)).size;
+  const mineOf = (uid) => base._readAll().filter((r) => r.studentUid === uid);
+  const sendMine = (conn, uid) => conn.send({ t: "mine", list: mineOf(uid) });
+
+  // 요청이 바뀔 때마다(선생님이 상태를 바꾸는 등) 연결된 학생에게 자기 요청을 다시 보내요
+  base.watchAll(() => conns.forEach((uid, conn) => uid && sendMine(conn, uid)));
+
+  const onConn = (conn) => {
+    conns.set(conn, null);
+    conn.onmessage = (m) => {
+      if (!m || typeof m !== "object") return;
+      if (m.t === "hello" && typeof m.uid === "string" && m.uid.length >= 8) {
+        conns.set(conn, m.uid.slice(0, 60));
+        setRoom({ students: countStudents() });
+        sendMine(conn, conns.get(conn));
+      } else if (m.t === "add") {
+        const uid = conns.get(conn);
+        if (!uid) return;
+        try {
+          const item = base._add({ ...cleanRequestInput(m.req || {}), studentUid: uid });
+          conn.send({ t: "added", rid: m.rid, id: item.id, code: item.code });
+        } catch (err) {
+          conn.send({ t: "added", rid: m.rid, error: err.message });
+        }
+      }
+    };
+    conn.onclose = () => {
+      conns.delete(conn);
+      setRoom({ students: countStudents() });
+    };
+  };
+
+  const errorText = (type) => (type === "nolib"
+    ? "연결 도구를 불러오지 못했어요. 인터넷을 확인하고 새로 고쳐 주세요."
+    : `연결 서버(PeerJS)에 닿지 않아요. 인터넷을 확인해 주세요. 학교 와이파이에서 막혀 있을 수 있어요. (${type})`);
+
+  function open(code = room.code) {
+    handle?.close();
+    conns.forEach((_, c) => c.close());
+    conns.clear();
+    setRoom({ code, state: "opening", error: "", students: 0 });
+    handle = Net.host(code, {
+      onReady: (realCode) => {
+        safeStorage.set(ROOM_KEY, realCode);
+        setRoom({ code: realCode, state: "open", error: "" });
+      },
+      onConn,
+      onError: (type) => setRoom({ state: "error", error: errorText(type) }),
+    });
+  }
+
+  return {
+    ...base,
+    mode: "room",
+    // 방 열기·닫기 (선생님이 로그인하면 열고, 로그아웃하면 닫아요)
+    openRoom: () => open(),
+    closeRoom: () => { handle?.close(); handle = null; conns.clear(); setRoom({ state: "off", students: 0 }); },
+    newRoomCode: () => open(Net.newCode()),
+    onRoom(cb) { roomListeners.add(cb); cb(room); return () => roomListeners.delete(cb); },
+    studentLink(code = room.code) {
+      const url = new URL("./", location.href);
+      url.searchParams.set("room", code);
+      if (Net.isLocalNet) url.searchParams.set("net", "local");
+      return url.href;
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+//  방 번호 모드 — 학생 쪽
+// ─────────────────────────────────────────────────────────────
+const JOIN_KEY = "helpme.joinRoom";
+const MINE_KEY = "helpme.mine";
+
+function openRoomStudentStore() {
+  const params = new URLSearchParams(location.search);
+  let roomCode = /^\d{4}$/.test(params.get("room") || "") ? params.get("room") : safeStorage.get(JOIN_KEY, "");
+  if (roomCode) safeStorage.set(JOIN_KEY, roomCode);
+  let mine = (() => { try { return JSON.parse(safeStorage.get(MINE_KEY, "[]")) || []; } catch { return []; } })();
+  let conn = null;
+  let handle = null;
+  let status = { state: roomCode ? "connecting" : "noroom", room: roomCode, error: "" };
+  const mineListeners = new Set();
+  const statusListeners = new Set();
+  const waiting = new Map();   // 보낸 요청의 답을 기다려요
+
+  const uid = () => {
+    let id = safeStorage.get(UID_KEY);
+    if (!id) { id = `device-${makeCode()}${makeCode()}`; safeStorage.set(UID_KEY, id); }
+    return id;
+  };
+  const setStatus = (patch) => {
+    status = { ...status, ...patch };
+    statusListeners.forEach((fn) => fn(status));
+  };
+  const setMine = (list) => {
+    mine = Array.isArray(list) ? list.slice().sort((a, b) => b.createdAt - a.createdAt) : [];
+    safeStorage.set(MINE_KEY, JSON.stringify(mine));
+    mineListeners.forEach((fn) => fn(mine));
+  };
+
+  function connect() {
+    handle?.close();
+    conn = null;
+    if (!roomCode) { setStatus({ state: "noroom", room: "" }); return; }
+    setStatus({ state: "connecting", room: roomCode, error: "" });
+    handle = Net.join(roomCode, {
+      onOpen: (c) => {
+        conn = c;
+        c.onmessage = (m) => {
+          if (!m || typeof m !== "object") return;
+          if (m.t === "mine") setMine(m.list);
+          else if (m.t === "added" && waiting.has(m.rid)) {
+            const { resolve, reject, timer } = waiting.get(m.rid);
+            clearTimeout(timer);
+            waiting.delete(m.rid);
+            m.error ? reject(new Error(m.error)) : resolve({ id: m.id, code: m.code });
+          }
+        };
+        c.send({ t: "hello", uid: uid() });
+        setStatus({ state: "online", error: "" });
+      },
+      onClose: () => { conn = null; setStatus({ state: "offline" }); },
+      onError: (type) => {
+        conn = null;
+        setStatus({
+          state: type === "peer-unavailable" ? "notfound" : "offline",
+          error: type === "nolib" ? "연결 도구를 불러오지 못했어요." : "",
+        });
+      },
+    });
+  }
+
+  return {
+    mode: "room",
+    role: "student",
+    async ensureStudent() { connect(); return uid(); },
+    async addRequest(input) {
+      if (!conn) throw new Error("선생님 화면과 연결되어 있지 않아요. 선생님께 화면을 켜 달라고 해 주세요.");
+      const req = cleanRequestInput(input);
+      const rid = makeCode();
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          waiting.delete(rid);
+          reject(new Error("선생님 화면에서 답이 없어요. 잠시 뒤에 다시 보내 주세요."));
+        }, 8000);
+        waiting.set(rid, { resolve, reject, timer });
+        conn.send({ t: "add", rid, req });
+      });
+    },
+    watchMine(cb) {
+      mineListeners.add(cb);
+      cb(mine);
+      return () => mineListeners.delete(cb);
+    },
+    async newStudentIdentity() {
+      safeStorage.remove(UID_KEY);
+      setMine([]);
+      if (conn) conn.send({ t: "hello", uid: uid() });
+    },
+    // 방 번호
+    onStatus(cb) { statusListeners.add(cb); cb(status); return () => statusListeners.delete(cb); },
+    setRoom(code) {
+      roomCode = code;
+      safeStorage.set(JOIN_KEY, code);
+      setMine([]);   // 다른 반(방)의 요청 기록은 보이지 않게
+      connect();
+    },
+    get room() { return roomCode; },
+  };
 }

@@ -590,6 +590,74 @@ body.privacy .bell-item small, body.privacy .kv dd.who-dd { filter: blur(7px); u
 body.privacy .privacy-on { display: inline-flex !important; }
 .privacy-on { display: none !important; }
 
+
+/* ── 방 번호 모드: 연결 상태 ───────────────── */
+.conn-chip {
+  border: 0; border-radius: 999px; padding: 8px 14px; min-height: 40px;
+  font-weight: 800; font-size: .88rem; white-space: nowrap;
+  background: var(--gray-soft); color: var(--navy);
+}
+.conn-chip.on { background: var(--mint); color: var(--mint-dark); }
+.conn-chip.wait { background: var(--yellow-soft); color: var(--yellow-dark); }
+.conn-chip.off { background: var(--red-soft); color: var(--red); }
+.conn-chip:disabled { cursor: default; }
+.conn-bar {
+  display: flex; gap: 8px; align-items: flex-start;
+  margin-top: 16px; padding: 12px 16px; border-radius: 16px;
+  background: var(--red-soft); color: var(--red); font-size: .92rem;
+}
+.conn-bar b { color: var(--red); }
+
+/* 방 번호 넣기 */
+.join-box { text-align: center; max-width: 460px; }
+.join-ico {
+  width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 26px;
+  display: grid; place-items: center; font-size: 2.6rem; background: var(--cream);
+}
+.join-box h2 { margin: 0 0 6px; font-size: 1.45rem; }
+.join-box > p { margin: 0 0 20px; color: var(--navy-soft); }
+.code-slots { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.slot {
+  width: 62px; height: 74px; border-radius: 18px; border: 3px solid var(--line);
+  display: grid; place-items: center; font-size: 2.2rem; font-weight: 800; background: #fff;
+}
+.slot.filled { border-color: var(--blue); background: var(--blue-soft); color: var(--blue-dark); }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 340px; margin: 0 auto; }
+.key {
+  min-height: 64px; border: 0; border-radius: 18px; background: var(--bg);
+  font-size: 1.6rem; font-weight: 800; color: var(--navy);
+  box-shadow: inset 0 -3px 0 rgba(37, 59, 91, .08);
+  transition: transform .08s ease, background .15s ease;
+}
+.key:hover { background: #E9EFF7; }
+.key:active { transform: scale(.95); }
+.key-fn { font-size: 1rem; color: var(--navy-soft); }
+.join-msg { min-height: 1.5em; margin: 16px 0 6px; font-weight: 800; }
+.join-msg.wait { color: var(--yellow-dark); }
+.join-msg.good { color: var(--green); }
+.join-msg.bad { color: var(--red); }
+
+/* 선생님: 방 패널 */
+.room-panel {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--navy); color: #fff; border-radius: 22px; padding: 16px 20px; margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+.room-panel .room-label { font-size: .85rem; font-weight: 700; opacity: .8; display: block; }
+.room-panel .room-code { font-size: 2.2rem; font-weight: 900; letter-spacing: .12em; line-height: 1.1; }
+.room-panel .room-info { margin-right: auto; }
+.room-panel .room-state { font-size: .9rem; font-weight: 700; opacity: .92; }
+.room-panel .room-err { flex-basis: 100%; background: rgba(255, 255, 255, .12); padding: 10px 12px; border-radius: 12px; font-size: .88rem; }
+.room-panel .btn { background: rgba(255, 255, 255, .14); color: #fff; }
+.room-panel .btn:hover { background: rgba(255, 255, 255, .24); }
+.room-panel .btn-yellow { background: var(--yellow); color: var(--navy); }
+.room-panel .btn-yellow:hover { background: #FFCD55; }
+.qr-card { text-align: center; width: min(520px, 100%); }
+.qr-card .big-code { font-size: 4rem; font-weight: 900; letter-spacing: .15em; color: var(--navy); line-height: 1.1; margin: 4px 0 10px; }
+.qr-box { display: grid; place-items: center; margin: 10px auto 12px; }
+.qr-box img, .qr-box canvas { width: min(300px, 70vw) !important; height: auto !important; }
+.qr-link { font-size: .85rem; color: var(--gray); word-break: break-all; }
+
 /* ─────────────────────────────────────────────────────────────
    반응형
    ───────────────────────────────────────────────────────────── */
@@ -645,6 +713,8 @@ body.privacy .privacy-on { display: inline-flex !important; }
   .filters .spacer { display: none; }
   .filters select { width: 100%; }
   .steps .step { font-size: .7rem; }
+  .room-panel .room-code { font-size: 1.8rem; }
+  .conn-chip { font-size: .8rem; padding: 6px 10px; }
 }
 @media (max-width: 380px) {
   .help-grid { gap: 10px; }

@@ -140,15 +140,15 @@ function showLogin(auth) {
   $("#dash").hidden = true;
   $("#admin-tools").hidden = true;
   updateSoundHint();
-  const local = store.mode === "local";
+  const local = store.mode !== "firebase";  // 방 번호 모드와 시험 모드는 이 기기 비밀번호로 잠가요
   $("#email-row").hidden = local;
   $("#login-email").required = !local;
   $("#reset-btn").hidden = local;
   $("#login-pw").autocomplete = local && store.localNeedsPinSetup() ? "new-password" : "current-password";
   if (local) {
     $("#login-desc").innerHTML = store.localNeedsPinSetup()
-      ? "<b>처음이에요!</b> 이 브라우저에서 쓸 선생님 비밀번호(4자 이상)를 정해 주세요.<br><small>로컬 테스트 모드: 비밀번호는 이 브라우저에만 저장돼요.</small>"
-      : "선생님 비밀번호를 입력해 주세요.<br><small>로컬 테스트 모드</small>";
+      ? "<b>처음이에요!</b> 이 기기에서 쓸 선생님 비밀번호(4자 이상)를 정해 주세요.<br><small>비밀번호는 이 기기의 브라우저에만 저장돼요.</small>"
+      : "선생님 비밀번호를 입력해 주세요.";
     $("#login-btn").textContent = store.localNeedsPinSetup() ? "비밀번호 정하고 시작하기" : "로그인";
   }
   const box = $("#not-admin");
@@ -205,8 +205,14 @@ function onAuth(auth) {
     knownIds = null;
     selectedId = null;
     document.title = BASE_TITLE;
+    store.closeRoom?.();
+    $("#room-panel").hidden = true;
     showLogin(auth);
     return;
+  }
+  if (store.mode === "room") {
+    $("#room-panel").hidden = false;
+    store.openRoom();
   }
   $("#login").hidden = true;
   $("#dash").hidden = false;
@@ -580,6 +586,45 @@ function confirmBox(title, text) {
 // "방금 전", "5분 전" 같은 시간을 30초마다 새로 그려요
 setInterval(() => { if (requests.length) { renderList(); renderBell(requests.filter(isNew)); } }, 30000);
 
+
+// ─────────────────────────────────────────────
+//  방 번호 모드: 선생님 화면이 켜져 있는 동안 학생 기기가 방 번호로 들어와요
+// ─────────────────────────────────────────────
+let roomCode = "";
+function renderRoom(room) {
+  roomCode = room.code;
+  $("#room-code").textContent = room.state === "open" ? room.code : "····";
+  const state = {
+    off: "방이 닫혀 있어요",
+    opening: "🟡 방을 여는 중…",
+    open: room.students ? `🟢 방 열림 · 학생 기기 ${room.students}대 연결됨` : "🟢 방 열림 · 학생을 기다리는 중",
+    error: "🔴 방을 열지 못했어요. 다시 시도하는 중…",
+  }[room.state];
+  $("#room-state").textContent = state;
+  $("#room-err").hidden = !room.error;
+  $("#room-err").textContent = room.error ? `⚠️ ${room.error}` : "";
+  if (!$("#qr-modal").hidden) drawQr();
+}
+function drawQr() {
+  const link = store.studentLink(roomCode);
+  $("#qr-code").textContent = roomCode;
+  $("#qr-link").textContent = link;
+  const box = $("#qr-box");
+  box.innerHTML = "";
+  try {
+    // eslint-disable-next-line no-undef
+    new QRCode(box, { text: link, width: 600, height: 600, correctLevel: QRCode.CorrectLevel.M });
+  } catch {
+    box.textContent = "QR코드를 만들지 못했어요. 숫자를 알려 주세요.";
+  }
+}
+$("#room-qr").addEventListener("click", () => { drawQr(); $("#qr-modal").hidden = false; });
+$("#qr-close").addEventListener("click", () => { $("#qr-modal").hidden = true; });
+$("#qr-modal").addEventListener("click", (e) => { if (e.target.id === "qr-modal") $("#qr-modal").hidden = true; });
+$("#room-new").addEventListener("click", async () => {
+  if (await confirmBox("새 방 번호로 바꿀까요?", "학생 기기에서 새 번호를 다시 넣어야 해요. 보통은 같은 번호를 계속 쓰면 돼요.")) store.newRoomCode();
+});
+
 // ── 시작 ──
 renderSoundBtn();
 renderTypeFilters();
@@ -592,8 +637,9 @@ try {
   store = await openStore("admin");
   const chip = $("#mode-chip");
   chip.hidden = false;
-  chip.textContent = store.mode === "firebase" ? "● Firebase 실시간 연결" : "로컬 테스트 모드";
-  chip.classList.toggle("live", store.mode === "firebase");
+  chip.textContent = { firebase: "● Firebase 실시간 연결", room: "📡 방 번호 모드", local: "한 브라우저 시험 모드" }[store.mode];
+  chip.classList.toggle("live", store.mode !== "local");
+  if (store.mode === "room") store.onRoom(renderRoom);
   store.onAdminAuth(onAuth);
 } catch (err) {
   $("#login").hidden = false;
