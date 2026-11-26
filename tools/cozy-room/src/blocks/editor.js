@@ -371,7 +371,7 @@ export class BlockEditor {
       if (d.kind === 'new') {
         const b = newBlock(d.type, { action: this.actions[0]?.id });
         if (!insertBlock(this.program, ref, index, b)) this.onToast?.(`블록은 ${LIMITS.blocks}개까지, ${LIMITS.depth}겹까지 넣을 수 있어요.`, 'warn');
-        else this.activeRef = ref;
+        else this.activeRef = b.type === 'repeat' ? `${b.id}:body` : b.type === 'if' ? `${b.id}:then` : ref; // 반복·만약은 안쪽 칸을 골라 둬요
       } else if (!moveBlock(this.program, d.id, ref, index)) {
         this.onToast?.('거기에는 놓을 수 없어요.', 'warn');
       } else this.activeRef = ref;
