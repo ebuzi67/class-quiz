@@ -54,6 +54,7 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   await tapThing('furniture', 'vanity');
   await p.waitForSelector('#menu:not([hidden])');
   ok((await p.textContent('#menu-title')).includes('화장대'), '화장대를 누르면 화장대 메뉴가 나와요');
+  ok(!(await p.textContent('#menu')).includes('null'), '메뉴에 "null" 같은 이상한 글자가 없어요');
   ok(await p.isVisible('#menu [data-action="cream"]'), '메뉴에 크림 바르기가 있어요');
   ok((await p.evaluate(() => app.world.highlighted.size)) >= 1, '누른 가구가 강조돼요');
   await p.click('#menu [data-action="cream"]');
