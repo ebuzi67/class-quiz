@@ -237,7 +237,8 @@ function boot() {
     } else if (kind === 'character') world.showRing(char.position, 0.4);
     const list = actionsFor(kind, id);
     const busy = brain.current && brain.current.phase === 'do';
-    menu.replaceChildren(
+    // replaceChildren 은 null 을 "null" 글자로 넣어서, 빈 칸은 걸러 내요
+    menu.replaceChildren(...[
       el('div', { class: 'menu-head' },
         el('h2', { id: 'menu-title', text: `${info?.emoji || ''} ${info?.name || id}` }),
         el('button', { type: 'button', class: 'icon-btn', 'aria-label': '메뉴 닫기', text: '✕', onclick: () => closeMenu(true) })),
@@ -246,7 +247,7 @@ function boot() {
           el('span', { class: 'em', 'aria-hidden': 'true', text: a.emoji }), a.name, el('small', { text: `${a.duration}초` })))))
         : el('p', { class: 'note', text: '여기서 할 수 있는 행동이 아직 없어요. actions.js에 추가해 보세요!' }),
       busy ? el('p', { class: 'note', text: `⏳ ${charName}가 지금 하는 행동을 마치고 갈게요.` }) : null,
-    );
+    ].filter(Boolean));
     placeMenu(kind, id);
     menu.querySelector('[data-action]')?.focus({ preventScroll: true });
     sound.play('pop');
