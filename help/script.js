@@ -5,7 +5,7 @@ import { openStore } from "./store.js";
 const $ = (sel) => document.querySelector(sel);
 const NAME_KEY = "helpme.studentName";
 
-const screens = ["join", "main", "detail", "done", "mine"];
+const screens = ["start", "join", "main", "detail", "done", "mine"];
 let store = null;
 let current = null;        // 지금 고른 요청 종류
 let chosenOption = "";
@@ -16,14 +16,17 @@ let stopWatch = null;
 // ── 화면 바꾸기 (주소 뒤 #으로 기억해서 뒤로 가기 버튼도 돼요) ──
 function show(name) {
   for (const s of screens) $(`#screen-${s}`).hidden = s !== name;
+  document.body.dataset.screen = name;
   scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
 }
 
 function route() {
   const hash = location.hash.slice(1);
-  // 방 번호 모드에서 아직 방 번호가 없으면 먼저 방 번호를 받아요
-  if (store?.mode === "room" && (!store.room || hash === "join")) {
+  // 방 번호 모드에서 아직 방 번호가 없으면 첫 화면(학생/선생님 고르기)부터 보여 줘요
+  if (store?.mode === "room" && hash === "join") {
     openJoin();
+  } else if (store?.mode === "room" && !store.room) {
+    show("start");
   } else if (hash.startsWith("help-") && TYPE_BY_ID[hash.slice(5)]) {
     openDetail(hash.slice(5));
   } else if (hash === "mine") {
@@ -267,7 +270,7 @@ function openJoin() {
   joining = false;
   $("#join-msg").textContent = "";
   $("#join-msg").className = "join-msg";
-  $("#join-cancel").hidden = !previousRoom;
+  $("#join-cancel").textContent = previousRoom ? "← 원래 방으로 돌아가기" : "← 처음으로";
   drawCode();
   show("join");
 }
@@ -303,8 +306,13 @@ addEventListener("keydown", (e) => {
 });
 $("#join-cancel").addEventListener("click", () => {
   if (previousRoom && previousRoom !== store.room) store.setRoom(previousRoom);
-  go("main");
+  go("main");  // 방 번호가 없으면 첫 화면으로 가요
 });
+
+// 첫 화면 버튼
+$("#start-student").addEventListener("click", () => { location.hash = "join"; });
+// 시험 모드(?net=local)라면 선생님 화면에도 그대로 붙여 줘요
+$("#start-teacher").href = `admin.html${location.search}`;
 
 function onConnStatus(st) {
   const chip = $("#conn-chip");

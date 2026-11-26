@@ -49,6 +49,7 @@ body {
   color: var(--navy);
   font-size: 17px;
   line-height: 1.5;
+  word-break: keep-all;  /* 한국어는 낱말 단위로 줄을 바꿔요 */
   /* 따뜻한 교실: 위쪽은 크림빛 햇살, 아래는 깔끔한 밝은 파랑 */
   background:
     radial-gradient(1200px 420px at 50% -120px, var(--cream) 0%, rgba(255, 249, 237, 0) 70%),
@@ -637,6 +638,27 @@ body.privacy .privacy-on { display: inline-flex !important; }
 .join-msg.good { color: var(--green); }
 .join-msg.bad { color: var(--red); }
 
+
+/* 첫 화면: 학생 / 선생님 고르기 */
+body[data-screen="start"] #mine-btn, body[data-screen="start"] #conn-chip { display: none; }
+.start-box { text-align: center; max-width: 560px; padding: 36px 28px 30px; }
+.start-icons { font-size: 3.2rem; letter-spacing: .1em; line-height: 1; margin-bottom: 14px; }
+.start-box h1 { font-size: clamp(2rem, 6vw, 2.6rem); line-height: 1.2; margin: 0 0 10px; letter-spacing: -.02em; }
+.start-box > p { color: var(--navy-soft); margin: 0 0 26px; font-size: 1.08rem; }
+.start-choices { display: flex; flex-direction: column; gap: 14px; }
+.choice {
+  display: flex; align-items: center; gap: 18px; width: 100%; text-align: left;
+  padding: 20px 22px; border-radius: 22px; border: 2px solid var(--line);
+  background: #fff; color: var(--navy); text-decoration: none;
+  box-shadow: 0 4px 0 var(--line);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.choice:hover { transform: translateY(-3px); border-color: var(--blue); box-shadow: 0 7px 0 #C9D9EE; }
+.choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.choice-ico { width: 72px; height: 72px; flex: none; border-radius: 22px; display: grid; place-items: center; font-size: 2.4rem; }
+.choice b { display: block; font-size: 1.3rem; margin-bottom: 2px; }
+.choice small { display: block; color: var(--navy-soft); font-size: .95rem; }
+
 /* 선생님: 방 패널 */
 .room-panel {
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
@@ -714,6 +736,10 @@ body.privacy .privacy-on { display: inline-flex !important; }
   .filters select { width: 100%; }
   .steps .step { font-size: .7rem; }
   .room-panel .room-code { font-size: 1.8rem; }
+  .start-box { padding: 28px 18px 22px; }
+  .choice { padding: 16px; gap: 14px; }
+  .choice-ico { width: 60px; height: 60px; font-size: 2rem; border-radius: 18px; }
+  .choice b { font-size: 1.15rem; }
   .conn-chip { font-size: .8rem; padding: 6px 10px; }
 }
 @media (max-width: 380px) {
