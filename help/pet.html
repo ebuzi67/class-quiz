@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>나의 반려동물 · 저요! 저요! 도와주세요</title>
+  <meta name="theme-color" content="#5B91D6">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pet/pet.css">
+  <script src="lib/peerjs.min.js"></script>
+  <script type="importmap">{ "imports": { "three": "./lib/three.module.min.js" } }</script>
+</head>
+<body class="pet-page">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./" id="home-link">
+        <img src="icons/icon-192.png" alt="">
+        <span>저요! 저요!<small>쉬는 시간</small></span>
+      </a>
+      <nav class="pet-tabs" aria-label="쉬는 시간 메뉴">
+        <a href="#pet" data-tab="pet" data-short="반려동물">🐾 <span>나의 반려동물</span></a>
+        <a href="#dex" data-tab="dex" data-short="도감">📖 <span>동물 도감</span></a>
+      </nav>
+      <a class="btn btn-white btn-sm back-help" href="./" id="help-link">🙋 <span class="hide-sm">도움 요청</span></a>
+    </div>
+  </header>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <main class="wrap pet-main">
+    <!-- 반려동물 고르기 -->
+    <section class="screen" id="v-pick" hidden>
+      <div class="pet-hero">
+        <h1>어떤 친구를 만나 볼까요?</h1>
+        <p>마음에 드는 친구를 골라 이름을 지어 주세요.</p>
+      </div>
+      <div class="cat-tabs" id="pick-tabs" role="tablist"></div>
+      <p class="pick-note" id="pick-note" hidden>🪲 실제 곤충은 알 → 애벌레 → 번데기를 거쳐 어른벌레가 돼요. 여기서는 어른벌레 친구를 게임 속 반려동물로 만나요. (실제 한살이는 동물 도감에서 볼 수 있어요)</p>
+      <div class="pick-grid" id="pick-grid"></div>
+      <p class="sub-note center"><a class="btn btn-white" href="#pet/sync">📲 다른 기기에서 키우던 친구가 있나요? 불러오기</a></p>
+    </section>
+
+    <!-- 이름 짓기 -->
+    <section class="screen" id="v-name" hidden>
+      <div class="name-layout">
+        <div class="stage-box showcase" id="name-stage"><span class="stage-hint">👆 끌어서 돌려 보세요</span></div>
+        <form class="panel name-panel" id="name-form" novalidate>
+          <span class="pill tone-blue" id="name-species"></span>
+          <h2>이름을 지어 주세요</h2>
+          <input class="input name-input" id="name-input" maxlength="10" autocomplete="off" placeholder="예: 콩이">
+          <div class="chips" id="name-ideas"></div>
+          <p class="form-error" id="name-error" role="alert"></p>
+          <div class="panel-actions">
+            <a class="btn btn-lg" href="#pet">← 다시 고르기</a>
+            <button class="btn btn-primary btn-lg" type="submit">🐾 이 이름으로 할게요</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 나의 반려동물 -->
+    <section class="screen" id="v-home" hidden>
+      <div class="pet-info">
+        <div class="pet-id">
+          <h1 id="h-name"></h1>
+          <span class="pill tone-blue" id="h-species"></span>
+          <span class="pill tone-gray" id="h-days"></span>
+        </div>
+        <div class="meters">
+          <div class="meter">
+            <span class="meter-label">💖 친밀도 <b id="h-love"></b></span>
+            <span class="bar"><i id="h-love-bar" class="love"></i></span>
+          </div>
+          <div class="meter">
+            <span class="meter-label">🌱 <b id="h-stage"></b> <small id="h-exp"></small></span>
+            <span class="bar"><i id="h-exp-bar" class="exp"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="stage-box room" id="home-stage">
+        <div class="bubble" id="bubble"></div>
+        <div class="fx" id="fx"></div>
+      </div>
+      <div class="actions" id="actions"></div>
+      <div class="pet-sub">
+        <a class="btn btn-white" href="#pet/rewards">🏅 보상과 배지</a>
+        <a class="btn btn-white" href="#pet/sync">📲 다른 기기에서 이어하기</a>
+        <a class="btn btn-white" href="#dex">📖 동물 도감</a>
+      </div>
+    </section>
+
+    <!-- 꾸미기 -->
+    <section class="screen" id="v-decor" hidden>
+      <div class="decor-layout">
+        <div class="stage-box room" id="decor-stage"><span class="stage-hint">👆 물건을 끌어서 옮겨요</span></div>
+        <div class="panel decor-panel">
+          <div class="decor-head">
+            <h2>🎨 공간 꾸미기</h2>
+            <a class="btn btn-primary btn-sm" href="#pet">✔ 다 꾸몄어요</a>
+          </div>
+          <div class="cat-tabs small" id="decor-tabs"></div>
+          <div class="item-grid" id="decor-items"></div>
+          <p class="decor-note" id="decor-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 보상과 배지 -->
+    <section class="screen" id="v-rewards" hidden>
+      <div class="section-title"><h2>🏅 보상과 배지</h2><a class="btn btn-sm" href="#pet">← 돌아가기</a></div>
+      <p class="sub-note">반려동물을 돌보고 도감을 탐색하면 아이템과 배지를 받아요. (도움 요청과는 관계없어요. 도움은 언제든 편하게 요청해요!)</p>
+      <h3 class="block-title">배지</h3>
+      <div class="badge-grid" id="badge-grid"></div>
+      <h3 class="block-title">아이템 <small id="item-count"></small></h3>
+      <div class="item-grid wide" id="reward-items"></div>
+    </section>
+
+    <!-- 이어하기 -->
+    <section class="screen" id="v-sync" hidden>
+      <div class="section-title"><h2>📲 다른 기기에서 이어하기</h2><a class="btn btn-sm" href="#pet">← 돌아가기</a></div>
+      <div class="sync-grid">
+        <div class="panel">
+          <h3>내 이어하기 코드</h3>
+          <div class="save-code" id="save-code"></div>
+          <p class="sync-state" id="sync-state"></p>
+          <p class="sub-note">🔒 이 코드는 <b>나만 아는 비밀번호</b>예요. 친구에게 알려 주지 마세요. 다른 기기에서 이 코드를 넣으면 지금 친구를 이어서 키울 수 있어요.</p>
+        </div>
+        <form class="panel" id="sync-form" novalidate>
+          <h3>다른 기기에서 키우던 친구 불러오기</h3>
+          <input class="input code-input" id="sync-input" maxlength="9" autocomplete="off" placeholder="예: K7Q2-M9XA">
+          <p class="form-error" id="sync-error" role="alert"></p>
+          <button class="btn btn-primary btn-block" type="submit">📥 불러오기</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 도감 목록 -->
+    <section class="screen" id="v-dex" hidden>
+      <div class="dex-top">
+        <div class="dex-total panel">
+          <span class="dex-label">📖 전체 도감 완성률</span>
+          <b class="dex-pct" id="dex-pct">0%</b>
+          <span class="bar big"><i id="dex-bar" class="exp"></i></span>
+          <small id="dex-count"></small>
+        </div>
+        <div class="dex-cats" id="dex-cats"></div>
+      </div>
+      <div class="cat-tabs" id="dex-tabs"></div>
+      <div class="dex-grid" id="dex-grid"></div>
+      <p class="sub-note center">모든 도감은 누구나 자유롭게 볼 수 있어요. 카드를 눌러 동물을 발견해 보세요!</p>
+    </section>
+
+    <!-- 도감 상세 -->
+    <section class="screen" id="v-dexd" hidden>
+      <div class="dexd-nav">
+        <a class="btn btn-sm" href="#dex" id="dexd-back">← 도감 목록</a>
+        <span class="dexd-pos" id="dexd-pos"></span>
+        <span class="dexd-arrows">
+          <button class="btn btn-sm btn-white" id="dexd-prev">◀ 이전</button>
+          <button class="btn btn-sm btn-white" id="dexd-next">다음 ▶</button>
+        </span>
+      </div>
+      <div class="dexd-layout">
+        <div class="stage-box showcase" id="dex-stage"><span class="stage-hint">👆 끌어서 돌려 보세요</span></div>
+        <article class="panel dexd-info" id="dexd-info"></article>
+      </div>
+      <div class="panel life" id="dexd-life" hidden></div>
+    </section>
+  </main>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" id="modal-card"></div>
+  </div>
+
+  <script type="module" src="pet/app.js"></script>
+</body>
+</html>

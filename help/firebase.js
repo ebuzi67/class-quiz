@@ -23,7 +23,7 @@ export async function openFirebaseStore(config, role) {
     signOut, sendPasswordResetEmail,
   } = authMod;
   const {
-    getFirestore, collection, doc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot,
+    getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot,
     query, where, orderBy, limit, serverTimestamp, writeBatch, Timestamp,
   } = fsMod;
 
@@ -168,6 +168,25 @@ export async function openFirebaseStore(config, role) {
       }
       try {
         await batch.commit();
+      } catch (err) {
+        throw friendlyError(err);
+      }
+    },
+    // 반려동물 이어하기: petSaves/{이어하기 코드} 문서. 코드를 아는 사람만 읽고 쓸 수 있어요(목록 보기는 막혀 있어요).
+    async petSave(code, data) {
+      await this.ensureStudent();
+      try {
+        await setDoc(doc(db, "petSaves", code), { v: 1, data, updatedAt: serverTimestamp() });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    async petLoad(code) {
+      await this.ensureStudent();
+      try {
+        const snap = await getDoc(doc(db, "petSaves", code));
+        return snap.exists() ? snap.get("data") : null;
       } catch (err) {
         throw friendlyError(err);
       }
