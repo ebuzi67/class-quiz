@@ -6,7 +6,7 @@ import { buildPet, disposeTree } from '../pet/models.js';
 import { SPECIES_BY_ID, growthOf } from '../pet/data.js';
 import { load, saveLocal, today } from '../pet/save.js';
 
-const SIZE = { dog: 0.42, cat: 0.4, bug: 0.28 };    // 모모 옆에서 알맞은 크기
+const SIZE = { dog: 0.42, cat: 0.4, bug: 0.36 };    // 모모 옆에서 알맞은 크기
 const MOMO_DAILY = 5;                                // 하루에 경험치를 받는 횟수 (넘겨도 계속 놀 수 있어요)
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 

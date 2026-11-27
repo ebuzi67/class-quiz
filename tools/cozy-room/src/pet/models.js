@@ -74,8 +74,8 @@ function onEllipsoid(c, r, theta, phi) {
 // ─────────────────────────────────────────────────────────────
 //  얼굴 (눈·감은 눈·입·볼)
 // ─────────────────────────────────────────────────────────────
-function addFace(head, { eyeX, eyeY, eyeZ, eyeR, iris, mouthY, mouthZ, blushX, blushY, blushZ }) {
-  const face = { open: [], closed: [], mouth: null, blush: [] };
+function addFace(head, { eyeX, eyeY, eyeZ, eyeR, iris, mouthY, mouthZ, blushX, blushY, blushZ, eyeColor = "#1E1A22", smile = false, tongue = false, blushAlways = false, lineColor = "#4A2E28" }) {
+  const face = { open: [], closed: [], mouth: null, blush: [], smile: null, blushAlways };
   for (const s of [-1, 1]) {
     const eye = new THREE.Group();
     eye.position.set(s * eyeX, eyeY, eyeZ);
@@ -83,9 +83,9 @@ function addFace(head, { eyeX, eyeY, eyeZ, eyeR, iris, mouthY, mouthZ, blushX, b
       eye.add(mesh(sphere(eyeR, 16), mat(iris, { roughness: 0.3 })));
       eye.add(mesh(sphere(eyeR * 0.62, 12), mat("#1E1A22", { roughness: 0.2 }), [0, 0, eyeR * 0.45], [0.55, 1.15, 0.6]));
     } else {
-      eye.add(mesh(sphere(eyeR, 16), mat("#1E1A22", { roughness: 0.2 })));
+      eye.add(mesh(sphere(eyeR, 16), mat(eyeColor, { roughness: 0.25 }), null, [1, 1.08, 0.75]));
     }
-    eye.add(mesh(sphere(eyeR * 0.32, 8), mat("#FFFFFF", { roughness: 0.1 }), [eyeR * 0.35, eyeR * 0.4, eyeR * 0.75]));
+    eye.add(mesh(sphere(eyeR * (iris ? 0.32 : 0.24), 8), mat("#FFFFFF", { roughness: 0.1 }), [eyeR * 0.3, eyeR * 0.38, eyeR * 0.62]));
     head.add(eye);
     face.open.push(eye);
     // 감은 눈 (^ 모양)
@@ -102,91 +102,121 @@ function addFace(head, { eyeX, eyeY, eyeZ, eyeR, iris, mouthY, mouthZ, blushX, b
   face.mouth.add(mesh(sphere(eyeR * 0.55, 10), mat("#F27C8A"), [0, -eyeR * 0.3, eyeR * 0.3]));
   face.mouth.visible = false;
   head.add(face.mouth);
+  // 평소 입: 작은 "w" 모양 미소 (참고 그림처럼)
+  if (smile) {
+    const g = new THREE.Group();
+    g.position.set(0, mouthY + eyeR * 0.6, mouthZ + eyeR * 0.2);
+    const lm = mat(lineColor, { roughness: 0.4 });
+    for (const sx of [-1, 1]) g.add(mesh(new THREE.TorusGeometry(eyeR * 0.62, eyeR * 0.16, 6, 12, Math.PI), lm, [sx * eyeR * 0.6, 0, 0], null, [0, 0, Math.PI]));
+    if (tongue) g.add(mesh(sphere(eyeR * 0.62, 10), mat("#F08A96"), [0, -eyeR * 0.85, eyeR * 0.1], [0.85, 1, 0.45]));
+    head.add(g);
+    face.smile = g;
+  }
   return face;
 }
 
 // ─────────────────────────────────────────────────────────────
 //  강아지
 // ─────────────────────────────────────────────────────────────
+// 참고 그림: tools/cozy-room/art/ref-dogs.png (앞·옆·뒤·비스듬히)
 const DOGS = {
-  poodle: { fur: "#E8AE78", shade: "#D49058", light: "#F3CFA6", ears: "pom", tail: "pom", curly: true },
-  corgi: { fur: "#E8913F", shade: "#C26F25", light: "#FFFFFF", ears: "big", tail: "stub", white: true, short: true },
-  shiba: { fur: "#D9803A", shade: "#B45F22", light: "#F8E6C8", ears: "small", tail: "curl", cheeks: true },
-  golden: { fur: "#E3AE52", shade: "#C88F33", light: "#F4D48E", ears: "flop", tail: "plume", big: true },
-  pomeranian: { fur: "#F0A23F", shade: "#D7841F", light: "#FAD08A", ears: "tiny", tail: "curl", mane: true },
-  bichon: { fur: "#FBFAF5", shade: "#ECE6DA", light: "#FFFFFF", ears: "puff", tail: "pom", curly: true, round: true },
+  poodle: { fur: "#D9AF89", shade: "#C99C75", light: "#E8CBAA", ears: "pom", tail: "pom", curly: true, topknot: true },
+  corgi: { fur: "#E5A35B", shade: "#D18E47", light: "#F8EEDF", ears: "big", tail: "stub", blaze: true, chest: true, socks: true, short: true, long: true },
+  shiba: { fur: "#E3A762", shade: "#CC8D48", light: "#F7E9D3", ears: "small", tail: "curl", brows: true, chest: true, blush: true },
+  golden: { fur: "#EBD3A7", shade: "#DEC192", light: "#F4E5C9", ears: "flop", tail: "plume", tongue: true },
+  pomeranian: { fur: "#E3B07D", shade: "#D29D68", light: "#F2DAB8", ears: "tiny", tail: "fluff", mane: true },
+  bichon: { fur: "#F6F3EE", shade: "#E7E2DA", light: "#FFFFFF", ears: "puff", tail: "pom", curly: true, round: true, tongue: true },
 };
 function buildDog(p) {
   const root = new THREE.Group();
-  const fur = mat(p.fur), shade = mat(p.shade), light = mat(p.light);
+  const fur = mat(p.fur, { roughness: 0.78 }), shade = mat(p.shade, { roughness: 0.8 }), light = mat(p.light, { roughness: 0.78 });
   const parts = { legs: [] };
-  const legLen = p.short ? 0.1 : 0.2;
-  const bodyY = p.short ? 0.38 : 0.48;
-  const W = p.big ? 1.1 : 1;
-  // 몸
-  const body = mesh(sphere(0.4), fur, [0, bodyY, -0.05], [0.88 * W, 0.78, 1.12 * W]);
+  const bodyY = p.short ? 0.33 : 0.41;
+  const L = p.long ? 1.25 : 1.08;          // 몸 길이
+  const puff = sphere(0.062, 10);
+  const fluff = (parent, c, r, n, seed, opt = {}) => {
+    // 털 뭉치를 공 표면에 붙여요 (곱슬·풍성한 털)
+    const rnd = rng(1000 + seed * 97);
+    const c0 = Math.cos(opt.ph0 ?? 0.15), c1 = Math.cos((opt.ph0 ?? 0.15) + (opt.phSpan ?? 2.5));
+    for (let i = 0; i < n; i++) {
+      // 공 표면에 고르게 흩어 놓아요 (줄지어 보이지 않게)
+      const th = rnd() * Math.PI * 2, ph = Math.acos(c0 + (c1 - c0) * rnd());
+      const pt = onEllipsoid(c, r.clone().multiplyScalar(0.95), th, ph);  // 반쯤 묻혀서 부드럽게
+      if (opt.skip && opt.skip(pt)) continue;
+      const k = (opt.size ?? 1) * (0.75 + rnd() * 0.5);
+      parent.add(mesh(puff, rnd() < 0.75 ? fur : shade, pt.toArray(), [k, k, k]));
+    }
+  };
+  // 몸 (통통하게)
+  const body = mesh(sphere(0.36), fur, [0, bodyY, -0.04], [0.98, 0.86, L]);
   root.add(body); parts.body = body;
-  root.add(mesh(sphere(0.3), light, [0, bodyY - 0.02, 0.22], [0.78, 0.85, 0.62]));
-  if (p.mane) root.add(mesh(sphere(0.42), fur, [0, bodyY + 0.22, 0.18], [1.15, 0.95, 0.85]));
-  // 다리
-  for (const [x, z] of [[-0.19, 0.22], [0.19, 0.22], [-0.19, -0.3], [0.19, -0.3]]) {
+  if (p.chest) root.add(mesh(sphere(0.25), light, [0, bodyY + 0.02, 0.2], [0.82, 0.9, 0.62]));
+  if (p.curly) fluff(root, V(0, bodyY, -0.04), V(0.34, 0.3, 0.37 * L), 46, 1);
+  if (p.mane) {
+    root.add(mesh(sphere(0.4), fur, [0, bodyY + 0.12, 0.08], [1.18, 1.02, 1.05]));
+    root.add(mesh(sphere(0.3), light, [0, bodyY + 0.06, 0.26], [1, 0.95, 0.7]));
+    fluff(root, V(0, bodyY + 0.12, 0.08), V(0.45, 0.39, 0.41), 44, 3, { size: 1.15 });
+  }
+  // 다리 (짧고 통통하게)
+  const hip = bodyY - 0.08;
+  for (const [x, z] of [[-0.17, 0.2], [0.17, 0.2], [-0.17, -0.22 * L], [0.17, -0.22 * L]]) {
     const leg = new THREE.Group();
-    leg.position.set(x * W, bodyY - 0.12, z * W);
-    leg.add(mesh(capsule(0.085, legLen), fur, [0, -legLen / 2 - 0.06, 0]));
-    leg.add(mesh(sphere(0.095, 12), p.white ? light : shade, [0, -legLen - 0.13, 0.02], [1, 0.7, 1.2]));
+    leg.position.set(x, hip, z);
+    const len = Math.max(0.02, hip - 0.12);
+    leg.add(mesh(capsule(0.1, len), fur, [0, -len / 2 - 0.04, 0]));
+    leg.add(mesh(sphere(0.105, 12), p.socks ? light : fur, [0, -hip + 0.065, 0.02], [1, 0.68, 1.15]));
+    if (p.curly || p.mane) for (let k = 0; k < 5; k++) leg.add(mesh(puff, k % 2 ? fur : shade, [Math.cos(k * 1.3) * 0.09, -hip * 0.45 - (k % 2) * 0.05, Math.sin(k * 1.3) * 0.09]));
     root.add(leg); parts.legs.push(leg);
   }
   // 꼬리
   const tail = new THREE.Group();
-  tail.position.set(0, bodyY + 0.12, -0.45 * W);
-  if (p.tail === "curl") { tail.add(mesh(new THREE.TorusGeometry(0.13, 0.075, 10, 20, Math.PI * 1.6), fur, [0, 0.14, -0.02], null, [0, Math.PI / 2, 0.6])); }
-  else if (p.tail === "stub") tail.add(mesh(sphere(0.08, 12), fur, [0, 0.02, -0.02]));
-  else if (p.tail === "pom") { tail.add(mesh(capsule(0.04, 0.16), fur, [0, 0.1, -0.05], null, [-0.5, 0, 0])); tail.add(mesh(sphere(0.11, 14), fur, [0, 0.22, -0.11])); }
-  else tail.add(mesh(capsule(0.07, 0.28), fur, [0, 0.12, -0.12], null, [-0.9, 0, 0]));
+  tail.position.set(0, bodyY + 0.1, -0.36 * L);
+  if (p.tail === "curl") { tail.add(mesh(new THREE.TorusGeometry(0.11, 0.07, 10, 20, Math.PI * 1.7), fur, [0, 0.16, 0.04], null, [0, Math.PI / 2, 0.4])); tail.add(mesh(sphere(0.06, 10), light, [0, 0.2, 0.15])); }
+  else if (p.tail === "stub") tail.add(mesh(sphere(0.075, 12), fur, [0, 0.03, -0.02], [1, 1.2, 1]));
+  else if (p.tail === "pom") { tail.add(mesh(capsule(0.04, 0.14), fur, [0, 0.08, -0.04], null, [-0.6, 0, 0])); tail.add(mesh(sphere(0.12, 14), fur, [0, 0.2, -0.1])); fluff(tail, V(0, 0.2, -0.1), V(0.1, 0.1, 0.1), 7, 2, { size: 0.8 }); }
+  else if (p.tail === "fluff") { tail.add(mesh(sphere(0.2), fur, [0, 0.16, 0.06], [0.9, 0.8, 1.1])); fluff(tail, V(0, 0.16, 0.06), V(0.17, 0.14, 0.2), 12, 5); }
+  else tail.add(mesh(tube([V(0, 0, 0), V(0, 0.12, -0.12), V(0, 0.3, -0.18), V(0, 0.42, -0.12)], 0.06), fur));
   root.add(tail); parts.tail = tail;
-  // 머리
+  // 머리 (크게)
   const head = new THREE.Group();
-  head.position.set(0, bodyY + 0.42, 0.3);
-  const HR = p.round ? 0.44 : 0.37;
-  head.add(mesh(sphere(HR), fur));
+  head.position.set(0, bodyY + 0.37, 0.2);
+  const HR = p.round ? 0.43 : 0.4;
+  head.add(mesh(sphere(HR), fur, null, [1.06, 0.96, 0.96]));
+  const fz = HR * 0.96;   // 얼굴 앞면
   // 주둥이·무늬
-  if (p.white) { head.add(mesh(sphere(0.2), light, [0, -0.1, 0.25], [1.1, 0.8, 1])); head.add(mesh(capsule(0.05, 0.22), light, [0, 0.12, 0.31], null, [0.3, 0, 0])); }
-  else if (p.cheeks) head.add(mesh(sphere(0.26), light, [0, -0.11, 0.18], [1.15, 0.6, 0.9]));
-  else head.add(mesh(sphere(0.17), light, [0, -0.1, HR - 0.08], [1.15, 0.82, 1]));
-  head.add(mesh(sphere(0.055, 12), mat("#1E1A22", { roughness: 0.25 }), [0, -0.04, HR + 0.07]));
+  head.add(mesh(sphere(0.15), p.curly ? fur : light, [0, -0.11, fz - 0.07], [1.3, 0.78, 0.82]));
+  if (p.blaze) head.add(mesh(capsule(0.05, 0.2), light, [0, 0.07, fz - 0.035], [1, 1, 0.6], [0.25, 0, 0]));
+  if (p.chest) head.add(mesh(sphere(0.22), light, [0, -0.2, fz - 0.16], [1.25, 0.6, 0.8]));
+  if (p.brows) for (const sx of [-1, 1]) head.add(mesh(sphere(0.035, 10), light, [sx * 0.13, 0.13, fz - 0.03], [1.2, 0.8, 0.6]));
+  head.add(mesh(sphere(0.04, 12), mat("#3B2622", { roughness: 0.3 }), [0, -0.075, fz + 0.035], [1.35, 0.95, 0.85]));
   // 귀
   const ears = [];
+  const pink = mat("#F2B3AB");
   for (const s of [-1, 1]) {
     let ear;
-    if (p.ears === "flop") ear = mesh(sphere(0.13), shade, [s * 0.33, -0.04, 0], [0.55, 1.35, 0.85], [0, 0, s * 0.25]);
-    if (p.ears === "pom") ear = mesh(sphere(0.15), shade, [s * 0.36, -0.08, -0.02], [0.75, 1.2, 0.9]);
-    if (p.ears === "puff") ear = mesh(sphere(0.15), shade, [s * 0.4, -0.04, 0], [0.7, 1.05, 0.9]);
-    if (p.ears === "big") ear = mesh(cone(0.14, 0.34), fur, [s * 0.22, 0.38, -0.02], null, [0, 0, -s * 0.28]);
-    if (p.ears === "small") ear = mesh(cone(0.1, 0.2, 12), fur, [s * 0.21, 0.33, 0], null, [0, 0, -s * 0.3]);
-    if (p.ears === "tiny") ear = mesh(cone(0.075, 0.14, 12), fur, [s * 0.18, 0.33, 0], null, [0, 0, -s * 0.25]);
+    if (p.ears === "flop") ear = mesh(sphere(0.15), shade, [s * 0.38, -0.02, -0.02], [0.55, 1.3, 0.85], [0, 0, s * 0.18]);
+    if (p.ears === "pom") ear = mesh(sphere(0.17), fur, [s * 0.39, -0.08, -0.03], [0.75, 1.15, 0.9]);
+    if (p.ears === "puff") ear = mesh(sphere(0.15), fur, [s * 0.4, -0.04, -0.02], [0.75, 1.05, 0.9]);
+    if (p.ears === "big") ear = mesh(cone(0.14, 0.3), fur, [s * 0.22, 0.4, -0.05], null, [0, 0, -s * 0.3]);
+    if (p.ears === "small") ear = mesh(cone(0.11, 0.2, 12), fur, [s * 0.22, 0.36, -0.03], null, [0, 0, -s * 0.32]);
+    if (p.ears === "tiny") ear = mesh(cone(0.08, 0.14, 12), fur, [s * 0.18, 0.37, -0.02], null, [0, 0, -s * 0.28]);
     head.add(ear); ears.push(ear);
-    if (p.ears === "big") head.add(mesh(cone(0.08, 0.22, 12), mat("#F3B5A6"), [s * 0.215, 0.37, 0.04], null, [0, 0, -s * 0.28]));
+    if (p.ears === "big" || p.ears === "small" || p.ears === "tiny") {
+      const sc = p.ears === "big" ? 1 : p.ears === "small" ? 0.7 : 0.5;
+      head.add(mesh(cone(0.085 * sc, 0.2 * sc, 12), pink, [s * (p.ears === "big" ? 0.215 : 0.21), (p.ears === "big" ? 0.39 : 0.36), (p.ears === "big" ? 0.0 : 0.01)], null, [0, 0, -s * 0.3]));
+    }
+    if (p.ears === "pom" || p.ears === "puff") fluff(head, V(s * 0.4, -0.06, -0.03), V(0.12, 0.17, 0.13), 8, s + 3, { size: 0.85 });
   }
   parts.ears = ears;
-  if (p.ears === "pom") head.add(mesh(sphere(0.2), fur, [0, 0.34, -0.02], [1.2, 0.8, 1]));
-  // 곱슬 털 뭉치
-  if (p.curly) {
-    const puff = sphere(0.09, 10);
-    for (let i = 0; i < 26; i++) {
-      const th = (i * 2.4) % (Math.PI * 2), ph = 0.35 + ((i * 0.618) % 1) * 1.6;
-      const pt = onEllipsoid(V(0, bodyY, -0.05), V(0.35 * W, 0.31, 0.45 * W), th, ph);
-      if (pt.z > 0.18 && pt.y > bodyY) continue;
-      root.add(mesh(puff, i % 3 ? fur : shade, pt.toArray()));
-    }
-    for (let i = 0; i < 14; i++) {
-      const th = (i * 2.4) % (Math.PI * 2), ph = 0.2 + ((i * 0.618) % 1) * 0.9;
-      const pt = onEllipsoid(V(0, 0, 0), V(HR * 0.95, HR * 0.95, HR * 0.95), th, ph);
-      if (pt.z > HR * 0.45) continue;  // 얼굴은 비워 둬요
-      head.add(mesh(puff, i % 3 ? fur : shade, pt.toArray()));
-    }
-  }
-  if (p.ears === "flop" && p.big) root.add(mesh(sphere(0.2), mat(p.light), [0, bodyY + 0.12, 0.33], [1, 0.9, 0.6]));
-  parts.face = addFace(head, { eyeX: 0.15, eyeY: 0.05, eyeZ: HR - 0.05, eyeR: 0.055, mouthY: -0.19, mouthZ: HR - 0.02, blushX: 0.25, blushY: -0.07, blushZ: HR - 0.12 });
+  if (p.topknot) { head.add(mesh(sphere(0.2), fur, [0, 0.33, -0.02], [1.25, 0.8, 1.05])); fluff(head, V(0, 0.33, -0.02), V(0.22, 0.15, 0.18), 12, 4); }
+  // 곱슬 털 (얼굴은 비워요)
+  if (p.curly) fluff(head, V(0, 0, 0), V(HR * 0.98, HR * 0.94, HR * 0.94), 34, 2, { ph0: 0.1, phSpan: 1.9, skip: (pt) => pt.z > HR * 0.3 && pt.y < HR * 0.55 });
+  if (p.mane) fluff(head, V(0, -0.05, -0.02), V(HR * 1.05, HR * 0.9, HR * 0.9), 18, 6, { ph0: 0.9, phSpan: 1.6, skip: (pt) => pt.z > HR * 0.3 });
+  parts.face = addFace(head, {
+    eyeX: 0.155, eyeY: 0.03, eyeZ: fz - 0.03, eyeR: 0.046, eyeColor: "#3A2723",
+    mouthY: -0.19, mouthZ: fz - 0.02, blushX: 0.25, blushY: -0.08, blushZ: fz - 0.12,
+    smile: true, tongue: !!p.tongue, blushAlways: !!p.blush,
+  });
   root.add(head); parts.head = head;
   parts.headAnchor = V(0, HR, 0);
   return { root, parts, kind: "dog" };
@@ -195,149 +225,222 @@ function buildDog(p) {
 // ─────────────────────────────────────────────────────────────
 //  고양이
 // ─────────────────────────────────────────────────────────────
+// 참고 그림: tools/cozy-room/art/ref-cats.png (앞·옆·뒤·비스듬히)
 const CATS = {
-  cheese: { fur: "#F2A64A", accent: "#CF7424", belly: "#FBE0B5", iris: "#9BCB4E", kind: "stripes" },
-  calico: { fur: "#FCF8F0", accent: null, belly: "#FFFFFF", iris: "#E7B43A", kind: "calico" },
-  mackerel: { fur: "#A3A7AC", accent: "#4D5258", belly: "#DADDE0", iris: "#C9C24A", kind: "stripes" },
-  blackcat: { fur: "#2F2B34", accent: null, belly: null, iris: "#F2C94C", kind: null, roughness: 0.4 },
-  russianblue: { fur: "#8A9AB0", accent: null, belly: null, iris: "#62C98A", kind: null, roughness: 0.45 },
-  tuxedo: { fur: "#2E2A31", accent: null, belly: null, iris: "#9BD06A", kind: null, tux: true, roughness: 0.45 },
+  cheese: { fur: "#F0B06B", accent: "#D6864A", white: "#FFF5E8", kind: "stripes", muzzle: true, chest: true, paws: true },
+  calico: { fur: "#FFF8EF", kind: "calico", muzzle: true },
+  mackerel: { fur: "#ACACA9", accent: "#707074", white: "#EEE8DE", kind: "stripes", muzzle: true, chest: true, paws: true },
+  blackcat: { fur: "#3A363C", iris: "#E8D27C" },
+  russianblue: { fur: "#8FA4AD" },
+  tuxedo: { fur: "#3A363C", white: "#FFFFFF", muzzle: true, chest: true, paws: true, tailTip: true, iris: "#E8D27C" },
 };
-function buildCat(p, id) {
+// 고양이 무늬 그림 (공의 무늬: 가로 0~256 = 오른쪽→앞→왼쪽→뒤, 세로 0 = 위)
+function catTexture(p, part) {
+  const cv = document.createElement("canvas");
+  cv.width = 256; cv.height = 128;
+  const c = cv.getContext("2d");
+  c.fillStyle = p.fur; c.fillRect(0, 0, 256, 128);
+  const blob = (x, y, rx, ry, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.fill(); if (x - rx < 0) { c.beginPath(); c.ellipse(x + 256, y, rx, ry, 0, 0, Math.PI * 2); c.fill(); } };
+  if (p.kind === "stripes") {
+    c.strokeStyle = p.accent; c.lineCap = "round"; c.lineWidth = 7;
+    if (part === "body") for (let i = 0; i < 9; i++) { const x = 140 + i * 13; c.beginPath(); c.moveTo(x, 6); c.lineTo(x + 2, 58); c.stroke(); }
+    if (part === "body") for (const x of [10, 24, 104, 118]) { c.beginPath(); c.moveTo(x, 30); c.lineTo(x + 3, 62); c.stroke(); }
+    if (part === "head") { c.lineWidth = 6; for (const x of [56, 64, 72]) { c.beginPath(); c.moveTo(x, 8); c.lineTo(x, 26); c.stroke(); } for (const x of [10, 20, 108, 118]) { c.beginPath(); c.moveTo(x, 40); c.lineTo(x + 2, 60); c.stroke(); } }
+    if (part === "tail") { c.lineWidth = 10; for (let i = 0; i < 6; i++) { const x = 30 + i * 38; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 128); c.stroke(); } }
+  }
+  if (p.kind === "calico") {
+    const brown = "#6E5B4E", orange = "#E3A24C";
+    if (part === "head") { blob(26, 22, 44, 34, brown); blob(104, 20, 34, 26, orange); }
+    if (part === "body") { blob(200, 22, 50, 26, brown); blob(132, 48, 30, 20, orange); blob(14, 58, 18, 14, brown); blob(176, 70, 16, 12, orange); }
+    if (part === "tail") { c.fillStyle = orange; c.fillRect(0, 0, 150, 128); c.fillStyle = brown; c.fillRect(150, 0, 106, 128); }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+function buildCat(p) {
   const root = new THREE.Group();
   const parts = { legs: [] };
-  const texOpts = p.kind ? { map: patternTexture({ base: p.fur, accent: p.accent, belly: p.belly, kind: p.kind, seed: id.length * 13 }) } : {};
-  const fur = new THREE.MeshStandardMaterial({ color: p.kind ? "#FFFFFF" : p.fur, roughness: p.roughness || 0.62, ...texOpts });
-  const plain = mat(p.fur, { roughness: p.roughness || 0.62 });
-  const white = mat("#FFFFFF");
-  const bodyY = 0.46;
-  const body = mesh(sphere(0.36), fur, [0, bodyY, -0.05], [0.82, 0.8, 1.22]);
+  const R = 0.82;
+  const texMat = (part) => (p.kind ? new THREE.MeshStandardMaterial({ color: "#FFFFFF", roughness: R, map: catTexture(p, part) }) : mat(p.fur, { roughness: R }));
+  const plain = mat(p.fur, { roughness: R });
+  const white = mat(p.white || "#FFFFFF", { roughness: R });
+  const bodyY = 0.4;
+  const body = mesh(sphere(0.34), texMat("body"), [0, bodyY, -0.04], [0.95, 0.86, 1.18]);
   root.add(body); parts.body = body;
-  if (p.tux) root.add(mesh(sphere(0.24), white, [0, bodyY, 0.2], [0.85, 0.95, 0.6]));
-  else if (p.belly) root.add(mesh(sphere(0.22), mat(p.belly), [0, bodyY - 0.05, 0.22], [0.8, 0.9, 0.55]));
-  for (const [x, z] of [[-0.15, 0.22], [0.15, 0.22], [-0.15, -0.3], [0.15, -0.3]]) {
+  if (p.chest) root.add(mesh(sphere(0.22), white, [0, bodyY + 0.02, 0.2], [0.8, 0.95, 0.6]));
+  const hip = bodyY - 0.08;
+  for (const [x, z] of [[-0.15, 0.19], [0.15, 0.19], [-0.15, -0.24], [0.15, -0.24]]) {
     const leg = new THREE.Group();
-    leg.position.set(x, bodyY - 0.12, z);
-    leg.add(mesh(capsule(0.07, 0.2), plain, [0, -0.16, 0]));
-    leg.add(mesh(sphere(0.08, 12), p.tux ? white : plain, [0, -0.3, 0.02], [1, 0.7, 1.2]));
+    leg.position.set(x, hip, z);
+    const len = hip - 0.12;
+    const legMat = p.kind === "calico" ? white : plain;
+    leg.add(mesh(capsule(0.09, len), legMat, [0, -len / 2 - 0.04, 0]));
+    leg.add(mesh(sphere(0.095, 12), p.paws ? white : legMat, [0, -hip + 0.06, 0.02], [1, 0.68, 1.15]));
     root.add(leg); parts.legs.push(leg);
   }
   // 꼬리 (위로 감아 올림)
   const tail = new THREE.Group();
-  tail.position.set(0, bodyY + 0.08, -0.45);
-  tail.add(mesh(tube([V(0, 0, 0), V(0.05, 0.22, -0.14), V(0.12, 0.48, -0.12), V(0.06, 0.62, 0.02)], 0.055), fur));
+  tail.position.set(0, bodyY + 0.06, -0.38);
+  const tailPts = [V(0, 0, 0), V(0, 0.16, -0.12), V(0, 0.38, -0.14), V(0, 0.52, -0.04)];
+  tail.add(mesh(tube(tailPts, 0.06), texMat("tail")));
+  tail.add(mesh(sphere(0.06, 12), p.tailTip ? white : p.kind === "calico" ? mat("#6E5B4E", { roughness: R }) : p.kind === "stripes" ? mat(p.accent, { roughness: R }) : plain, tailPts[3].toArray()));
   root.add(tail); parts.tail = tail;
-  // 머리
+  // 머리 (크게)
   const head = new THREE.Group();
-  head.position.set(0, bodyY + 0.4, 0.28);
-  head.add(mesh(sphere(0.36), fur, null, [1.12, 0.94, 1]));
+  head.position.set(0, bodyY + 0.36, 0.2);
+  const HR = 0.38;
+  head.add(mesh(sphere(HR), texMat("head"), null, [1.1, 0.95, 0.97]));
+  const fz = HR * 0.96;
+  const pink = mat("#F2AEB2");
+  const earCol = (s) => (p.kind === "calico" ? mat(s < 0 ? "#6E5B4E" : "#E3A24C", { roughness: R }) : plain);
   for (const s of [-1, 1]) {
-    head.add(mesh(cone(0.13, 0.25, 4), plain, [s * 0.22, 0.31, -0.02], null, [0, Math.PI / 4, -s * 0.32]));
-    head.add(mesh(cone(0.075, 0.16, 4), mat("#F3AFB4"), [s * 0.215, 0.3, 0.035], null, [0, Math.PI / 4, -s * 0.32]));
+    head.add(mesh(cone(0.16, 0.3, 4), earCol(s), [s * 0.235, 0.34, -0.03], null, [0, Math.PI / 4, -s * 0.3]));
+    head.add(mesh(cone(0.1, 0.2, 4), pink, [s * 0.23, 0.33, 0.02], null, [0, Math.PI / 4, -s * 0.3]));
   }
   parts.ears = [];
-  const muzzle = p.tux || p.kind === "calico" ? white : mat(p.belly || p.fur);
-  for (const s of [-1, 1]) head.add(mesh(sphere(0.085, 14), muzzle, [s * 0.065, -0.12, 0.3], [1, 0.85, 0.8]));
-  if (p.tux) head.add(mesh(sphere(0.16), white, [0, -0.13, 0.22], [1.2, 0.7, 0.7]));
-  head.add(mesh(sphere(0.035, 10), mat("#E8818C"), [0, -0.06, 0.355], [1.3, 0.8, 0.8]));
-  // 수염
-  const wc = mat(p.fur === "#2F2B34" || p.fur === "#2E2A31" ? "#B9B4BF" : "#8D949C");
-  for (const s of [-1, 1]) for (const dy of [-0.02, 0.03]) head.add(rod(V(s * 0.12, -0.11 + dy, 0.3), V(s * 0.42, -0.09 + dy * 2.4, 0.26), 0.006, wc));
-  parts.face = addFace(head, { eyeX: 0.15, eyeY: 0.04, eyeZ: 0.29, eyeR: 0.065, iris: p.iris, mouthY: -0.2, mouthZ: 0.3, blushX: 0.26, blushY: -0.07, blushZ: 0.24 });
+  if (p.muzzle) {
+    head.add(mesh(sphere(0.13), white, [0, -0.12, fz - 0.06], [1.3, 0.78, 0.62]));
+  }
+  head.add(mesh(sphere(0.03, 10), mat("#E8939A"), [0, -0.07, fz + 0.02], [1.3, 0.85, 0.8]));
+  parts.face = addFace(head, {
+    eyeX: 0.155, eyeY: 0.02, eyeZ: fz - 0.04, eyeR: p.iris ? 0.065 : 0.048, iris: p.iris, eyeColor: "#3A2723",
+    mouthY: -0.17, mouthZ: fz - 0.02, blushX: 0.25, blushY: -0.08, blushZ: fz - 0.12,
+    smile: true, lineColor: p.fur === "#3A363C" && !p.muzzle ? "#8A8290" : "#4A2E28",
+  });
   root.add(head); parts.head = head;
-  parts.headAnchor = V(0, 0.34, 0);
+  parts.headAnchor = V(0, HR, 0);
   return { root, parts, kind: "cat" };
 }
 
 // ─────────────────────────────────────────────────────────────
 //  곤충 (딱정벌레)
 // ─────────────────────────────────────────────────────────────
+// 참고 그림: tools/cozy-room/art/ref-bugs.png (앞·옆·뒤·비스듬히)
+// 큰 동그란 머리에 눈이 있고, 큰턱·뿔이 머리 위로 솟은 귀여운 캐릭터 모양이에요.
 const BUGS = {
-  stag: { body: "#5B3A23", jaw: "stag" },
-  rhino: { body: "#6E3522", horn: true },
-  wide: { body: "#2E2622", jaw: "wide", wide: true },
-  saw: { body: "#8E3D1F", jaw: "saw" },
-  king: { body: "#211D1E", jaw: "king", thick: true },
-  chafer: { body: "#3F6B3A", chafer: true },
+  stag: { body: "#B8875E", head: "#C49770", jaw: "#7C5A45", jawType: "stag" },
+  rhino: { body: "#7B3F2C", head: "#8A4A35", jaw: "#7B3F2C", horn: true },
+  wide: { body: "#5E4E42", head: "#857160", jaw: "#6E5B4C", jawType: "wide", arms: true, snout: true, wide: true },
+  saw: { body: "#8A4632", head: "#9A5340", jaw: "#6E4235", jawType: "saw", arms: true, snout: true },
+  king: { body: "#58504C", head: "#665D58", jaw: "#5B4A40", jawType: "king" },
+  chafer: { body: "#F2B07A", legs: "#5B4FA8", chafer: true },
 };
+function chaferTexture() {
+  const cv = document.createElement("canvas");
+  cv.width = 256; cv.height = 128;
+  const c = cv.getContext("2d");
+  const g = c.createLinearGradient(0, 0, 256, 0);
+  [["#7FD3C8", 0], ["#F4C46A", 0.2], ["#F08C78", 0.42], ["#7FD3C8", 0.6], ["#F4C46A", 0.8], ["#F08C78", 1]].forEach(([col, t]) => g.addColorStop(t, col));
+  c.fillStyle = g; c.fillRect(0, 0, 256, 128);
+  const r = rng(11);
+  for (let k = 0; k < 16; k++) {
+    c.fillStyle = k % 3 ? "#6E63C7" : "#3FA9A0";
+    c.beginPath(); c.arc(r() * 256, 12 + r() * 70, 7 + r() * 7, 0, Math.PI * 2); c.fill();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
 function buildBug(p) {
   const root = new THREE.Group();
   const parts = { legs: [], antennae: [] };
-  const shell = new THREE.MeshStandardMaterial({ color: p.body, roughness: p.chafer ? 0.28 : 0.3, metalness: p.chafer ? 0.55 : 0.18 });
-  const dark = mat("#1A1210", { roughness: 0.5 });
-  const W = p.wide ? 1.12 : 1;
-  const Y = 0.3;
-  // 딱지날개
-  const elytra = mesh(sphere(0.4), shell, [0, Y, -0.22], [0.9 * W, 0.46, 1.3]);
-  root.add(elytra); parts.body = elytra;
-  // 딱지날개 가운데 선 (몸 곡면을 따라가요)
+  const R = 0.72;
+  const shell = p.chafer ? new THREE.MeshStandardMaterial({ color: "#FFFFFF", roughness: 0.6, map: chaferTexture() }) : mat(p.body, { roughness: R });
+  const headMat = p.chafer ? shell : mat(p.head, { roughness: R });
+  const jaw = mat(p.jaw || p.body, { roughness: R });
+  const legMat = mat(p.legs || p.jaw || p.body, { roughness: R });
+  const line = mat("#2E2320", { roughness: 0.5 });
+  const W = p.wide ? 1.1 : 1;
+  // 몸 (딱지날개): 머리 뒤에 동그랗게
+  const bodyC = V(0, 0.34, -0.14);
+  const bodyR = p.chafer ? V(0.36, 0.3, 0.4) : V(0.31 * W, 0.28, 0.34);
+  const body = mesh(sphere(1), shell, bodyC.toArray(), bodyR.toArray());
+  root.add(body); parts.body = body;
+  // 딱지날개 가운데 선 (뒤에서 보여요)
   const seam = [];
-  for (let i = 0; i <= 12; i++) { const z = -0.22 - 0.5 + (i / 12) * 1.0; const k = 1 - ((z + 0.22) / 0.52) ** 2; seam.push(V(0, Y + 0.184 * Math.sqrt(Math.max(0, k)) + 0.004, z)); }
-  root.add(mesh(tube(seam, 0.008, 24), dark));
-  // 가슴·머리
-  root.add(mesh(sphere(0.3), shell, [0, Y, 0.36], [1.05 * W, 0.52, 0.72]));
+  for (let k = 0; k <= 10; k++) { const ph = 0.25 + (k / 10) * 1.55; seam.push(onEllipsoid(bodyC, bodyR.clone().multiplyScalar(1.005), -Math.PI / 2, ph)); }
+  if (!p.chafer) root.add(mesh(tube(seam, 0.007, 20), line));
+  // 머리: 크고 동그랗게, 앞을 봐요
   const head = new THREE.Group();
-  head.position.set(0, Y - 0.02, 0.6);
-  head.add(mesh(sphere(0.17), shell, null, [p.thick ? 1.45 : 1.2, 0.62, 1]));
-  for (const s of [-1, 1]) {
-    head.add(mesh(sphere(0.04, 10), mat("#15100E", { roughness: 0.15 }), [s * 0.17, 0.03, 0.05]));
-    head.add(mesh(sphere(0.013, 6), mat("#FFFFFF"), [s * 0.18, 0.05, 0.085]));
+  head.position.set(0, p.chafer ? 0.3 : 0.44, p.chafer ? 0.16 : 0.12);
+  const HR = p.chafer ? 0.2 : 0.25;
+  head.add(mesh(sphere(HR), headMat, null, [1.08 * W, 0.95, 0.92]));
+  const fz = HR * 0.9;
+  for (const sx of [-1, 1]) {
+    head.add(mesh(sphere(0.032, 12), mat("#2A1F1C", { roughness: 0.25 }), [sx * 0.1, 0.0, fz], [1, 1.1, 0.7]));
+    head.add(mesh(sphere(0.009, 6), mat("#FFFFFF"), [sx * 0.1 + 0.01, 0.013, fz + 0.022]));
   }
-  // 큰턱·뿔
+  if (p.snout) head.add(mesh(sphere(0.1), mat(p.head, { roughness: R }), [0, -0.07, fz - 0.01], [1.25, 0.7, 0.8]));
+  // 큰턱 (머리 위로 솟은 사슴뿔 모양)
   const J = {
-    stag: [[0.08, 0, 0.12], [0.2, 0.03, 0.32], [0.2, 0.05, 0.52], [0.07, 0.07, 0.66]],
-    wide: [[0.09, -0.01, 0.12], [0.14, 0, 0.36], [0.11, 0, 0.56], [0.03, 0, 0.62]],
-    saw: [[0.08, 0, 0.12], [0.27, 0.03, 0.28], [0.27, 0.05, 0.5], [0.09, 0.07, 0.64]],
-    king: [[0.1, 0, 0.12], [0.22, 0.02, 0.27], [0.12, 0.03, 0.42]],
-  }[p.jaw];
+    stag: [[0.11, 0.17, 0.0], [0.18, 0.3, 0.02], [0.18, 0.42, 0.0], [0.1, 0.5, -0.02]],
+    wide: [[0.12, 0.16, 0.0], [0.17, 0.27, 0.0], [0.15, 0.36, -0.01], [0.09, 0.4, -0.02]],
+    saw: [[0.11, 0.17, 0.0], [0.2, 0.3, 0.03], [0.2, 0.44, 0.01], [0.11, 0.52, -0.02]],
+    king: [[0.12, 0.17, 0.0], [0.19, 0.3, 0.01], [0.17, 0.42, -0.01], [0.1, 0.47, -0.02]],
+  }[p.jawType];
   if (J) {
-    for (const s of [-1, 1]) {
-      head.add(mesh(tube(J.map(([x, y, z]) => V(s * x, y, z)), p.jaw === "king" ? 0.045 : p.jaw === "wide" ? 0.032 : 0.035), shell));
-      const teeth = p.jaw === "saw" ? [0.35, 0.5, 0.62] : p.jaw === "wide" ? [0.3, 0.42, 0.52] : p.jaw === "king" ? [0.55] : [0.5];
-      const curve = new THREE.CatmullRomCurve3(J.map(([x, y, z]) => V(s * x, y, z)));
-      teeth.forEach((t) => {
+    const r0 = p.jawType === "king" ? 0.062 : p.jawType === "wide" ? 0.058 : 0.052;
+    for (const sx of [-1, 1]) {
+      const pts = J.map(([x, y, z]) => V(sx * x * W, y, z));
+      head.add(mesh(tube(pts, r0, 20), jaw));
+      head.add(mesh(sphere(r0 * 1.05, 10), jaw, pts[pts.length - 1].toArray()));
+      const curve = new THREE.CatmullRomCurve3(pts);
+      const teeth = p.jawType === "saw" ? [0.35, 0.55, 0.75] : p.jawType === "stag" ? [0.6] : p.jawType === "king" ? [0.5] : [0.55];
+      for (const t of teeth) {
         const pt = curve.getPoint(t);
-        head.add(mesh(cone(p.jaw === "king" ? 0.03 : 0.018, 0.07, 6), shell, [pt.x - s * 0.03, pt.y, pt.z], null, [0, 0, s * Math.PI / 2]));
-      });
-      if (p.jaw === "stag") { const tip = curve.getPoint(0.86); head.add(mesh(cone(0.02, 0.08, 6), shell, [tip.x, tip.y + 0.04, tip.z], null, [0, 0, 0])); }
+        // 안쪽으로 비스듬히 솟은 가지 돌기
+        head.add(mesh(cone(p.jawType === "king" ? 0.04 : 0.032, 0.12, 8), jaw, [pt.x - sx * 0.05, pt.y + 0.03, pt.z], null, [0, 0, sx * Math.PI * 0.3]));
+      }
     }
   }
+  // 장수풍뎅이 뿔 (위로 길게, 끝이 갈라져요)
   if (p.horn) {
-    head.add(mesh(tube([V(0, 0.04, 0.05), V(0, 0.16, 0.22), V(0, 0.4, 0.34), V(0, 0.62, 0.28)], 0.045), shell));
-    for (const s of [-1, 1]) head.add(mesh(tube([V(0, 0.6, 0.29), V(s * 0.07, 0.7, 0.27), V(s * 0.1, 0.76, 0.22)], 0.025, 8), shell));
-    root.add(mesh(cone(0.05, 0.2, 10), shell, [0, Y + 0.2, 0.5], null, [0.9, 0, 0]));
+    const hp = [V(0, 0.18, 0.02), V(0, 0.34, 0.04), V(0, 0.48, 0.0)];
+    head.add(mesh(tube(hp, 0.065, 16), jaw));
+    head.add(mesh(sphere(0.06, 10), jaw, [0, 0.49, 0.0]));
+    for (const sx of [-1, 1]) {
+      head.add(mesh(tube([V(0, 0.48, 0.0), V(sx * 0.06, 0.56, 0.0), V(sx * 0.08, 0.63, -0.01)], 0.035, 8), jaw));
+      head.add(mesh(sphere(0.035, 8), jaw, [sx * 0.08, 0.63, -0.01]));
+      head.add(mesh(tube([V(0, 0.38, 0.01), V(sx * 0.06, 0.43, 0.02)], 0.026, 6), jaw));
+    }
+    head.add(mesh(tube([V(0, 0.5, 0.0), V(0, 0.6, 0.0), V(0, 0.66, -0.01)], 0.03, 6), jaw));
   }
-  // 더듬이
-  for (const s of [-1, 1]) {
-    const a = new THREE.Group();
-    a.position.set(s * 0.12, 0.04, 0.1);
-    a.add(mesh(tube([V(0, 0, 0), V(s * 0.1, 0.06, 0.08), V(s * 0.16, 0.1, 0.18)], 0.012, 8), dark));
-    a.add(mesh(sphere(0.028, 8), dark, [s * 0.16, 0.1, 0.19], [1, 0.8, 1.4]));
-    head.add(a); parts.antennae.push(a);
+  // 꽃무지 더듬이 (보라색, 끝이 동그래요)
+  if (p.chafer) {
+    for (const sx of [-1, 1]) {
+      const a = new THREE.Group();
+      a.position.set(sx * 0.07, 0.12, 0.08);
+      a.add(mesh(tube([V(0, 0, 0), V(sx * 0.03, 0.08, 0.02), V(sx * 0.07, 0.15, 0.0)], 0.018, 8), legMat));
+      a.add(mesh(sphere(0.035, 10), legMat, [sx * 0.07, 0.16, 0.0]));
+      head.add(a); parts.antennae.push(a);
+    }
   }
   root.add(head); parts.head = head;
-  // 다리 6개
-  [[0.42, 0.25], [0.12, 0], [-0.18, -0.3]].forEach(([z, dz]) => {
-    for (const s of [-1, 1]) {
+  // 다리 6개 (짧고 통통하게)
+  const legY = 0.16;
+  [[0.1, 0.5], [-0.1, 0.0], [-0.28, -0.5]].forEach(([z, out]) => {
+    for (const sx of [-1, 1]) {
       const leg = new THREE.Group();
-      const a = V(s * 0.2 * W, Y - 0.08, z), k = V(s * 0.44 * W, Y + 0.04, z + dz * 0.4), f = V(s * 0.54 * W, 0.01, z + dz);
-      leg.add(rod(a, k, 0.03, dark)); leg.add(rod(k, f, 0.022, dark));
+      leg.position.set(sx * 0.17 * W, legY, z);
+      leg.add(mesh(capsule(0.05, 0.08), legMat, [sx * 0.015, -0.07, 0.0], null, [0, 0, sx * (0.12 + out * 0.05)]));
+      leg.add(mesh(sphere(0.055, 10), legMat, [sx * 0.025, -0.135, 0.015], [1, 0.7, 1.2]));
       root.add(leg); parts.legs.push(leg);
     }
   });
-  // 꽃무지 흰 점무늬
-  if (p.chafer) {
-    const spot = mat("#F4F1E6", { roughness: 0.5 });
-    [[0.15, -0.05], [-0.18, -0.12], [0.2, -0.35], [-0.12, -0.42], [0.05, -0.6], [-0.22, 0.38], [0.22, 0.4]].forEach(([x, z]) => {
-      const zc = z < 0.2 ? -0.22 : 0.36, rz = z < 0.2 ? 0.52 : 0.216, rx = z < 0.2 ? 0.36 : 0.315, ry = z < 0.2 ? 0.184 : 0.156;
-      const k = 1 - (x / rx) ** 2 - ((z - zc) / rz) ** 2;
-      if (k <= 0) return;
-      root.add(mesh(sphere(0.03, 8), spot, [x, Y + ry * Math.sqrt(k), z], [1, 0.3, 1]));
-    });
+  // 앞으로 뻗은 앞다리 (넓적사슴벌레·톱사슴벌레)
+  if (p.arms) {
+    for (const sx of [-1, 1]) {
+      root.add(mesh(capsule(0.04, 0.12), legMat, [sx * 0.33 * W, 0.34, 0.12], null, [0.3, 0, sx * 1.1]));
+      for (const k of [-1, 0, 1]) root.add(mesh(cone(0.018, 0.06, 6), legMat, [sx * (0.43 * W), 0.37 + k * 0.025, 0.14], null, [0, 0, -sx * Math.PI / 2]));
+    }
   }
   parts.face = null;
   parts.headAnchor = V(0, 0.12, -0.12);
-  root.scale.setScalar(1.25);   // 곤충은 강아지·고양이와 비슷한 크기로 보이게 키워요
+  parts.accPos = V(0, head.position.y + (p.horn || J ? 0.25 : HR), head.position.z - 0.02);
+  root.scale.setScalar(1.15);
   return { root, parts, kind: "bug" };
 }
 
@@ -374,7 +477,7 @@ function buildAcc(id) {
 export function buildPet(id, opts = {}) {
   let built;
   if (DOGS[id]) built = buildDog(DOGS[id]);
-  else if (CATS[id]) built = buildCat(CATS[id], id);
+  else if (CATS[id]) built = buildCat(CATS[id]);
   else built = buildBug(BUGS[id] || BUGS.stag);
   const { root, parts, kind } = built;
   const group = new THREE.Group();
@@ -389,7 +492,7 @@ export function buildPet(id, opts = {}) {
     const acc = buildAcc(opts.acc);
     acc.position.add(parts.headAnchor);
     (kind === "bug" ? root : parts.head).add(acc);
-    if (kind === "bug") acc.position.set(0, 0.48, 0.36);
+    if (kind === "bug") acc.position.copy(parts.accPos || V(0, 0.48, 0.36));
   }
 
   const base = {
@@ -408,7 +511,8 @@ export function buildPet(id, opts = {}) {
     f.closed.forEach((e) => { e.visible = closed; e.scale.y = m === "sleep" ? 0.15 : 1; });
     f.mouth.visible = m === "eat" || m === "wow" || m === "happy";
     f.mouth.scale.y = m === "eat" ? 0.8 : 0.5;
-    f.blush.forEach((b) => { b.visible = m === "happy" || m === "eat" || m === "wow"; });
+    if (f.smile) f.smile.visible = !f.mouth.visible;
+    f.blush.forEach((b) => { b.visible = f.blushAlways || m === "happy" || m === "eat" || m === "wow"; });
   }
 
   // action: { name, t(경과 시간), dur } 또는 null

@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- 확인용 페이지 (사이트에는 올라가지 않아요): 반려동물 3D 모델을 참고 그림과 같은 배치로 찍어요.
+     npm run dev 후 http://localhost:5173/dev/turnaround.html?cat=dog -->
+<html lang="ko"><head><meta charset="utf-8"><title>3D 모델 비교</title>
+<style>body{margin:0;background:#FCF8E5}canvas{display:block}</style></head>
+<body><canvas id="out"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { buildPet } from '/src/pet/models.js';
+import { SPECIES } from '/src/pet/data.js';
+const cat = new URLSearchParams(location.search).get('cat') || 'dog';
+const list = SPECIES.filter((s) => s.cat === cat);
+const C = 224, R = 300;
+const out = document.getElementById('out');
+out.width = C * 4; out.height = R * list.length;
+const g = out.getContext('2d');
+g.fillStyle = '#FCF8E5'; g.fillRect(0, 0, out.width, out.height);
+const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+r.setSize(C, R); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight('#ffffff', '#e8d8c8', 1.6));
+const d = new THREE.DirectionalLight('#ffffff', 1.6); d.position.set(2, 4, 5); scene.add(d);
+const cam = new THREE.PerspectiveCamera(22, C / R, 0.1, 50);
+// 참고 그림: 1 앞, 2 옆(왼쪽을 봄), 3 뒤, 4 비스듬히 앞(왼쪽)
+const views = [0, -Math.PI / 2, Math.PI, -0.6];
+list.forEach((s, row) => {
+  const pet = buildPet(s.id);
+  pet.update(0, 0, null);
+  scene.add(pet.group);
+  views.forEach((a, col) => {
+    pet.group.rotation.y = a;
+    pet.group.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(pet.group);
+    const ctr = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3()).length();
+    const dist = size * 2.1;
+    cam.position.set(ctr.x, ctr.y + size * 0.25, ctr.z + dist);
+    cam.lookAt(ctr);
+    r.render(scene, cam);
+    g.drawImage(r.domElement, col * C, row * R);
+  });
+  scene.remove(pet.group);
+});
+document.title = 'done';
+</script></body></html>
