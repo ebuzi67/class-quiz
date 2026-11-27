@@ -1,6 +1,6 @@
 // 모모의 코딩 하루 오프라인 지원 (빌드할 때 자동으로 만들어져요. tools/cozy-room/vite.config.js)
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 버전을 보여 줘요.
-const CACHE = "cozy-room-7dce42dd";
+const CACHE = "cozy-room-62c20416";
 const FILES = [
   "./",
   "./index.html",
@@ -8,11 +8,11 @@ const FILES = [
   "./assets/main-D18u0PdA.css",
   "./assets/pet-B8YA3B2b.css",
   "./assets/three-CmsoEPJ3.js",
-  "./assets/main-DEERCL_K.js",
-  "./assets/pet-Dh5ycQ8f.js",
+  "./assets/main-CoST4v-z.js",
+  "./assets/pet-CL-am5_s.js",
   "./assets/save-BXsaWFjU.js",
-  "./assets/scene-BxiYGVgk.js",
-  "./assets/models-Bw6ExqQy.js",
+  "./assets/scene-Czf7dJTX.js",
+  "./assets/models-WHpnGa9o.js",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
