@@ -24,7 +24,7 @@ const cam = new THREE.PerspectiveCamera(22, C / R, 0.1, 50);
 // 참고 그림: 1 앞, 2 옆(왼쪽을 봄), 3 뒤, 4 비스듬히 앞(왼쪽)
 const views = [0, -Math.PI / 2, Math.PI, -0.6];
 list.forEach((s, row) => {
-  const pet = buildPet(s.id);
+  const pet = buildPet(s.id, { model: true });
   pet.update(0, 0, null);
   scene.add(pet.group);
   views.forEach((a, col) => {
