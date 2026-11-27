@@ -210,9 +210,6 @@ function openLocalStore(role) {
     async addTestRequest() {
       add({ ...cleanRequestInput(randomTestRequest()), studentUid: "sample" });
     },
-    // 반려동물 이어하기: 이 모드에서는 이 기기에만 저장돼요
-    async petSave() { return false; },
-    async petLoad() { throw new Error("선생님 방에 연결되어 있을 때만 다른 기기의 반려동물을 불러올 수 있어요."); },
     // 방 번호 모드가 함께 써요
     _readAll: readAll,
     _add: add,
@@ -236,13 +233,6 @@ async function sha256(text) {
 //  학생에게는 그 학생(기기)의 요청만 보내 줘요.
 // ─────────────────────────────────────────────────────────────
 const ROOM_KEY = "helpme.room";
-const PET_SAVES_KEY = "helpme.petSaves";
-const PET_MAX = 40000;   // 반려동물 저장 하나의 최대 크기(글자 수)
-const PET_KEEP = 300;    // 선생님 기기에 보관하는 반려동물 수
-export const validPetCode = (c) => typeof c === "string" && /^[A-Z2-9]{8,12}$/.test(c);
-function readPetSaves() {
-  try { return JSON.parse(safeStorage.get(PET_SAVES_KEY, "{}")) || {}; } catch { return {}; }
-}
 
 function openRoomHostStore() {
   const base = openLocalStore("admin");
@@ -279,17 +269,6 @@ function openRoomHostStore() {
         } catch (err) {
           conn.send({ t: "added", rid: m.rid, error: err.message });
         }
-      } else if (m.t === "petSave" && validPetCode(m.code) && typeof m.data === "string" && m.data.length <= PET_MAX) {
-        // 반려동물 저장: 이어하기 코드별로 선생님 기기에 보관해요 (학생 이름·도움 요청과는 따로)
-        const all = readPetSaves();
-        all[m.code] = { data: m.data, at: Date.now() };
-        const codes = Object.keys(all).sort((a, b) => all[b].at - all[a].at);
-        codes.slice(PET_KEEP).forEach((c) => delete all[c]);  // 너무 많으면 오래된 것부터 정리
-        safeStorage.set(PET_SAVES_KEY, JSON.stringify(all));
-        conn.send({ t: "petAck", rid: m.rid, ok: true });
-      } else if (m.t === "petLoad" && validPetCode(m.code)) {
-        const save = readPetSaves()[m.code];
-        conn.send({ t: "petData", rid: m.rid, data: save ? save.data : null });
       }
     };
     conn.onclose = () => {
@@ -367,17 +346,6 @@ function openRoomStudentStore() {
     mineListeners.forEach((fn) => fn(mine));
   };
 
-  // 선생님 기기에 묻고 답을 기다려요 (연결이 없거나 답이 없으면 fallback)
-  function ask(msg, fallback) {
-    if (!conn) return Promise.resolve(fallback);
-    const rid = makeCode();
-    return new Promise((resolve) => {
-      const timer = setTimeout(() => { waiting.delete(rid); resolve(fallback); }, 6000);
-      waiting.set(rid, { resolve, reject: () => resolve(fallback), timer });
-      conn.send({ ...msg, rid });
-    });
-  }
-
   function connect() {
     handle?.close();
     conn = null;
@@ -394,11 +362,6 @@ function openRoomStudentStore() {
             clearTimeout(timer);
             waiting.delete(m.rid);
             m.error ? reject(new Error(m.error)) : resolve({ id: m.id, code: m.code });
-          } else if ((m.t === "petAck" || m.t === "petData") && waiting.has(m.rid)) {
-            const { resolve, timer } = waiting.get(m.rid);
-            clearTimeout(timer);
-            waiting.delete(m.rid);
-            resolve(m.t === "petAck" ? true : m.data);
           }
         };
         c.send({ t: "hello", uid: uid() });
@@ -441,12 +404,6 @@ function openRoomStudentStore() {
       safeStorage.remove(UID_KEY);
       setMine([]);
       if (conn) conn.send({ t: "hello", uid: uid() });
-    },
-    // 반려동물 이어하기: 선생님 기기에 맡겨 두고, 다른 기기에서 코드로 불러와요
-    petSave(code, data) { return ask({ t: "petSave", code, data }, false); },
-    async petLoad(code) {
-      if (!conn) throw new Error("선생님 방에 연결되어 있을 때만 불러올 수 있어요.");
-      return ask({ t: "petLoad", code }, null);
     },
     // 방 번호
     onStatus(cb) { statusListeners.add(cb); cb(status); return () => statusListeners.delete(cb); },
