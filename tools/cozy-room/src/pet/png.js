@@ -5,7 +5,7 @@
 //  (npm run publish-site 하면 cozy-room/pet/img/ 로 복사돼요)
 //
 //  · 고르기·도감 카드, 이름 짓기·도감 상세의 큰 그림에 이 그림이 보여요 ("3D로 돌려 보기" 버튼도 있어요).
-//  · 돌보기 방과 모모의 방에서는 움직여야 해서 3D 모델(models.js)이 그대로 나와요.
+//  · 3D 화면(돌보기 방, 모모의 방, 3D로 돌려 보기)은 아래 VIEW_SPECIES 의 방향별 그림을 써요.
 //  · idle: 보통 그림, sil: 아직 발견하지 않은 동물의 그림자 모양
 //  · 다른 그림으로 바꾸려면 파일을 넣고 아래 경로를 고쳐요. 줄을 지우면 3D 모델 사진으로 돌아가요.
 //    예) poodle: "pet/img/my-poodle.png"  (그림자 없이 그림 하나만 적어도 돼요)
@@ -34,3 +34,12 @@ export const PNG_ART = {
 //  예) "toy-ball": "pet/img/toy-ball.png",
 export const PNG_ITEMS = {
 };
+
+// 방향별 그림 (3D 화면용): 앞·옆·뒤·비스듬히 앞 4장. make_pet_views.py 가 art/ref-*.png 에서 만들어요.
+// 여기 적힌 동물은 3D 화면에서 기본 도형 모델 대신 이 그림을 세워서 보여 줘요.
+// 카메라가 보는 방향에 맞는 그림을 고르고, 반대쪽은 좌우로 뒤집어서 써요.
+// 줄을 지우면 그 동물은 기본 도형 3D 모델(models.js)로 돌아가요.
+export const VIEW_SPECIES = ["poodle", "corgi", "shiba", "golden", "pomeranian", "bichon",
+  "cheese", "calico", "mackerel", "blackcat", "russianblue", "tuxedo",
+  "stag", "rhino", "wide", "saw", "king", "chafer"];
+export const viewPath = (id, view) => `pet/views/${id}-${view}.webp`;

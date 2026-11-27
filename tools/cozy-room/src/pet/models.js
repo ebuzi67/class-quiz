@@ -8,6 +8,7 @@
 //  buildItem(id)         → 꾸미기 아이템 모델
 // ─────────────────────────────────────────────────────────────
 import * as THREE from "three";
+import { VIEW_SPECIES, viewPath } from "./png.js";
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const matCache = new Map();
@@ -474,7 +475,143 @@ function buildAcc(id) {
 // ─────────────────────────────────────────────────────────────
 //  반려동물 만들기 + 표정 + 움직임
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  그림으로 보여 주는 반려동물 (방향별 그림 4장)
+//  카메라가 반려동물을 어느 쪽에서 보는지 계산해서 앞·비스듬히·옆·뒤 그림을 골라요.
+//  왼쪽을 보는 그림을 좌우로 뒤집으면 오른쪽에서 본 모습이 돼요.
+//  움직임은 그림 전체를 통통 튀기고, 눌렀다 펴고, 기울여서 표현해요.
+// ─────────────────────────────────────────────────────────────
+const texCache = new Map();
+const texLoader = new THREE.TextureLoader();
+function viewTexture(id, view) {
+  const key = `${id}-${view}`;
+  if (!texCache.has(key)) {
+    const t = texLoader.load(viewPath(id, view));
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    texCache.set(key, t);
+  }
+  return texCache.get(key);
+}
+let blobTex = null;
+function shadowTexture() {
+  if (blobTex) return blobTex;
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = 64;
+  const c = cv.getContext("2d");
+  const g = c.createRadialGradient(32, 32, 2, 32, 32, 30);
+  g.addColorStop(0, "rgba(60,40,40,0.35)"); g.addColorStop(1, "rgba(60,40,40,0)");
+  c.fillStyle = g; c.fillRect(0, 0, 64, 64);
+  blobTex = new THREE.CanvasTexture(cv);
+  return blobTex;
+}
+const tmpV = new THREE.Vector3();
+function buildSpritePet(id, kind, opts) {
+  const group = new THREE.Group();
+  group.userData.kind = kind;
+  const root = new THREE.Group();          // 움직임은 이 묶음을 움직여요
+  group.add(root);
+  const H = kind === "bug" ? 1.05 : 1.2;   // 그림 한 변의 길이 (기본 도형 모델과 비슷한 키)
+  const tex = { front: viewTexture(id, "front"), side: viewTexture(id, "side"), back: viewTexture(id, "back"), q: viewTexture(id, "q") };
+  const material = new THREE.MeshBasicMaterial({ map: tex.front, transparent: true, alphaTest: 0.04, side: THREE.DoubleSide, toneMapped: false });
+  const yaw = new THREE.Group();            // 늘 카메라 쪽을 보게 돌려요
+  root.add(yaw);
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(H, H).translate(0, H * 0.47, 0), material);
+  yaw.add(plane);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(H * 0.32, 24), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.005;
+  shadow.scale.set(1.15, 0.8, 1);
+  shadow.raycast = () => {};
+  group.add(shadow);
+  plane.onBeforeRender = (renderer, scene, camera) => {
+    // 반려동물 기준으로 카메라가 어느 쪽에 있는지 (0 = 정면, + = 반려동물의 왼쪽)
+    camera.getWorldPosition(tmpV);
+    root.worldToLocal(tmpV);
+    const a = Math.atan2(tmpV.x, tmpV.z);
+    const d = Math.abs(a) * 180 / Math.PI;
+    const view = d < 24 ? "front" : d < 66 ? "q" : d < 128 ? "side" : "back";
+    material.map = tex[view];
+    plane.scale.x = a < 0 && view !== "front" && view !== "back" ? -1 : 1;
+    yaw.rotation.y = a;
+    yaw.updateMatrixWorld(true);
+  };
+  // 장식은 머리 위쯤에 달아요
+  const head = new THREE.Group();
+  head.position.set(0, H * (kind === "bug" ? 0.62 : 0.72), 0.05);
+  root.add(head);
+  if (opts.acc === "acc-scarf" && kind !== "bug") {
+    root.add(mesh(new THREE.TorusGeometry(0.2, 0.05, 10, 24), mat("#E2554B"), [0, H * 0.42, 0.04], [1, 1, 0.8], [Math.PI / 2, 0, 0]));
+  } else if (opts.acc && opts.acc !== "acc-scarf") {
+    const acc = buildAcc(opts.acc);
+    acc.position.set(0, kind === "bug" ? 0.12 : 0.18, 0);
+    head.add(acc);
+  }
+  let mood = "idle";
+  function setMood(m) { mood = m; }
+  function update(dt, time, action) {
+    const a = action ? action.name : "idle";
+    const k = action ? action.t : 0;
+    root.position.set(0, 0, 0);
+    root.rotation.set(0, 0, 0);
+    const breathe = Math.sin(time * 2.2) * 0.012;
+    let sx = 1 - breathe * 0.5, sy = 1 + breathe;
+    shadow.scale.set(1.15, 0.8, 1);
+    switch (a) {
+      case "eat":
+      case "drink": {
+        // 고개 숙여 냠냠: 꾸벅꾸벅 눌렸다 펴져요
+        const nod = Math.abs(Math.sin(time * (a === "eat" ? 10 : 7)));
+        sy = 0.94 + nod * 0.05; sx = 1.03 - nod * 0.03;
+        root.position.z = 0.03;
+        break;
+      }
+      case "pet": {
+        const sq = Math.sin(k * 10) * 0.06;
+        sx = 1 + sq; sy = 1 - sq;
+        root.rotation.z = Math.sin(time * 3) * 0.06;
+        break;
+      }
+      case "ball":
+      case "jump":
+      case "pounce": {
+        const hop = Math.abs(Math.sin(k * (a === "pounce" ? 5 : 7)));
+        root.position.y = hop * (a === "jump" ? 0.45 : 0.3);
+        sy = 1 + hop * 0.06; sx = 1 - hop * 0.04;
+        if (a === "ball") root.rotation.y = Math.sin(k * 4) * 0.8;
+        shadow.scale.set(1.15 * (1 - hop * 0.3), 0.8 * (1 - hop * 0.3), 1);
+        break;
+      }
+      case "walk": {
+        // 방 안을 동그랗게 돌아요 (보는 방향이 바뀌면 그림도 바뀌어요)
+        const ang = k * 2.2;
+        root.position.set(Math.sin(ang) * 0.9, Math.abs(Math.sin(time * 10)) * 0.05, Math.cos(ang) * 0.5 - 0.5);
+        root.rotation.y = ang + Math.PI / 2;
+        root.rotation.z = Math.sin(time * 10) * 0.04;
+        shadow.position.set(root.position.x, 0.005, root.position.z);
+        break;
+      }
+      case "trot": {
+        root.position.y = Math.abs(Math.sin(time * 10)) * 0.045;
+        root.rotation.z = Math.sin(time * 10) * 0.035;
+        break;
+      }
+      case "observe": {
+        root.rotation.y = k * 1.6;   // 천천히 한 바퀴: 여러 방향 그림이 차례로 보여요
+        break;
+      }
+      default:
+        root.rotation.z = Math.sin(time * 0.9) * 0.015;
+    }
+    if (a !== "walk") shadow.position.set(0, 0.005, 0);
+    root.scale.set(sx, sy, sx);
+  }
+  return { group, setMood, update, kind, sprite: true };
+}
+
 export function buildPet(id, opts = {}) {
+  const kindOf = DOGS[id] ? "dog" : CATS[id] ? "cat" : "bug";
+  if (VIEW_SPECIES.includes(id) && !opts.model) return buildSpritePet(id, kindOf, opts);
   let built;
   if (DOGS[id]) built = buildDog(DOGS[id]);
   else if (CATS[id]) built = buildCat(CATS[id]);

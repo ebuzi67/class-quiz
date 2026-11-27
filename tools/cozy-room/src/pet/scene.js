@@ -347,7 +347,7 @@ export function thumb(kind, id, opts = {}) {
     lights(thumbScene, false);
     thumbCam = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
   }
-  const obj = kind === "pet" ? buildPet(id).group : kind === "life" ? buildLife(id, opts.stage) : buildItem(id);
+  const obj = kind === "pet" ? buildPet(id, { model: true }).group : kind === "life" ? buildLife(id, opts.stage) : buildItem(id);
   const isBug = kind === "pet" && obj.userData.kind === "bug";
   if (kind === "pet") obj.rotation.y = isBug ? -0.5 : -0.55;
   if (kind === "item") obj.rotation.y = -0.4;
