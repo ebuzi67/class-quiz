@@ -20,3 +20,10 @@ body {
 }
 .code-area { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; resize: vertical; margin-bottom: 10px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 사진 그림 (도감 상세, 이름 짓기) */
+.big-art-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+.big-art { width: 86%; height: 86%; object-fit: contain; filter: drop-shadow(0 14px 18px rgba(120, 80, 90, .18)); animation: artIn .35s ease-out; }
+.art-3d { position: absolute; right: 12px; bottom: 12px; }
+@keyframes artIn { from { opacity: 0; transform: translateY(10px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .big-art { animation: none; } }

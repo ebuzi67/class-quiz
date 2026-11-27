@@ -332,7 +332,11 @@ const thumbCache = new Map();
 export function thumb(kind, id, opts = {}) {
   const key = `${kind}:${id}:${opts.stage || ""}:${opts.silhouette ? 1 : 0}`;
   if (thumbCache.has(key)) return thumbCache.get(key);
-  if (kind === "pet" && PNG_ART[id] && !opts.silhouette) return typeof PNG_ART[id] === "string" ? PNG_ART[id] : PNG_ART[id].idle;
+  if (kind === "pet" && PNG_ART[id]) {
+    const art = PNG_ART[id];
+    if (!opts.silhouette) return typeof art === "string" ? art : art.idle;
+    if (typeof art === "object" && art.sil) return art.sil;
+  }
   if (kind === "item" && PNG_ITEMS[id]) return PNG_ITEMS[id];
   if (!webglOK()) return "";
   if (!thumbR) {
