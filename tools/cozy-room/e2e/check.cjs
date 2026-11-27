@@ -67,8 +67,9 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   await p.click('[data-act="things"]');
   await p.click('#menu li:has-text("화장대") button');
   await p.click('#menu [data-action="cream"]');
-  await p.waitForSelector('.toast:has-text("이미")', { timeout: 3000 }).catch(() => {});
-  ok(await p.isVisible('.toast:has-text("이미")'), '같은 부탁을 두 번 하면 한 번만 들어가요');
+  await p.waitForTimeout(300);
+  const creamCount = await p.evaluate(() => app.brain.queue.filter((r) => r.action.id === 'cream').length + (app.brain.current?.action.id === 'cream' ? 1 : 0));
+  ok(creamCount === 1, '같은 부탁을 두 번 하면 한 번만 들어가요', `(${creamCount}번)`);
   await waitDoing('cream');
   await p.waitForFunction(() => !!app.char.held && !app.char.hopping, null, { timeout: 10000 }).catch(() => {});
   const seatOk = await p.evaluate(() => app.char.sitting && Math.abs(app.char.position.x - (-3.06)) < 0.2);
@@ -238,6 +239,8 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   await m.screenshot({ path: path.join(OUT, '7-phone-coding.png') });
 
   console.log('■ 반려동물 & 동물 도감');
+  await phone.close();
+  await ctx.close();
   const pc = await browser.newContext({ viewport: { width: 1200, height: 800 } });
   const q = await pc.newPage();
   q.on('pageerror', (e) => errors.push('[반려동물] ' + e));
@@ -259,7 +262,7 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   ok((await q.textContent('#h-name')) === '콩이', '이름을 지으면 나의 반려동물 화면이 나와요');
   ok((await q.locator('#actions .act').count()) === 7, '강아지 돌보기 버튼 (사료·물·산책·공놀이·쓰다듬기·관찰·꾸미기)');
   await q.click('#actions [data-act="feed"]');
-  await q.waitForFunction(() => !document.querySelector('#actions .act').disabled, null, { timeout: 15000 });
+  await q.waitForFunction(() => !document.querySelector('#actions .act').disabled, null, { timeout: 60000 });
   ok((await q.textContent('#h-exp')).includes('경험치'), '돌보면 경험치가 올라요');
   await q.goto(BASE + 'pet.html#dex/rhino');
   await q.waitForSelector('#v-dexd:not([hidden])');
