@@ -49,20 +49,6 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // 반려동물 저장: 문서 ID가 학생만 아는 "이어하기 코드"(8자리)예요.
-    // 코드를 아는 기기만 한 문서를 읽고 쓸 수 있고, 목록 보기(다른 학생 찾기)와 지우기는 막혀 있어요.
-    // 학생 이름이나 도움 요청은 여기에 저장하지 않아요.
-    match /petSaves/{code} {
-      allow get: if signedIn() && code.matches('^[A-Z2-9]{8,12}$');
-      allow list, delete: if false;
-      allow create, update: if signedIn()
-        && code.matches('^[A-Z2-9]{8,12}$')
-        && request.resource.data.keys().hasOnly(['v', 'data', 'updatedAt'])
-        && request.resource.data.data is string
-        && request.resource.data.data.size() <= 40000
-        && request.resource.data.updatedAt == request.time;
-    }
-
     // 관리자 명단: 콘솔에서만 만들어요. 앱에서는 "내가 관리자인지"만 읽을 수 있어요.
     match /admins/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;

@@ -1,7 +1,7 @@
 // 저요! 저요! 도와주세요 — 오프라인 지원과 브라우저 알림 클릭 처리
 // 인터넷이 되면 항상 새 버전을 받아 오고, 안 되면 저장해 둔 화면을 보여 줘요.
 // (요청을 주고받는 일은 인터넷이 있어야 해요. 연결 서버·Firebase 요청은 여기서 건드리지 않아요.)
-const CACHE = "helpme-v4";
+const CACHE = "helpme-v3";
 const FILES = [
   "./",
   "./index.html",
@@ -15,15 +15,6 @@ const FILES = [
   "./net.js",
   "./lib/peerjs.min.js",
   "./lib/qrcode.min.js",
-  "./lib/three.module.min.js",
-  "./pet.html",
-  "./pet/app.js",
-  "./pet/data.js",
-  "./pet/models.js",
-  "./pet/scene.js",
-  "./pet/save.js",
-  "./pet/png.js",
-  "./pet/pet.css",
   "./firebase-config.js",
   "./manifest.json",
   "./icons/icon-192.png",
