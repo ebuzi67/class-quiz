@@ -1,0 +1,22 @@
+/* 모모의 코딩 하루 색으로 바꾸기 — base.css(저요! 저요! 디자인)의 색 이름은 그대로 두고 값만 바꿔요.
+   (--blue 는 "주 색" 이라는 뜻으로 쓰고 있어서, 여기서는 코랄빛으로 바꿔요) */
+:root {
+  --bg: #fdf3ee;
+  --blue: #e3675f;
+  --blue-dark: #c9524b;
+  --blue-soft: #ffe8e2;
+  --navy: #4a3a44;
+  --navy-soft: #806c78;
+  --cream: #fff8ef;
+  --mint: #def3ec;
+  --line: #f1dfd8;
+  --purple-soft: #efe8fb;
+  --shadow: 0 2px 4px rgba(150, 90, 100, .05), 0 8px 24px rgba(150, 90, 100, .1);
+  --shadow-lift: 0 6px 12px rgba(150, 90, 100, .08), 0 18px 40px rgba(150, 90, 100, .16);
+}
+body {
+  background: radial-gradient(1200px 480px at 50% -140px, #fff1e4 0%, rgba(255, 241, 228, 0) 70%), radial-gradient(120% 90% at 30% 10%, #fde9df, #f3e4ff);
+  background-attachment: fixed;
+}
+.code-area { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; resize: vertical; margin-bottom: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

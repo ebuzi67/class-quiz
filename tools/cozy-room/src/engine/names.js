@@ -1,6 +1,8 @@
 // 엔진이 알고 있는 이름 목록이에요. 설정 파일에 잘못된 이름을 적으면 알려 주는 데 써요.
 export const MOTION_NAMES = ['idle', 'pat', 'dropper', 'washFace', 'brushTeeth', 'lipBalm', 'blush', 'comb', 'sunscreen',
-  'maskPack', 'drink', 'read', 'nap', 'water', 'tidy', 'press', 'dance', 'stretch', 'wave', 'jump'];
+  'maskPack', 'drink', 'read', 'nap', 'water', 'tidy', 'press', 'dance', 'stretch', 'wave', 'jump', 'petting', 'playPet'];
+// 가구 대신 쓸 수 있는 특별한 대상: 'pet' = 내 반려동물 (반려동물 화면에서 고른 친구)
+export const SPECIAL_TARGETS = ['pet'];
 export const SHAPES = ['bottle', 'dropper', 'jar', 'tube', 'stick', 'compact', 'comb', 'toothbrush', 'pouch', 'book', 'cup', 'can'];
 export const FURNITURE_TYPES = ['bed', 'nightstand', 'vanity', 'sink', 'shelf', 'window', 'plant', 'teaTable', 'rug', 'toyBox'];
 export const EFFECTS = ['hearts', 'stars', 'sparkle', 'bubbles', 'crown', 'notes', 'drops', 'zzz', 'steam'];

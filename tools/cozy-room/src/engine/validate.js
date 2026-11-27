@@ -1,5 +1,5 @@
 // 학생이 설정 파일을 고치다 실수해도 앱이 멈추지 않게, 잘못된 부분을 찾아 빼고 한국어로 알려 줘요.
-import { MOTION_NAMES, SHAPES, FURNITURE_TYPES, EFFECTS, EXPRESSIONS } from './names.js';
+import { MOTION_NAMES, SHAPES, FURNITURE_TYPES, EFFECTS, EXPRESSIONS, SPECIAL_TARGETS } from './names.js';
 
 const isColor = (c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
 
@@ -46,7 +46,7 @@ export function validateConfig({ furniture = [], products = [], actions = [] }) 
     const label = `행동 "${a?.name || a?.id || '?'}"`;
     if (!a || typeof a.id !== 'string') { warnings.push(`${label}: id가 없어요.`); continue; }
     if (aIds.has(a.id)) { warnings.push(`${label}: id "${a.id}"가 겹쳐요.`); continue; }
-    if (a.target != null && !fIds.has(a.target)) { warnings.push(`${label}: target "${a.target}" 가구가 없어요.`); continue; }
+    if (a.target != null && !fIds.has(a.target) && !SPECIAL_TARGETS.includes(a.target)) { warnings.push(`${label}: target "${a.target}" 가구가 없어요.`); continue; }
     if (!MOTION_NAMES.includes(a.motion)) { warnings.push(`${label}: motion "${a.motion}"은(는) 없는 몸동작이에요.`); continue; }
     const fixed = {
       emoji: '⭐', name: a.id, code: a.name || a.id, duration: 3, expression: 'happy', effects: {}, finish: [],
@@ -63,6 +63,7 @@ export function validateConfig({ furniture = [], products = [], actions = [] }) 
       return false;
     });
     if (fixed.seat && !(fixed.target && goodFurniture.find((f) => f.id === fixed.target)?.seat)) {
+      // (반려동물에게는 앉을 자리가 없어요)
       warnings.push(`${label}: target 가구에 seat가 없어서 서서 해요.`);
       fixed.seat = false;
     }

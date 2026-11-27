@@ -106,6 +106,7 @@ export class Brain {
       if (w <= 0 || a.id === this.lastAuto) continue;
       if (a.wants) for (const [k, rule] of Object.entries(a.wants)) if (k in v && testWant(v[k], rule)) w *= 4;
       if (a.motion === 'tidy') w *= this.world.messCount ? 1 + this.world.messCount : 0;
+      if (a.target === 'pet' && !this.world.buddy?.active) continue;
       if (a.motion === 'nap' && v.sleepy < 40) w *= 0.2;
       if (w <= 0) continue;
       total += w;
@@ -160,6 +161,7 @@ export class Brain {
 
   async walkTo(point, signal) {
     const ch = this.char;
+    if (!point) return;
     const from = [ch.position.x, ch.position.z];
     if (Math.hypot(point[0] - from[0], point[1] - from[1]) < 0.05) return;
     ch.walkPath(this.world.grid.findPath(from, point));
@@ -199,6 +201,15 @@ export class Brain {
     const verb = `${action.emoji} ${action.name}`;
     let mesh = null;
     let seated = false;
+    const buddy = action.target === 'pet' ? w.buddy : null;
+    // 반려동물이 없으면 알려 주고 넘어가요 (코드가 멈추지 않게)
+    if (action.target === 'pet' && !buddy?.active) {
+      this.hooks.onStatus?.(`${verb} — 반려동물이 아직 없어요`, 'idle');
+      this.hooks.onSay?.('아직 반려동물이 없어요! 🐾 반려동물 메뉴에서 친구를 만나 봐요', 2.5);
+      await this.wait(1.5, sig).finally(() => { if (this.current?.ctrl === ctrl) this.current = null; });
+      return;
+    }
+    if (buddy) buddy.hold = true;
     try {
       // 1) 물건을 다른 곳에서 집어 와야 하면 먼저 가요
       const home = action.product ? w.products.get(action.product)?.cfg.home : null;
@@ -217,7 +228,7 @@ export class Brain {
       // 2) 가구까지 걸어가요
       if (action.target) {
         this.hooks.onStatus?.(`${verb} — 가는 중`, 'go');
-        await this.walkTo(w.spot(action.target), sig);
+        await this.walkTo(w.spot(action.target, [ch.position.x, ch.position.z]), sig);
       }
       // 3) 앉거나 눕거나, 알맞은 방향으로 서요
       const seat = action.seat ? w.seat(action.target) : null;
@@ -254,6 +265,10 @@ export class Brain {
       this.sound?.play('start');
       if (action.onStart) this.safeHook(action, 'onStart');
       ch.motion = { fn: motions[action.motion] || motions.idle, t: 0, dur: action.duration };
+      if (buddy) {
+        buddy.faceToward(ch.position.x, ch.position.z);
+        buddy.play(action.petAnim || 'pet', action.duration, action.petMood || 'happy');
+      }
       await this.wait(action.duration, sig);
       ch.motion = null;
       // 5) 완료 효과
@@ -263,12 +278,18 @@ export class Brain {
       for (const e of action.finish || []) this.particles.burst(e, e === 'crown' ? top.clone() : top.clone().setY(top.y - 0.15), e === 'crown' ? 1 : 8);
       this.sound?.play('finish');
       if (action.onFinish) this.safeHook(action, 'onFinish');
+      if (buddy) {
+        this.particles.burst('hearts', buddy.top(), 5);
+        const r = buddy.rewardFromMomo(action.id);
+        if (r) this.hooks.onPetReward?.(r);
+      }
       this.hooks.onAction?.(action, req.source, 'done');
       ch.setExpression(lie ? 'happy' : 'proud', 1.3);
       if (lie) this.hooks.onSay?.('잘 잤다~!', 1.5);
       await this.wait(0.7, sig);
     } finally {
       // 6) 정리 — 취소돼도 꼭 해요
+      if (buddy) buddy.hold = false;
       ch.motion = null;
       ch.stopWalking();
       ch.fx.foam = 0; ch.fx.mask = 0; ch.fx.dots = 0;

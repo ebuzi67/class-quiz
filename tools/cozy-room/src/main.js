@@ -13,6 +13,7 @@ import { Particles } from './engine/particles.js';
 import { Brain, Canceled } from './engine/brain.js';
 import { CameraRig } from './engine/cameraRig.js';
 import { Sound } from './engine/sound.js';
+import { PetBuddy } from './engine/petBuddy.js';
 import { createState, GAUGES } from './engine/state.js';
 import { EXPRESSION_NAMES } from './engine/names.js';
 import { BlockEditor } from './blocks/editor.js';
@@ -95,6 +96,10 @@ function boot() {
   char.root.position.set(startSpot[0], 0, startSpot[1] + 0.4);
   char.heading = 0.6;
   char.prevPos.copy(char.root.position);
+  // 반려동물 화면에서 고른 친구가 방에 놀러 와요 (없으면 보이지 않아요)
+  let buddy = null;
+  try { buddy = new PetBuddy(scene, world); } catch (err) { console.warn('반려동물을 불러오지 못했어요', err); }
+  world.buddy = buddy;
   const particles = new Particles(scene, { reducedMotion: reduced });
   char.onEmit = (type, pos, n) => particles.burst(type, pos, n);
   const sound = new Sound();
@@ -157,6 +162,10 @@ function boot() {
       onSay: say,
       onQueue: drawQueue,
       onWarn: (t) => toast(t, 'warn'),
+      onPetReward: (r) => {
+        if (r.gained) toast(`🐾 ${buddy.info.name}의 친밀도 +1, 경험치 +3`, 'ok', 2200);
+        if (r.grew) toast(`🎉 ${buddy.info.name}가 한 단계 자랐어요!`, 'ok', 3500);
+      },
       onAction: (a, source, phase) => {
         if (phase === 'done' && source === 'click') { clicks.push(a.id); missions?.check(); }
       },
@@ -166,7 +175,7 @@ function boot() {
   // ── 고르기(클릭)와 행동 메뉴 ──
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  const pickTargets = [char.root, ...world.pickables];
+  const pickTargets = [char.root, ...world.pickables, ...(buddy ? [buddy.group] : [])];
   const pickAt = (x, y) => {
     const r = canvas.getBoundingClientRect();
     ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
@@ -185,14 +194,15 @@ function boot() {
     }
     return null;
   };
-  const objOf = (kind, id) => (kind === 'character' ? char.root : kind === 'product' ? world.products.get(id)?.mesh : world.furniture.get(id)?.group);
-  const nameOf = (kind, id) => (kind === 'character' ? { name: charName, emoji: '🙋' } : kind === 'product' ? prodById.get(id) : furnById.get(id));
+  const objOf = (kind, id) => (kind === 'character' ? char.root : kind === 'buddy' ? buddy?.group : kind === 'product' ? world.products.get(id)?.mesh : world.furniture.get(id)?.group);
+  const nameOf = (kind, id) => (kind === 'character' ? { name: charName, emoji: '🙋' } : kind === 'buddy' ? { name: `${buddy.info.name} (${buddy.info.species})`, emoji: buddy.info.emoji } : kind === 'product' ? prodById.get(id) : furnById.get(id));
 
   const menu = $('#menu');
   let selected = null;
   let hovered = null;
   const actionsFor = (kind, id) => {
     if (kind === 'character') return actions.filter((a) => !a.target);
+    if (kind === 'buddy') return actions.filter((a) => a.target === 'pet');
     if (kind === 'product') return actions.filter((a) => a.product === id);
     return actions.filter((a) => a.target === id || (a.pickup && prodById.get(a.product)?.home === id));
   };
@@ -206,7 +216,7 @@ function boot() {
       x = (innerWidth - mw) / 2;
       y = innerHeight - mh - 150;
     } else {
-      const p = kind === 'character' ? char.headTop() : world.anchor(kind, id) || new THREE.Vector3();
+      const p = kind === 'character' ? char.headTop() : kind === 'buddy' ? buddy.top() : world.anchor(kind, id) || new THREE.Vector3();
       p.project(camera);
       const r = canvas.getBoundingClientRect();
       const sx = r.left + ((p.x + 1) / 2) * r.width, sy = r.top + ((1 - p.y) / 2) * r.height;
@@ -235,6 +245,7 @@ function boot() {
       const f = furnById.get(id);
       world.showRing(new THREE.Vector3(f.pos[0], 0, f.pos[1]), f.type === 'rug' ? 1.3 : 0.75);
     } else if (kind === 'character') world.showRing(char.position, 0.4);
+    else if (kind === 'buddy') world.showRing(buddy.position, 0.35);
     const list = actionsFor(kind, id);
     const busy = brain.current && brain.current.phase === 'do';
     // replaceChildren 은 null 을 "null" 글자로 넣어서, 빈 칸은 걸러 내요
@@ -247,6 +258,7 @@ function boot() {
           el('span', { class: 'em', 'aria-hidden': 'true', text: a.emoji }), a.name, el('small', { text: `${a.duration}초` })))))
         : el('p', { class: 'note', text: '여기서 할 수 있는 행동이 아직 없어요. actions.js에 추가해 보세요!' }),
       busy ? el('p', { class: 'note', text: `⏳ ${charName}가 지금 하는 행동을 마치고 갈게요.` }) : null,
+      kind === 'buddy' ? el('a', { class: 'item pet-link', href: 'pet.html#pet' }, el('span', { class: 'em', 'aria-hidden': 'true', text: '🏠' }), '반려동물 화면에서 돌보기·꾸미기') : null,
     ].filter(Boolean));
     placeMenu(kind, id);
     menu.querySelector('[data-action]')?.focus({ preventScroll: true });
@@ -269,6 +281,7 @@ function boot() {
         el('button', { type: 'button', class: 'icon-btn', 'aria-label': '메뉴 닫기', text: '✕', onclick: () => closeMenu(true) })),
       el('ul', {}, [
         el('li', {}, el('button', { type: 'button', onclick: () => openMenu('character', 'character') }, el('span', { class: 'em', text: '🙋' }), charName)),
+        buddy?.active ? el('li', {}, el('button', { type: 'button', onclick: () => openMenu('buddy', 'pet') }, el('span', { class: 'em', text: buddy.info.emoji }), `${buddy.info.name} (반려동물)`)) : null,
         ...cfg.furniture.map((f) => el('li', {}, el('button', { type: 'button', onclick: () => openMenu('furniture', f.id) }, el('span', { class: 'em', text: f.emoji }), f.name))),
       ]),
     );
@@ -281,13 +294,13 @@ function boot() {
     if (!hit) { closeMenu(); return; }
     const kind = hit.kind === 'product' ? 'product' : hit.kind;
     // 코드가 실행 중이고 이 물건을 누르면 실행되는 스크립트가 있으면 그걸 먼저 해요
-    const eventKind = kind === 'product' ? 'furniture' : kind;
-    const eventId = kind === 'product' ? prodById.get(hit.id)?.home : hit.id;
+    const eventKind = kind === 'product' || kind === 'buddy' ? 'furniture' : kind;
+    const eventId = kind === 'product' ? prodById.get(hit.id)?.home : kind === 'buddy' ? 'pet' : hit.id;
     if (runCtl.trigger(eventKind, eventId)) {
       const obj = objOf(kind, hit.id);
       world.highlight(obj, 2);
       setTimeout(() => { if (!selected || objOf(selected.kind, selected.id) !== obj) world.highlight(obj, 0); }, 500);
-      particles.burst('sparkle', world.anchor(kind === 'character' ? 'furniture' : kind, hit.id) || char.headTop(), 4);
+      particles.burst('sparkle', kind === 'buddy' ? buddy.top() : world.anchor(kind === 'character' ? 'furniture' : kind, hit.id) || char.headTop(), 4);
       return;
     }
     if (selected && selected.kind === kind && selected.id === hit.id) { closeMenu(); return; }
@@ -339,7 +352,7 @@ function boot() {
   });
 
   // ── 코딩 모드 ──
-  const things = cfg.furniture.map((f) => ({ id: f.id, name: f.name, emoji: f.emoji }));
+  const things = [...cfg.furniture.map((f) => ({ id: f.id, name: f.name, emoji: f.emoji })), { id: 'pet', name: '내 반려동물', emoji: '🐾' }];
   const sanitizeOpts = { actionIds: actions.map((a) => a.id), thingIds: things.map((t) => t.id) };
   let saveTimer = 0;
   const editor = new BlockEditor({
@@ -360,7 +373,7 @@ function boot() {
     brain, char, state, editor,
     hooks: {
       onSay: say,
-      thingName: (id) => furnById.get(id)?.name,
+      thingName: (id) => (id === 'pet' ? '반려동물' : furnById.get(id)?.name),
       onState: (text, kind) => { runState.textContent = text; runState.className = `run-state ${kind || ''}`; },
       onRunChange: (on) => {
         $('#run').disabled = on;
@@ -398,7 +411,7 @@ function boot() {
   $('#show-code').addEventListener('click', () => {
     const src = toCode(editor.program, {
       actionCode: (id) => actionById.get(id)?.code || id,
-      thingName: (id) => (furnById.get(id)?.name || id).replace(/\s+/g, ''),
+      thingName: (id) => (id === 'pet' ? '반려동물' : furnById.get(id)?.name || id).replace(/\s+/g, ''),
       gaugeName: (id) => GAUGES.find((g) => g.id === id)?.name || id,
       exprName: (e) => EXPRESSION_NAMES[e] || e,
     });
@@ -546,6 +559,7 @@ function boot() {
         el('li', {}, el('span', { class: 'em', 'aria-hidden': 'true', text: '🧩' }), el('span', { text: '"코딩 모드"에서 블록으로 순서·반복·조건·이벤트를 만들어 ▶ 실행해요.' })),
         el('li', {}, el('span', { class: 'em', 'aria-hidden': 'true', text: '🏅' }), el('span', { text: '미션 탭에서 차시별 미션을 해결하고 도장을 모아요.' })),
         el('li', {}, el('span', { class: 'em', 'aria-hidden': 'true', text: '💖' }), el('span', { text: '위쪽 게이지는 기분·졸림·깨끗함 변수예요. 행동을 하면 숫자가 바뀌어요.' })),
+        el('li', {}, el('span', { class: 'em', 'aria-hidden': 'true', text: '🐾' }), el('span', { text: '"반려동물"에서 3D 친구를 골라 키우고, "도감"에서 동물 18종을 모아요. 내 반려동물은 이 방에도 놀러 와요!' })),
       ),
       cfg.warnings.length ? el('div', { class: 'run-state err' },
         el('b', { text: `설정 파일에서 고칠 곳이 ${cfg.warnings.length}개 있어요 (그 부분만 빼고 실행했어요)` }),
@@ -591,6 +605,8 @@ function boot() {
       char.wind = world.wind;
       char.update(dt, simTime);
       world.update(dt, reduced);
+      buddy?.update(dt, char, reduced);
+      if (!menu.hidden && selected?.kind === 'buddy') world.showRing(buddy.position, 0.35);
       particles.update(dt);
       rig.update(raw);
       if (!menu.hidden && selected?.kind === 'character') world.showRing(char.position, 0.4);
@@ -636,7 +652,11 @@ function boot() {
     }
   };
   renderer.setAnimationLoop(frame);
+  // 반려동물 화면에서 돌아오면 바뀐 친구를 다시 불러와요
+  addEventListener('pageshow', () => buddy?.reload());
+  addEventListener('storage', (e) => { if (e.key === 'cozy-room.pet.v1') buddy?.reload(); });
   document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) buddy?.reload();
     if (document.hidden) renderer.setAnimationLoop(null);
     else { clock.getDelta(); renderer.setAnimationLoop(frame); }
   });
@@ -655,14 +675,14 @@ function boot() {
 
   // 테스트와 디버깅용 (콘솔에서 app 으로 볼 수 있어요)
   const screenOf = (kind, id) => {
-    const p = kind === 'character' ? char.headTop().setY(char.headTop().y - 0.3) : world.anchor(kind, id);
+    const p = kind === 'character' ? char.headTop().setY(char.headTop().y - 0.3) : kind === 'buddy' ? buddy.position.clone().setY(0.2) : world.anchor(kind, id);
     if (!p) return null;
     if (kind === 'furniture') p.y = Math.min(p.y, 0.6);
     p.project(camera);
     const r = canvas.getBoundingClientRect();
     return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
   };
-  window.app = { brain, char, world, state, editor, runCtl, missions, rig, renderer, camera, scene, openMenu, closeMenu, setPanel, screenOf };
+  window.app = { buddy, brain, char, world, state, editor, runCtl, missions, rig, renderer, camera, scene, openMenu, closeMenu, setPanel, screenOf };
   if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
