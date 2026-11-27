@@ -51,6 +51,11 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   console.log('■ 가구를 눌러 행동 부탁하기');
   await p.click('[data-act="camera"]');
   await p.waitForTimeout(1000);
+  // 모모가 화장대 앞을 가리지 않게 잠깐 자동 행동을 멈추고 비켜 세워요
+  await p.evaluate(() => app.brain.setAuto(false));
+  await p.waitForFunction(() => !app.brain.current, null, { timeout: 60000 });
+  await p.evaluate(() => { app.char.position.set(0.8, 0, 1.6); });
+  await p.evaluate(() => app.brain.setAuto(true));
   await tapThing('furniture', 'vanity');
   await p.waitForSelector('#menu:not([hidden])');
   ok((await p.textContent('#menu-title')).includes('화장대'), '화장대를 누르면 화장대 메뉴가 나와요');

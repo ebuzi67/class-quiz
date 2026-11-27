@@ -11,7 +11,9 @@ function serviceWorker() {
     name: 'cozy-room-sw',
     apply: 'build',
     generateBundle(_, bundle) {
-      const files = ['./', './index.html', ...Object.keys(bundle).filter((f) => f !== 'index.html').map((f) => './' + f), ...walk('public').map((f) => './' + f)];
+      // HTML 페이지는 이 단계에서 아직 목록에 없을 수 있어서 직접 넣어요
+      const pages = ['./', './index.html', './pet.html'];
+      const files = [...new Set([...pages, ...Object.keys(bundle).filter((f) => !f.endsWith('.html')).map((f) => './' + f), ...walk('public').map((f) => './' + f)])];
       const version = createHash('sha1').update(files.join('|')).digest('hex').slice(0, 8);
       this.emitFile({
         type: 'asset',
