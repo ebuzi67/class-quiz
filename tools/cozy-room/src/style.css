@@ -75,13 +75,16 @@ button { cursor: pointer; }
   position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; gap: 8px; z-index: 5;
 }
-.tools button {
+.tools button, .tools a {
+  text-decoration: none; color: inherit;
   width: calc(64px * var(--ui)); min-height: calc(58px * var(--ui)); border: none; border-radius: var(--radius); background: var(--card);
   box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-size: calc(22px * var(--ui)); padding: 4px; transition: transform .15s, background .2s;
 }
-.tools button .lbl { font-size: calc(11px * var(--ui)); line-height: 1.1; color: var(--muted); }
-.tools button:active { transform: scale(.94); }
+.tools button .lbl, .tools a .lbl { font-size: calc(11px * var(--ui)); line-height: 1.1; color: var(--muted); }
+.tools button:active, .tools a:active { transform: scale(.94); }
+.tools .pet-btn { background: linear-gradient(160deg, #fff3c4, #ffe08a); }
+.menu .pet-link { margin-top: 8px; text-decoration: none; color: inherit; background: #fff8e1; }
 .tools button[aria-pressed="true"] { background: #fff1c2; }
 .tools .code-btn { background: linear-gradient(160deg, #ffb3a8, var(--coral)); }
 .tools .code-btn .lbl { color: #fff; font-weight: 700; }
@@ -262,7 +265,7 @@ body.dragging .trash { display: block; }
     top: auto; transform: none; bottom: calc(8px + env(safe-area-inset-bottom)); right: 8px; left: 8px; flex-direction: row;
     overflow-x: auto; justify-content: flex-start; padding: 4px; gap: 6px; scrollbar-width: none;
   }
-  .tools button { flex: none; width: 62px; min-height: 56px; }
+  .tools button, .tools a { flex: none; width: 62px; min-height: 56px; }
   .status-wrap { bottom: calc(80px + env(safe-area-inset-bottom)); max-width: calc(100vw - 24px); }
   .status { font-size: 15px; padding: 8px 12px; }
   .panel { top: auto; height: 62vh; width: 100vw; border-radius: 26px 26px 0 0; animation-name: slideUp; }
@@ -280,7 +283,7 @@ body.dragging .trash { display: block; }
 @media (max-height: 520px) and (min-width: 761px) {
   .tools { gap: 4px; }
   .tools button { min-height: 46px; }
-  .tools button .lbl { display: none; }
+  .tools button .lbl, .tools a .lbl { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

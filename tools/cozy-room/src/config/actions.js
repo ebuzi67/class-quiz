@@ -8,6 +8,8 @@
 //   name     : 화면에 보이는 이름 (예: '세수하기')
 //   emoji    : 그림 글자
 //   target   : 가서 할 가구의 id (furniture.js) — null 이면 지금 서 있는 자리에서 해요
+//              'pet' 이면 내 반려동물에게 가요 (반려동물 화면에서 친구를 골랐을 때만 해요)
+//   petAnim  : (target 이 'pet' 일 때) 반려동물의 움직임 — 'pet'(좋아하기) 'jump' 'ball' 'eat' 'drink'
 //   seat     : true 면 그 가구의 seat(앉는/눕는 자리)에 올라가서 해요
 //   face     : 바라볼 방향 — 'target'(가구 쪽, 기본값) / 'camera'(화면 쪽) / 숫자(각도)
 //   product  : 손에 들 물건의 id (products.js) — 없으면 null
@@ -29,6 +31,7 @@
 //   'lipBalm'(입술 바르기) 'blush'(볼 톡톡) 'comb'(머리 빗기) 'sunscreen'(선크림)
 //   'maskPack'(마스크팩) 'drink'(마시기) 'read'(읽기) 'nap'(눕기) 'water'(물 주기)
 //   'tidy'(줍기) 'press'(누르기) 'dance'(춤) 'stretch'(기지개) 'wave'(손 흔들기) 'jump'(뛰기)
+//   'petting'(쪼그려 쓰다듬기) 'playPet'(손뼉 치며 놀기)
 
 export const actions = [
   {
@@ -153,6 +156,27 @@ export const actions = [
     effects: { mood: 6, sleepy: -6 }, finish: ['notes'],
     weight: 0.6,
     onFinish: (world) => world.toggleWindow(),
+  },
+  {
+    id: 'petPet', name: '반려동물 쓰다듬기', emoji: '🐾', code: '반려동물쓰다듬기',
+    target: 'pet', motion: 'petting', duration: 3.2, petAnim: 'pet',
+    expression: 'joy', say: '착하다~ 쓰담쓰담',
+    effects: { mood: 12 }, finish: ['hearts'],
+    weight: 1.2,
+  },
+  {
+    id: 'playPet', name: '반려동물과 놀기', emoji: '🎾', code: '반려동물과놀기',
+    target: 'pet', motion: 'playPet', duration: 3.6, petAnim: 'jump',
+    expression: 'joy', say: '같이 놀자!',
+    effects: { mood: 15, sleepy: 4, clean: -3 }, finish: ['notes', 'stars'],
+    weight: 1,
+  },
+  {
+    id: 'feedPet', name: '반려동물 밥 주기', emoji: '🥣', code: '반려동물밥주기',
+    target: 'pet', motion: 'petting', duration: 3.2, petAnim: 'eat', petMood: 'eat',
+    expression: 'happy', say: '맛있게 먹어~',
+    effects: { mood: 8 }, finish: ['hearts', 'sparkle'],
+    weight: 0.8,
   },
   {
     id: 'dance', name: '춤추기', emoji: '💃', code: '춤추기',

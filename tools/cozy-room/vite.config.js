@@ -69,7 +69,10 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     chunkSizeWarningLimit: 900,
-    rollupOptions: { output: { manualChunks: { three: ['three'] } } },
+    rollupOptions: {
+      input: { main: 'index.html', pet: 'pet.html' },
+      output: { manualChunks: { three: ['three'] } },
+    },
   },
   test: { environment: 'node', include: ['test/**/*.test.js'] },
 });

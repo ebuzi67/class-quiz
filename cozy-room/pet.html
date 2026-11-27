@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>나의 반려동물 · 모모의 코딩 하루</title>
+  <meta name="theme-color" content="#ff9a8f">
+  <meta name="description" content="나만의 3D 반려동물을 키우고 동물 도감을 모아요">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <script type="module" crossorigin src="./assets/pet-CbyCU_Xz.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/save-BXsaWFjU.js">
+  <link rel="stylesheet" crossorigin href="./assets/pet-A2b-DZi0.css">
+</head>
+<body class="pet-page">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./" id="home-link">
+        <img src="./icons/icon-192.png" alt="">
+        <span>모모의 코딩 하루<small>반려동물</small></span>
+      </a>
+      <nav class="pet-tabs" aria-label="쉬는 시간 메뉴">
+        <a href="#pet" data-tab="pet" data-short="반려동물">🐾 <span>나의 반려동물</span></a>
+        <a href="#dex" data-tab="dex" data-short="도감">📖 <span>동물 도감</span></a>
+      </nav>
+      <a class="btn btn-white btn-sm back-help" href="./" id="help-link">🏠 <span class="hide-sm">모모의 방</span></a>
+    </div>
+  </header>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <main class="wrap pet-main">
+    <!-- 반려동물 고르기 -->
+    <section class="screen" id="v-pick" hidden>
+      <div class="pet-hero">
+        <h1>어떤 친구를 만나 볼까요?</h1>
+        <p>마음에 드는 친구를 골라 이름을 지어 주세요.</p>
+      </div>
+      <div class="cat-tabs" id="pick-tabs" role="tablist"></div>
+      <p class="pick-note" id="pick-note" hidden>🪲 실제 곤충은 알 → 애벌레 → 번데기를 거쳐 어른벌레가 돼요. 여기서는 어른벌레 친구를 게임 속 반려동물로 만나요. (실제 한살이는 동물 도감에서 볼 수 있어요)</p>
+      <div class="pick-grid" id="pick-grid"></div>
+      <p class="sub-note center"><a class="btn btn-white" href="#pet/sync">📲 다른 기기에서 키우던 친구가 있나요? 불러오기</a></p>
+    </section>
+
+    <!-- 이름 짓기 -->
+    <section class="screen" id="v-name" hidden>
+      <div class="name-layout">
+        <div class="stage-box showcase" id="name-stage"><span class="stage-hint">👆 끌어서 돌려 보세요</span></div>
+        <form class="panel name-panel" id="name-form" novalidate>
+          <span class="pill tone-blue" id="name-species"></span>
+          <h2>이름을 지어 주세요</h2>
+          <input class="input name-input" id="name-input" maxlength="10" autocomplete="off" placeholder="예: 콩이">
+          <div class="chips" id="name-ideas"></div>
+          <p class="form-error" id="name-error" role="alert"></p>
+          <div class="panel-actions">
+            <a class="btn btn-lg" href="#pet">← 다시 고르기</a>
+            <button class="btn btn-primary btn-lg" type="submit">🐾 이 이름으로 할게요</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 나의 반려동물 -->
+    <section class="screen" id="v-home" hidden>
+      <div class="pet-info">
+        <div class="pet-id">
+          <h1 id="h-name"></h1>
+          <span class="pill tone-blue" id="h-species"></span>
+          <span class="pill tone-gray" id="h-days"></span>
+        </div>
+        <div class="meters">
+          <div class="meter">
+            <span class="meter-label">💖 친밀도 <b id="h-love"></b></span>
+            <span class="bar"><i id="h-love-bar" class="love"></i></span>
+          </div>
+          <div class="meter">
+            <span class="meter-label">🌱 <b id="h-stage"></b> <small id="h-exp"></small></span>
+            <span class="bar"><i id="h-exp-bar" class="exp"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="stage-box room" id="home-stage">
+        <div class="bubble" id="bubble"></div>
+        <div class="fx" id="fx"></div>
+      </div>
+      <div class="actions" id="actions"></div>
+      <div class="pet-sub">
+        <a class="btn btn-white" href="#pet/rewards">🏅 보상과 배지</a>
+        <a class="btn btn-white" href="#pet/sync">📲 다른 기기에서 이어하기</a>
+        <a class="btn btn-white" href="#dex">📖 동물 도감</a>
+        <a class="btn btn-white" href="./">🏠 모모의 방에 데려가기</a>
+      </div>
+      <p class="sub-note center">💡 내 반려동물은 모모의 방에도 놀러 가요. 모모가 쓰다듬어 주고 함께 놀아요!</p>
+    </section>
+
+    <!-- 꾸미기 -->
+    <section class="screen" id="v-decor" hidden>
+      <div class="decor-layout">
+        <div class="stage-box room" id="decor-stage"><span class="stage-hint">👆 물건을 끌어서 옮겨요</span></div>
+        <div class="panel decor-panel">
+          <div class="decor-head">
+            <h2>🎨 공간 꾸미기</h2>
+            <a class="btn btn-primary btn-sm" href="#pet">✔ 다 꾸몄어요</a>
+          </div>
+          <div class="cat-tabs small" id="decor-tabs"></div>
+          <div class="item-grid" id="decor-items"></div>
+          <p class="decor-note" id="decor-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 보상과 배지 -->
+    <section class="screen" id="v-rewards" hidden>
+      <div class="section-title"><h2>🏅 보상과 배지</h2><a class="btn btn-sm" href="#pet">← 돌아가기</a></div>
+      <p class="sub-note">반려동물을 돌보고 도감을 탐색하면 아이템과 배지를 받아요. 돌보지 못한 날이 있어도 아프거나 줄어드는 것은 없어요.</p>
+      <h3 class="block-title">배지</h3>
+      <div class="badge-grid" id="badge-grid"></div>
+      <h3 class="block-title">아이템 <small id="item-count"></small></h3>
+      <div class="item-grid wide" id="reward-items"></div>
+    </section>
+
+    <!-- 이어하기 -->
+    <section class="screen" id="v-sync" hidden>
+      <div class="section-title"><h2>📲 다른 기기에서 이어하기</h2><a class="btn btn-sm" href="#pet">← 돌아가기</a></div>
+      <p class="sub-note">반려동물과 도감 기록은 이 기기에 저장돼요. 다른 기기에서 이어 하려면 <b>백업 코드</b>를 복사해서, 그 기기의 "불러오기" 칸에 붙여 넣어요.</p>
+      <div class="sync-grid">
+        <div class="panel">
+          <h3>내 백업 코드</h3>
+          <label class="sr-only" for="save-code">내 백업 코드</label>
+          <textarea class="input code-area" id="save-code" rows="4" readonly></textarea>
+          <button class="btn btn-primary btn-block" type="button" id="copy-save">📋 백업 코드 복사</button>
+          <p class="sub-note">🔒 이 코드에는 내 반려동물 기록만 들어 있어요. 이름 같은 개인 정보는 없어요. 친구 기기에 붙여 넣으면 친구 기기의 기록이 바뀌니 조심해요.</p>
+        </div>
+        <form class="panel" id="sync-form" novalidate>
+          <h3>다른 기기에서 키우던 친구 불러오기</h3>
+          <label class="sr-only" for="sync-input">백업 코드 붙여 넣기</label>
+          <textarea class="input code-area" id="sync-input" rows="4" autocomplete="off" placeholder="PET1- 로 시작하는 백업 코드를 붙여 넣어요"></textarea>
+          <p class="form-error" id="sync-error" role="alert"></p>
+          <button class="btn btn-primary btn-block" type="submit">📥 불러오기</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 도감 목록 -->
+    <section class="screen" id="v-dex" hidden>
+      <div class="dex-top">
+        <div class="dex-total panel">
+          <span class="dex-label">📖 전체 도감 완성률</span>
+          <b class="dex-pct" id="dex-pct">0%</b>
+          <span class="bar big"><i id="dex-bar" class="exp"></i></span>
+          <small id="dex-count"></small>
+        </div>
+        <div class="dex-cats" id="dex-cats"></div>
+      </div>
+      <div class="cat-tabs" id="dex-tabs"></div>
+      <div class="dex-grid" id="dex-grid"></div>
+      <p class="sub-note center">모든 도감은 누구나 자유롭게 볼 수 있어요. 카드를 눌러 동물을 발견해 보세요!</p>
+    </section>
+
+    <!-- 도감 상세 -->
+    <section class="screen" id="v-dexd" hidden>
+      <div class="dexd-nav">
+        <a class="btn btn-sm" href="#dex" id="dexd-back">← 도감 목록</a>
+        <span class="dexd-pos" id="dexd-pos"></span>
+        <span class="dexd-arrows">
+          <button class="btn btn-sm btn-white" id="dexd-prev">◀ 이전</button>
+          <button class="btn btn-sm btn-white" id="dexd-next">다음 ▶</button>
+        </span>
+      </div>
+      <div class="dexd-layout">
+        <div class="stage-box showcase" id="dex-stage"><span class="stage-hint">👆 끌어서 돌려 보세요</span></div>
+        <article class="panel dexd-info" id="dexd-info"></article>
+      </div>
+      <div class="panel life" id="dexd-life" hidden></div>
+    </section>
+  </main>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" id="modal-card"></div>
+  </div>
+
+</body>
+</html>

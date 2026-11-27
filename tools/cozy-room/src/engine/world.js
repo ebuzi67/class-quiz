@@ -180,7 +180,9 @@ export class World {
   }
 
   // ── 자리 계산 ──
-  spot(fid) {
+  // from: 지금 캐릭터 자리 [x, z] (반려동물처럼 움직이는 대상에 필요해요)
+  spot(fid, from = [0, 0]) {
+    if (fid === 'pet') return this.buddy?.active ? this.buddy.spotFor(from) : null;
     const f = this.furniture.get(fid)?.cfg;
     if (!f) return null;
     return [f.pos[0] + f.spot[0], f.pos[1] + f.spot[1]];
@@ -191,6 +193,7 @@ export class World {
     return { x: f.pos[0] + f.seat.at[0], z: f.pos[1] + f.seat.at[1], y: f.seat.y, face: f.seat.face };
   }
   center(fid) {
+    if (fid === 'pet') return this.buddy?.active ? [this.buddy.position.x, this.buddy.position.z] : null;
     const f = this.furniture.get(fid)?.cfg;
     return f ? [f.pos[0], f.pos[1]] : null;
   }

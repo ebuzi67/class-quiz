@@ -60,6 +60,39 @@ npm run dev        # 개발용 서버 → 화면에 나오는 주소(http://loca
 
 ---
 
+## 🐾 나의 반려동물 & 📖 동물 도감 (`pet.html`)
+
+오른쪽 도구 버튼의 **🐾 반려동물**, **📖 도감**에서 들어가요. 화면 위 **🏠 모모의 방**을 누르면 돌아와요.
+"저요! 저요! 도와주세요"(`help/`)의 반려동물 기능을 옮겨 온 거예요. 두 앱은 따로 저장해서 서로 영향을 주지 않아요.
+
+| 기능 | 내용 |
+|---|---|
+| 반려동물 고르기 | 강아지 6, 고양이 6, 곤충 6 중 하나를 골라 이름을 지어요. 모두 같은 그림체의 3D 캐릭터예요 |
+| 돌보기 | 강아지: 사료·물·산책·공놀이·쓰다듬기·관찰 / 고양이: 간식·물·장난감·낚싯대·쓰다듬기·관찰 / 곤충: 먹이(곤충 젤리)·물 뿌리기·관찰·놀이터 산책·성장 과정 보기 |
+| 성장 | 경험치로 아기 → 어린이 → 성장 → 성숙. 단계가 오르면 몸이 커져요. 친밀도는 0~100 |
+| 꾸미기 | 강아지·고양이는 실내 방, 곤충은 사육장. 배경·방석·장난감·그릇·작은 집·나무와 풀·곤충 사육장·곤충 놀이터·장식. 물건은 끌어서 옮겨요 |
+| 보상 | 아이템과 배지 10가지. 성장 단계·경험치·도감 발견 수·해 본 놀이 종류로 열려요 |
+| 동물 도감 | 18종. 3D 모델을 돌려 보며 생김새·생태·재미있는 사실을 봐요. 곤충은 분류·서식지·먹이·한살이(알 → 애벌레 → 번데기 → 어른벌레)까지 |
+| 수집 | 카드를 열면 "발견". 전체 완성률과 강아지·고양이·곤충별 현황. 반려동물이 없어도 누구나 모든 도감을 볼 수 있어요 |
+| 다른 기기로 옮기기 | 📲 이어하기 → `PET1-`로 시작하는 **백업 코드**를 복사해 다른 기기에 붙여 넣어요 (서버를 쓰지 않아요) |
+
+**모모의 방에 놀러 와요**
+
+- 반려동물을 고르면 모모의 방에도 나타나서 돌아다니고, 가끔 모모 곁으로 와요.
+- 방 안의 반려동물을 누르면 메뉴가 나와요: **🐾 반려동물 쓰다듬기, 🎾 반려동물과 놀기, 🥣 반려동물 밥 주기**. 모모가 걸어가서 하고, 반려동물도 같이 움직여요.
+- 이 세 행동은 **코딩 블록**(🎬 행동하기)에도 있고, 모자 블록에서 **"물건을 누르면 → 🐾 내 반려동물"** 이벤트도 쓸 수 있어요.
+- 모모가 돌봐 주면 반려동물 화면의 친밀도 +1, 경험치 +3을 받아요 (하루 5번까지, 그 뒤에도 계속 놀 수 있어요).
+- 반려동물이 없을 때 코드가 이 행동을 시키면, 모모가 "아직 반려동물이 없어요!"라고 말하고 다음 블록으로 넘어가요.
+
+**지킨 약속**: 돌보지 않아도 아프거나 사라지거나 줄어드는 것은 없어요. 게임 속 성장 단계는 실제 동물의 성장과 다르다고 따로 알려 줘요. 저장 데이터에 학생 이름 같은 개인 정보는 없어요.
+
+**파일**: `pet.html`, `src/pet/` (`data.js` 동물·도감 정보와 아이템·배지, `models.js` 3D 모델, `scene.js` 3D 무대, `app.js` 화면, `save.js` 저장·백업 코드, `png.js` PNG로 바꾸기, `base.css`·`pet.css` 디자인, `theme.css` 모모의 방 색), `src/engine/petBuddy.js` (모모의 방에 놀러 오는 반려동물).
+동물 그림을 직접 그린 PNG로 바꾸려면 `public/pet/img/`에 넣고 `src/pet/png.js`에 경로를 적어요.
+
+**나중에 붙일 수 있는 학급 공동 공간**: `src/pet/save.js`의 `publicCard()`가 반려동물 모습(종류·이름·성장 단계·장식·배경)만 담은 공개 카드를 만들어요. 학생 이름과 개인 정보는 넣지 않아요. 친구들 반려동물 구경하기, 작은 마을, 학급 정원은 이 카드만 모아서 보여 주면 돼요.
+
+---
+
 ## 3. 코딩 모드 (블록)
 
 | 블록 | 뜻 | 배우는 개념 |
@@ -180,6 +213,7 @@ export const character = {
 },
 ```
 
+- `target`에 `'pet'`을 적으면 내 반려동물에게 가요. 이때 `petAnim`(`'pet'` `'jump'` `'ball'` `'eat'` `'drink'`)으로 반려동물의 움직임을 정해요.
 - 쓸 수 있는 `type`: `bed` `nightstand` `vanity` `sink` `shelf` `window` `plant` `teaTable` `rug` `toyBox`
 - 앉는 자리가 있으면 `seat: { at: [x, z], y: 높이, face: 각도 }`를 넣어요.
 - 새 **모양**을 만들려면 `src/engine/furnitureKit.js`의 `builders`에 함수를 하나 추가하고, `src/engine/names.js`의 `FURNITURE_TYPES`와 `FOOTPRINTS`(바닥 크기)에 이름을 넣어요.
@@ -218,7 +252,7 @@ export const character = {
 },
 ```
 
-- 몸동작(`motion`): `pat` `dropper` `washFace` `brushTeeth` `lipBalm` `blush` `comb` `sunscreen` `maskPack` `drink` `read` `nap` `water` `tidy` `press` `dance` `stretch` `wave` `jump`
+- 몸동작(`motion`): `pat` `dropper` `washFace` `brushTeeth` `lipBalm` `blush` `comb` `sunscreen` `maskPack` `drink` `read` `nap` `water` `tidy` `press` `dance` `stretch` `wave` `jump` `petting` `playPet`
 - 표정(`expression`): `happy` `joy` `closed` `sleepy` `surprised` `proud`
 - 효과(`finish`): `hearts` `stars` `sparkle` `bubbles` `crown` `notes` `drops` `zzz` `steam`
 - `onStart`/`onFinish`에서 쓸 수 있는 `world` 기능: `toggleLamp()` `toggleWindow()` `growPlant()` `collectMess()` `spawnMess()`

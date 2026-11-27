@@ -252,6 +252,30 @@ export const motions = {
     P.bodyY = 0.03 * up;
   },
 
+  // 쪼그려 앉아 반려동물을 쓰다듬어요 (밥 줄 때도 써요)
+  petting(P, t, p, ch) {
+    const down = Math.min(1, t * 3) * (p > 0.9 ? 1 - (p - 0.9) / 0.1 : 1);
+    P.lean = 0.5 * down; P.bodyY = -0.1 * down;
+    P.legL = -0.5 * down; P.legR = -0.5 * down;
+    P.headX = 0.35 * down;
+    const k = Math.sin(t * 6) * 0.04;
+    ch.reach(P, 'R', -0.04, 0.02 + k, 0.36);
+    ch.reach(P, 'L', 0.12, 0.08, 0.3);
+    if (every(ch, 'h', 0.8)) emit(ch, 'hearts', ch.handWorld('R', tmp), 1);
+  },
+
+  // 반려동물과 신나게 놀아요 (손뼉 치고 깡충)
+  playPet(P, t, p, ch) {
+    const cyc = (t % 0.9) / 0.9;
+    const hop = Math.sin(cyc * Math.PI);
+    P.bodyY = hop * 0.12;
+    const clap = Math.abs(Math.sin(t * 7)) * 0.06;
+    ch.reach(P, 'L', 0.03 + clap, 0.42, 0.3);
+    ch.reach(P, 'R', -0.03 - clap, 0.42, 0.3);
+    P.headX = 0.15; P.headZ = Math.sin(t * 3) * 0.12;
+    if (cyc < 0.1 && every(ch, 'n', 0.9)) emit(ch, 'notes', ch.headTop(tmp), 1);
+  },
+
   wave(P, t, p, ch) {
     P.armRX = 2.5; P.armRZ = 0.55 + S(t * 9) * 0.3; P.elbowR = 0.5;
     P.headZ = 0.12;

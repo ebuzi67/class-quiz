@@ -232,6 +232,47 @@ const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-u
   ok((await m.locator('#workspace .blk.t-action').count()) === 1, '휴대폰: 블록을 터치로 넣어요');
   await m.screenshot({ path: path.join(OUT, '7-phone-coding.png') });
 
+  console.log('■ 반려동물 & 동물 도감');
+  const pc = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+  const q = await pc.newPage();
+  q.on('pageerror', (e) => errors.push('[반려동물] ' + e));
+  q.on('console', (msg) => { if (msg.type() === 'error') errors.push('[반려동물] ' + msg.text()); });
+  await q.addInitScript(() => localStorage.setItem('cozy-room:seenHelp', 'true'));
+  await q.goto(BASE);
+  await q.waitForFunction(() => window.app?.brain);
+  ok(await q.evaluate(() => !app.buddy.active), '반려동물을 고르기 전에는 방에 없어요');
+  await q.click('.tools a[href="pet.html#pet"]');
+  await q.waitForSelector('#pick-grid [data-species]');
+  ok((await q.locator('#pick-grid .pick-card').count()) === 6, '강아지 6종을 고를 수 있어요');
+  await q.click('#pick-tabs [data-cat="bug"]');
+  ok(await q.isVisible('#pick-note'), '곤충은 실제 한살이와 게임 성장이 다르다고 알려 줘요');
+  await q.click('#pick-tabs [data-cat="dog"]');
+  await q.click('#pick-grid [data-species="corgi"]');
+  await q.fill('#name-input', '콩이');
+  await q.click('#name-form button[type=submit]');
+  await q.waitForSelector('#v-home:not([hidden])');
+  ok((await q.textContent('#h-name')) === '콩이', '이름을 지으면 나의 반려동물 화면이 나와요');
+  ok((await q.locator('#actions .act').count()) === 7, '강아지 돌보기 버튼 (사료·물·산책·공놀이·쓰다듬기·관찰·꾸미기)');
+  await q.click('#actions [data-act="feed"]');
+  await q.waitForFunction(() => !document.querySelector('#actions .act').disabled, null, { timeout: 15000 });
+  ok((await q.textContent('#h-exp')).includes('경험치'), '돌보면 경험치가 올라요');
+  await q.goto(BASE + 'pet.html#dex/rhino');
+  await q.waitForSelector('#v-dexd:not([hidden])');
+  ok((await q.locator('#dexd-life .life-steps li').count()) === 4, '곤충 도감에 한살이 4단계 (알·애벌레·번데기·어른벌레)');
+  await q.click('a[href="#dex"] >> nth=0');
+  await q.waitForSelector('#v-dex:not([hidden])');
+  ok((await q.textContent('#dex-count')).includes('1 / 18'), '도감을 보면 발견 수가 올라요');
+  await q.click('#home-link');
+  await q.waitForFunction(() => window.app?.brain);
+  ok(await q.evaluate(() => app.buddy.active && app.buddy.info.name === '콩이'), '고른 반려동물이 모모의 방에 놀러 와요');
+  await q.evaluate(() => { app.brain.setAuto(false); app.brain.request('petPet', 'click'); });
+  await q.waitForFunction(() => app.brain.current?.action.id === 'petPet' && app.brain.current.phase === 'do', null, { timeout: 60000 });
+  await q.waitForFunction(() => !app.brain.current, null, { timeout: 30000 });
+  const care = await q.evaluate(() => { const d = JSON.parse(localStorage.getItem('cozy-room.pet.v1')); return d.pets[d.activePetId].care.momo?.total || 0; });
+  ok(care === 1, '모모가 쓰다듬으면 반려동물 기록에도 남아요');
+  await q.screenshot({ path: path.join(OUT, '8-pet-room.png') });
+  await pc.close();
+
   console.log('■ 콘솔 오류');
   ok(errors.length === 0, '콘솔 오류 없음', errors.slice(0, 5).join('\n'));
 
