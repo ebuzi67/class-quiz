@@ -371,6 +371,12 @@ $("#install-btn").addEventListener("click", async () => {
   $("#install-btn").hidden = true;
 });
 
+// 쉬는 시간 메뉴: 시험 모드 주소(?net=local 등)를 그대로 이어 줘요
+document.querySelectorAll("[data-pet-link]").forEach((a) => {
+  const [path, hash] = a.getAttribute("href").split("#");
+  a.href = `${path}${location.search}#${hash}`;
+});
+
 // ── 시작 ──
 renderGrid();
 route();
