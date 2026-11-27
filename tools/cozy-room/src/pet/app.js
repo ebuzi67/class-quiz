@@ -10,6 +10,7 @@ import {
 } from "./data.js";
 import { load, saveLocal, blank, newPet, today, daysTogether, nextGrowth, exportCode, importCode } from "./save.js";
 import { escapeHtml, showToast } from "./common.js";
+import { PNG_ART } from "./png.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -72,7 +73,25 @@ async function mountStage(box, setup) {
   s.mount(box);
   return s;
 }
-const thumb = (kind, id, opts) => (threeMod ? threeMod.thumb(kind, id, opts) : "");
+// 작은 그림: PNG가 있으면 PNG, 없으면 3D 모델 사진
+const pngOf = (id, sil) => { const a = PNG_ART[id]; if (!a) return ""; return typeof a === "string" ? (sil ? "" : a) : (sil ? a.sil || "" : a.idle); };
+const thumb = (kind, id, opts = {}) => (kind === "pet" && pngOf(id, opts.silhouette)) || (threeMod ? threeMod.thumb(kind, id, opts) : "");
+// 큰 그림: PNG가 있으면 그림을 보여 주고 "3D로 돌려 보기" 버튼을 둬요. 없으면 바로 3D로 보여 줘요.
+async function showArt(box, speciesId, setup) {
+  const src = pngOf(speciesId, false);
+  box.querySelector(".big-art-wrap")?.remove();
+  if (!src) return mountStage(box, setup);
+  if (stage?.canvas.parentElement === box) stage.unmount();
+  box.querySelector(".stage-hint")?.setAttribute("hidden", "");
+  const name = SPECIES_BY_ID[speciesId]?.name || "";
+  box.insertAdjacentHTML("beforeend", `<div class="big-art-wrap"><img class="big-art" src="${src}" alt="${escapeHtml(name)} 그림"><button type="button" class="btn btn-white btn-sm art-3d">🔄 3D로 돌려 보기</button></div>`);
+  box.querySelector(".art-3d").onclick = async () => {
+    box.querySelector(".big-art-wrap")?.remove();
+    box.querySelector(".stage-hint")?.removeAttribute("hidden");
+    await mountStage(box, setup);
+  };
+  return null;
+}
 async function ensureThumbs() { if (!threeMod) await getStage(); }
 
 // ─────────────────────────────────────────────
@@ -136,7 +155,7 @@ async function openName() {
   $("#name-ideas").innerHTML = NAME_IDEAS[s.cat].map((n) => `<button type="button" class="chip">${n}</button>`).join("");
   $("#name-ideas").onclick = (e) => { const c = e.target.closest(".chip"); if (c) $("#name-input").value = c.textContent; };
   show("name");
-  await mountStage($("#name-stage"), (st) => { st.setMode("showcase"); st.setPet(s.id, { scale: 1 }); st.pet.setMood("happy"); });
+  await showArt($("#name-stage"), s.id, (st) => { st.setMode("showcase"); st.setPet(s.id, { scale: 1 }); st.pet.setMood("happy"); });
 }
 $("#name-form").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -521,7 +540,7 @@ async function openDexDetail(id) {
   life.hidden = !d.lifecycle;
   if (d.lifecycle) { life.innerHTML = lifeHtml(d.lifecycle, s.id); data.dex.life[d.lifecycle] = true; }
   show("dexd");
-  await mountStage($("#dex-stage"), (st) => { st.setMode("showcase"); st.spin = 0; st.setPet(s.id, { scale: 1 }); });
+  await showArt($("#dex-stage"), s.id, (st) => { st.setMode("showcase"); st.spin = 0; st.setPet(s.id, { scale: 1 }); });
   if (isNew) {
     data.dex.seen[id] = Date.now();
     const pp = pet();

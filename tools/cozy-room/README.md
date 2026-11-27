@@ -87,7 +87,7 @@ npm run dev        # 개발용 서버 → 화면에 나오는 주소(http://loca
 **지킨 약속**: 돌보지 않아도 아프거나 사라지거나 줄어드는 것은 없어요. 게임 속 성장 단계는 실제 동물의 성장과 다르다고 따로 알려 줘요. 저장 데이터에 학생 이름 같은 개인 정보는 없어요.
 
 **파일**: `pet.html`, `src/pet/` (`data.js` 동물·도감 정보와 아이템·배지, `models.js` 3D 모델, `scene.js` 3D 무대, `app.js` 화면, `save.js` 저장·백업 코드, `png.js` PNG로 바꾸기, `base.css`·`pet.css` 디자인, `theme.css` 모모의 방 색), `src/engine/petBuddy.js` (모모의 방에 놀러 오는 반려동물).
-동물 그림을 직접 그린 PNG로 바꾸려면 `public/pet/img/`에 넣고 `src/pet/png.js`에 경로를 적어요.
+**동물 그림**: 고르기·도감 카드와 큰 그림은 사진 `art/pets-sheet.webp`(6칸 × 3줄)을 잘라 만든 그림이에요. `python3 make_pet_art.py`가 한 마리씩 잘라 배경을 지우고 `public/pet/img/`에 `<동물>.webp`(그림)와 `<동물>-sil.png`(아직 발견하지 않은 동물의 그림자)를 만들어요. 경로는 `src/pet/png.js`에 적혀 있어요. 같은 배치로 그린 새 사진으로 바꾸고 다시 돌리면 그림이 바뀌어요. 돌보기 방과 모모의 방에서는 움직여야 해서 3D 모델이 나와요.
 
 **나중에 붙일 수 있는 학급 공동 공간**: `src/pet/save.js`의 `publicCard()`가 반려동물 모습(종류·이름·성장 단계·장식·배경)만 담은 공개 카드를 만들어요. 학생 이름과 개인 정보는 넣지 않아요. 친구들 반려동물 구경하기, 작은 마을, 학급 정원은 이 카드만 모아서 보여 주면 돼요.
 
@@ -177,6 +177,7 @@ tools/cozy-room/
 ├─ e2e/check.cjs         브라우저 자동 점검
 ├─ public/               manifest.json, 아이콘
 ├─ make_icons.py         아이콘 그리기
+├─ make_pet_art.py       반려동물 사진을 잘라 그림 만들기 (art/pets-sheet.webp → public/pet/img/)
 └─ scripts/publish.mjs   결과물을 저장소의 cozy-room/ 으로 복사
 ```
 
