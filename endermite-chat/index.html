@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>엔더마이트와 대화하기</title>
+<link rel="manifest" href="manifest.json?v=1">
+<meta name="theme-color" content="#2a1840">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="엔더마이트와 대화하기">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+:root {
+  --bg: #f6f2fb;
+  --stage: #ece4f6;
+  --one: #7b3fc4;
+  --ink: #22162e;
+  --muted: #6e5d7c;
+  --bubble-me: #6a32b0;
+  --bubble-me-ink: #ffffff;
+  --bubble-one: #ffffff;
+  --line: #ddd0ee;
+  --shade: rgba(20, 10, 35, .55);
+  --sky1: #2a1840;
+  --sky2: #120a1e;
+  --stone: #dcd89a;
+  --font-display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #140c1f; --stage: #24173a; --ink: #f1e9fb; --muted: #b8a6cc; --one: #b07cf0;
+    --bubble-me: #7b3fc4; --bubble-one: #24173a; --line: #3a2a52; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.wrap {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  width: 100%; max-width: 720px; margin: 0 auto;
+}
+header { background: radial-gradient(120% 140% at 30% 0%, var(--sky1), var(--sky2)); color: #f1e9fb; flex: none; position: relative; overflow: hidden; border-bottom: 6px solid #b9b46e; }
+header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: repeating-linear-gradient(90deg, var(--stone) 0 18px, #e6e2ab 18px 36px, #cfca86 36px 54px); }
+.sparks { position: absolute; inset: 0; pointer-events: none; }
+.sparks i { position: absolute; width: 4px; height: 4px; background: #d9a6ff; opacity: 0; animation: float 4s linear infinite; }
+@keyframes float { 0% { opacity: 0; transform: translateY(10px) } 20% { opacity: .9 } 100% { opacity: 0; transform: translateY(-70px) } }
+header .wrap { display: flex; align-items: flex-end; gap: 14px; padding-top: 10px; padding-bottom: 14px; position: relative; z-index: 1; }
+.one-fig { width: 116px; flex: none; cursor: pointer; }
+.one-fig img { width: 100%; height: auto; display: block; transform-origin: 60% 100%; animation: crawl 1.6s ease-in-out infinite; filter: drop-shadow(0 5px 0 rgba(0,0,0,.35)); }
+.who { min-width: 0; flex: 1; padding-bottom: 18px; }
+.who h1 { font-family: var(--font-display); font-weight: 400; font-size: 28px; margin: 0; color: #fff; line-height: 1.1; }
+.who p { margin: 4px 0 0; color: #d6c6e8; font-size: 15px; }
+.tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: none; max-width: 190px; padding-bottom: 20px; }
+.icon-btn {
+  font: inherit; font-size: 14px; border: 2px solid #6c4a96; background: rgba(18,10,30,.6); color: #f1e9fb;
+  border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+a.icon-btn { text-decoration: none; }
+.icon-btn[aria-pressed="true"] { border-color: #cf9cff; color: #cf9cff; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--bubble-me); outline-offset: 2px; }
+
+main { flex: 1; overflow-y: auto; min-height: 0; }
+main .wrap { display: flex; flex-direction: column; gap: 12px; padding-block: 16px; }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row.me { justify-content: flex-end; }
+.avatar { width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--sky1); padding: 3px; }
+.avatar img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.bubble {
+  max-width: 78%; padding: 10px 14px; border-radius: 20px; line-height: 1.55;
+  white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; min-width: 0;
+}
+.row.one .bubble { background: var(--bubble-one); border: 2px solid var(--line); border-bottom-left-radius: 6px; }
+.row.me .bubble { background: var(--bubble-me); color: var(--bubble-me-ink); border-bottom-right-radius: 6px; }
+.dots { color: var(--muted); }
+.dots span { display: inline-block; animation: hop 1s infinite; }
+.dots span:nth-child(2) { animation-delay: .15s; } .dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes hop { 0%,60%,100% { transform: none } 30% { transform: translateY(-4px) } }
+
+footer { flex: none; border-top: 2px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom, 0px); }
+footer .wrap { padding-block: 10px; display: flex; flex-direction: column; gap: 8px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.chip {
+  flex: none; font: inherit; font-size: 15px; background: var(--stage); color: var(--ink);
+  border: 2px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.board { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 8px; width: min(240px, 60vw); }
+.board button {
+  aspect-ratio: 1; font-size: 32px; border-radius: 14px; border: 2px solid var(--line);
+  background: var(--stage); cursor: pointer; padding: 0;
+}
+.board button:disabled { cursor: default; }
+.chip.answer { font-family: var(--font-display); font-size: 20px; min-width: 52px; }
+form#form { display: flex; gap: 8px; }
+#msg {
+  flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 16px; border-radius: 999px;
+  border: 2px solid var(--line); background: var(--bubble-one); color: var(--ink);
+}
+#mic {
+  flex: none; width: 48px; border-radius: 999px; border: 2px solid var(--line); background: var(--bubble-one);
+  font-size: 22px; cursor: pointer; color: var(--ink);
+}
+#mic.on { border-color: var(--one); background: var(--stage); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { transform: scale(1.08) } }
+.big-btn, #send {
+  font-family: var(--font-display); font-size: 18px; border: none; border-radius: 999px; padding: 10px 20px;
+  background: var(--one); color: #fff; cursor: pointer;
+}
+#send:disabled, .chip:disabled, #mic:disabled { opacity: .5; cursor: default; }
+
+.sheet { position: fixed; inset: 0; background: var(--shade); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.sheet > div { background: var(--bg); color: var(--ink); border-radius: 18px; padding: 22px; width: 100%; max-width: 420px; }
+.sheet h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0 0 10px; }
+.sheet li { line-height: 1.7; }
+.sheet .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+/* 엔더마이트 움직임: 평소엔 꼬물꼬물, 말할 땐 들썩들썩, 인사하면 흔들흔들, 기쁘면 폴짝 */
+@keyframes crawl { 0%,100% { transform: scale(1, 1) translateX(0) } 50% { transform: scale(1.06, .94) translateX(-3px) } }
+.talking img { animation: chat .22s ease-in-out infinite alternate; }
+@keyframes chat { from { transform: scale(1.04, .95) } to { transform: scale(.97, 1.04) translateY(-2px) } }
+.wave img { animation: wiggle .25s ease-in-out 6 alternate; }
+@keyframes wiggle { from { transform: rotate(-6deg) } to { transform: rotate(6deg) } }
+.jump img { animation: jump .4s ease-out 2; }
+@keyframes jump { 50% { transform: translateY(-16px) rotate(-4deg) } }
+@media (prefers-reduced-motion: reduce) {
+  .one-fig img, .sparks i, .dots span, #mic.on { animation: none !important; }
+}
+@media (max-width: 460px) {
+  .one-fig { width: 84px; }
+  .who h1 { font-size: 24px; }
+  .who p { display: none; }
+  .tools { max-width: 120px; }
+}
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="sparks" id="sparks"></div>
+  <div class="wrap">
+    <div class="one-fig" id="fig" title="엔더마이트를 누르면 꼬물꼬물 움직여요"><img src="endermite.png" alt="엔더마이트"></div>
+    <div class="who">
+      <h1>엔더마이트</h1>
+      <p>꼬물꼬물! 엔더 진주에서 톡 튀어나온 꼬마야.</p>
+    </div>
+    <div class="tools">
+      <button class="icon-btn" id="voice" type="button" aria-pressed="false">🔈 소리</button>
+      <button class="icon-btn" id="reset" type="button">↺ 처음</button>
+      <a class="icon-btn home-link" href="../" aria-label="전체 메뉴로">🏠</a>
+      <button class="icon-btn" id="installBtn" type="button" hidden>📲 설치</button>
+    </div>
+  </div>
+</header>
+
+<main id="scroller">
+  <div class="wrap" id="log" aria-live="polite"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="chips" id="chips"></div>
+    <form id="form" autocomplete="off">
+      <button id="mic" type="button" aria-label="말로 하기" hidden>🎤</button>
+      <input id="msg" maxlength="100" placeholder="엔더마이트에게 말을 걸어 보세요" aria-label="엔더마이트에게 보낼 말">
+      <button id="send" type="submit">보내기</button>
+    </form>
+  </div>
+</footer>
+
+<script src="words.js"></script>
+<script src="brain.js"></script>
+<script>
+// ---------- 화면 ----------
+// 엔더마이트의 말과 놀이는 brain.js에 있어요. 이 아래는 화면만 맡아요.
+const GREETING = "꼬물꼬물! 안녕! 나는 엔더마이트야 💜 엔더 진주에서 방금 톡 튀어나왔어. 오늘은 무슨 이야기 할까?";
+const CHAT_STORE = "endermite-chat-history";
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+
+const $ = (id) => document.getElementById(id);
+const log = $("log"), scroller = $("scroller"), msg = $("msg"), send = $("send"), fig = $("fig"), mic = $("mic");
+const sparks = $("sparks");
+for (let i = 0; i < 14; i++) {
+  const p = document.createElement("i");
+  p.style.left = (Math.random() * 100) + "%";
+  p.style.top = (30 + Math.random() * 60) + "%";
+  p.style.animationDelay = (Math.random() * 4) + "s";
+  sparks.append(p);
+}
+
+let view = [], busy = false, speak = true;
+
+function save() { store.set(CHAT_STORE, JSON.stringify(view.slice(-100))); }
+function scrollDown() { scroller.scrollTop = scroller.scrollHeight; }
+
+function miniOne() {
+  const s = document.createElement("div");
+  s.className = "avatar";
+  const im = document.createElement("img");
+  im.src = "endermite.png"; im.alt = "";
+  s.append(im);
+  return s;
+}
+
+function addBubble(who, text) {
+  const row = document.createElement("div");
+  row.className = "row " + who;
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  if (who === "one") row.append(miniOne());
+  row.append(b);
+  log.append(row);
+  scrollDown();
+  return b;
+}
+
+function act(kind) {
+  fig.classList.remove("wave", "jump");
+  void fig.offsetWidth;
+  fig.classList.add(kind);
+}
+function talk(on) { fig.classList.toggle("talking", on); }
+
+// 소리로 읽을 글 다듬기. 휴대폰 음성은 숫자를 늘 "일, 이, 삼"으로 읽어서,
+// 세는 말(번, 개, 문제…) 앞의 숫자는 "한, 두, 세"로 바꿔 줘요: "3번 이기면" → "세 번 이기면"
+// 순서를 말하는 "1번 문제"는 "일 번 문제"가 맞아서 그대로 둬요.
+const NATIVE_TENS = ["", "열", "스물", "서른", "마흔", "쉰", "예순", "일흔", "여든", "아흔"];
+const NATIVE_ONES = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉"];
+function nativeCount(n) {
+  if (n === 20) return "스무";
+  return NATIVE_TENS[Math.floor(n / 10)] + NATIVE_ONES[n % 10];
+}
+function speechText(text) {
+  return text
+    .split("\n").filter((line) => !line.startsWith("🟪")).join("\n") // 블록 그림 줄은 읽지 않아요
+    .replace(/[\u{1F300}-\u{1FAFF}☀-➿⬀-⯿\uFE0F]/gu, "")
+    .replace(/\+/g, " 더하기 ")
+    .replace(/×/g, " 곱하기 ")
+    .replace(/\s:\s/g, " 대 ") // (너 1 : 엔더마이트 2) → 너 1 대 엔더마이트 2
+    .replace(/(\d+)\s*(번째|번(?!\s*문제)|개|문제|줄|명|마리|살|판|가지|칸|장|권|시간|시)/g, (m, d, unit) => {
+      const n = Number(d);
+      if (n < 1 || n > 99) return m;
+      if (unit === "번째") return (n === 1 ? "첫" : nativeCount(n)) + " 번째";
+      return nativeCount(n) + " " + unit;
+    });
+}
+
+function sayAloud(text) {
+  if (!speak || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(speechText(text));
+    u.lang = "ko-KR"; u.pitch = 1.8; u.rate = 1.1;
+    u.onstart = () => talk(true);
+    u.onend = u.onerror = () => talk(false);
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function renderChips() {
+  const box = $("chips");
+  box.textContent = "";
+  chipsNow().forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (c.big ? " answer" : "");
+    btn.textContent = c.label;
+    btn.disabled = busy;
+    btn.onclick = () => ask(c.label);
+    box.append(btn);
+  });
+  box.scrollLeft = 0;
+}
+
+// 숨은 엔더마이트 찾기 판: 누르면 그 칸 번호를 엔더마이트에게 보내요
+function addBoard(spec) {
+  const row = document.createElement("div");
+  row.className = "row one";
+  const b = document.createElement("div");
+  b.className = "bubble";
+  const grid = document.createElement("div");
+  grid.className = "board";
+  grid.style.setProperty("--cols", spec.cols);
+  const cells = spec.spots.map((emoji, i) => {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.textContent = emoji;
+    c.setAttribute("aria-label", `${i + 1}번 ${emoji}`);
+    c.onclick = () => { if (!busy && game?.type === "hide" && game.cells === cells) ask(`${emoji} 뒤에 있니?`, i); };
+    grid.append(c);
+    return c;
+  });
+  b.append(grid);
+  row.append(miniOne(), b);
+  log.append(row);
+  if (game?.type === "hide") game.cells = cells;
+  scrollDown();
+}
+
+function wait(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+async function ask(text, cell = null) {
+  text = text.trim();
+  if (!text || busy) return;
+  msg.value = "";
+  addBubble("me", text);
+  view.push({ who: "me", text });
+  busy = true;
+  send.disabled = true;
+  renderChips();
+  const lines = reply(text, cell);
+  const said = [];
+  for (const line of lines) {
+    if (line.board) {
+      await wait(400);
+      addBoard(line.board);
+      view.push({ who: "one", text: "🔍 " + line.board.spots.join(" ") });
+      continue;
+    }
+    const b = addBubble("one", "");
+    b.innerHTML = '<span class="dots"><span>●</span> <span>●</span> <span>●</span></span>';
+    talk(true);
+    await wait(500 + Math.min(line.length * 12, 700));
+    b.textContent = line;
+    talk(false);
+    view.push({ who: "one", text: line });
+    said.push(line);
+    scrollDown();
+  }
+  sayAloud(said.join(" "));
+  busy = false;
+  send.disabled = false;
+  save();
+  renderChips();
+}
+
+function render() {
+  log.textContent = "";
+  addBubble("one", GREETING);
+  view.forEach((m) => addBubble(m.who, m.text));
+  renderChips();
+}
+
+// ---------- 말로 하기 (마이크) ----------
+const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null;
+if (Recog) {
+  mic.hidden = false;
+  mic.onclick = () => {
+    if (recog) { recog.stop(); return; }
+    try { speechSynthesis.cancel(); } catch (e) {}
+    recog = new Recog();
+    recog.lang = "ko-KR";
+    recog.interimResults = true;
+    let finalText = "";
+    recog.onresult = (e) => {
+      const r = Array.from(e.results).map((x) => x[0].transcript).join("");
+      msg.value = r;
+      if (e.results[e.results.length - 1].isFinal) finalText = r;
+    };
+    recog.onend = () => {
+      mic.classList.remove("on");
+      recog = null;
+      if (finalText.trim()) ask(finalText);
+    };
+    recog.onerror = () => {};
+    mic.classList.add("on");
+    try { recog.start(); } catch (e) { mic.classList.remove("on"); recog = null; }
+  };
+}
+
+// ---------- 버튼 연결 ----------
+$("form").addEventListener("submit", (e) => { e.preventDefault(); ask(msg.value); });
+$("reset").onclick = () => {
+  try { speechSynthesis.cancel(); } catch (e) {}
+  if (busy) return;
+  view = []; resetBrain(); save(); render(); act("wave");
+};
+const voiceBtn = $("voice");
+if (!("speechSynthesis" in window)) voiceBtn.hidden = true;
+voiceBtn.setAttribute("aria-pressed", String(speak));
+voiceBtn.textContent = speak ? "🔊 소리" : "🔈 소리";
+voiceBtn.onclick = () => {
+  speak = !speak;
+  voiceBtn.setAttribute("aria-pressed", String(speak));
+  voiceBtn.textContent = speak ? "🔊 소리" : "🔈 소리";
+  if (!speak) { try { speechSynthesis.cancel(); } catch (e) {} talk(false); }
+};
+fig.onclick = () => act(Math.random() < .5 ? "wave" : "jump");
+
+try {
+  const saved = JSON.parse(store.get(CHAT_STORE) || "null");
+  if (Array.isArray(saved)) view = saved.filter((m) => m && typeof m.text === "string");
+} catch (e) {}
+render();
+act("wave");
+
+// ---------- 홈 화면에 설치하기 ----------
+// 앱으로 연 게 아니면 버튼을 항상 보여 줘요. 크롬이 설치 창을 줄 수 있으면 바로 띄우고,
+// 아니면 설치 순서를 안내해요(아이폰·아이패드는 "공유 → 홈 화면에 추가", 그 밖에는 크롬 ⋮ 메뉴).
+(() => {
+  const btn = $("installBtn"); let ev = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const upd = () => { btn.hidden = standalone(); };
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ev = e; upd(); });
+  addEventListener("appinstalled", () => { ev = null; upd(); });
+  btn.addEventListener("click", async () => {
+    if (ev) { const e = ev; ev = null; e.prompt(); try { await e.userChoice; } catch (_) {} upd(); return; }
+    const s = document.createElement("div");
+    s.className = "sheet";
+    s.innerHTML = ios
+      ? `<div role="dialog" aria-label="설치 안내"><h2>아이패드·아이폰에 설치하기</h2>
+      <ol><li><b>사파리</b>에서 이 페이지를 열어요.</li>
+      <li>위쪽(아이폰은 아래쪽)의 <b>공유 버튼</b>(□↑)을 눌러요.</li>
+      <li><b>홈 화면에 추가</b>를 누르고 <b>추가</b>를 눌러요.</li></ol>
+      <div class="actions"><button class="big-btn">알겠어요</button></div></div>`
+      : `<div role="dialog" aria-label="설치 안내"><h2>앱으로 설치하기</h2>
+      <ol><li>크롬 오른쪽 위 <b>⋮</b> 메뉴를 눌러요.</li><li><b>앱 설치</b>(또는 <b>홈 화면에 추가</b>)를 눌러요.</li><li>메뉴에 없으면 이미 설치되어 있을 수 있어요. 홈 화면에서 아이콘을 찾아보세요. 다른 앱(카카오톡 등) 안에서 열었다면 <b>크롬 앱</b>으로 다시 열어요.</li></ol>
+      <div class="actions"><button class="big-btn">알겠어요</button></div></div>`;
+    s.addEventListener("click", (e) => { if (e.target === s || e.target.closest("button")) s.remove(); });
+    document.body.append(s);
+  });
+  upd();
+})();
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
