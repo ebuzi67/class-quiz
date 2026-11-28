@@ -19,6 +19,7 @@
 ├─ village/                  꼬마 발명가 마을
 ├─ pixel-lab/                픽셀 마법사 연구소 (코딩 블록으로 픽셀 그림·애니메이션 만들기)
 ├─ help/                     저요! 저요! 도와주세요 (학급 도움 요청, 방 번호로 선생님 화면에 실시간 알림 — help/README.md)
+├─ endermite-chat/           엔더마이트와 대화하기 (마인크래프트 엔더마이트 채팅, 앱 하나)
 └─ numberblocks/             넘버블럭스
    ├─ one-chat/  two-chat/   (원이랑 대화하기, 투랑 대화하기)
 ```
@@ -138,6 +139,17 @@
 - 끝말잇기 낱말은 원과 같이 `tools/numberblocks/one-chat/words.txt`에서 `python3 tools/numberblocks/one-chat/build_words.py`로 `numberblocks/one-chat/words.js`와 `numberblocks/two-chat/words.js`를 함께 만들어요.
 - 목소리: 기기의 한국어 목소리 중 남자 목소리를 찾아 써요. 없으면 기본 목소리를 낮게(pitch 0.7) 내려요. 🔊 소리를 켜면 보이는 🎙 목소리 버튼으로 다른 목소리를 들어 보고 고를 수 있어요(그 기기에 저장, `two-voice`).
 - `tools/numberblocks/two-chat/make_icons.py`: `tools/numberblocks/two-chat/two.jpg`(투 그림)의 바둑판 배경을 흰색으로 바꿔서 `numberblocks/two-chat/icons/` 아이콘을 만들어요.
+
+## 엔더마이트와 대화하기 (`endermite-chat/`, 따로 있는 앱)
+
+"원이랑 대화하기"와 같은 방식으로 만든 마인크래프트 엔더마이트 채팅 앱이에요. AI 없이 정해 둔 말과 놀이로만 대답하고 아무 데도 연결하지 않아요. 전체 메뉴에서 고르거나 `…/class-quiz/endermite-chat/` 주소로 열어서 "엔더마이트와 대화하기" 앱으로 설치해요.
+
+- 엔더마이트의 이야기: 엔드, 엔더 진주, 엔드 시티, 집 짓는 법, 레드스톤, 다이아몬드. 몹 친구 소개(엔더맨, 엔더 드래곤, 셜커, 크리퍼, 주민, 꿀벌, 철 골렘, 스티브·알렉스).
+- 놀이: 마크 퀴즈(3지선다 15문제 중 5문제), 블록 계산 퀴즈(곱셈·두 자리 덧셈·뺄셈, 블록 그림), 끝말잇기, 가위바위보, 숨은 엔더마이트 찾기, 보라색 찾기. "4 곱하기 6" 같은 계산도 블록 그림으로 보여 줘요.
+- 위로, 일상 대화, 끝말잇기 짜임은 `numberblocks/one-chat/brain.js`와 같아요. 게임을 오래 하고 싶다고 하면 정한 시간만큼만 하자고 해요.
+- 🎤 말로 하기(지원하는 브라우저만), 🔊 소리(처음부터 켜짐), 📲 설치 버튼(앱으로 연 게 아니면 항상 보임).
+- 말과 놀이는 `endermite-chat/brain.js`, 화면은 `endermite-chat/index.html`이에요. 끝말잇기 낱말은 원·투와 같이 `python3 tools/numberblocks/one-chat/build_words.py`로 `endermite-chat/words.js`까지 함께 만들어요.
+- `tools/endermite-chat/make_icons.py`: `tools/endermite-chat/endermite.jpg`로 아이콘(`endermite-chat/icons/`)과 화면 캐릭터(`endermite-chat/endermite.png`, 흰 배경을 지운 그림)를 만들어요.
 
 ## 꼬마 발명가 마을 (따로 분리된 앱)
 
